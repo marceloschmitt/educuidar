@@ -38,7 +38,6 @@ class User {
             
             // If user uses LDAP authentication
             if ($auth_type === 'ldap') {
-                require_once __DIR__ . '/../config/ldap.php';
                 $ldap = new LDAPAuth($this->conn);
                 $ldap_result = $ldap->authenticate($username, $password);
                 

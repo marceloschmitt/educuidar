@@ -12,7 +12,7 @@ class Database {
 
     public function __construct() {
         // Load configuration from config file
-        $config_file = __DIR__ . '/config.php';
+        $config_file = __DIR__ . '/../config/config.php';
         
         if (!file_exists($config_file)) {
             throw new Exception('Configuration file not found. Please create config/config.php with your database settings. See documentation for the required structure.');

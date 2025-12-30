@@ -27,11 +27,5 @@ spl_autoload_register(function ($class) {
         }
     }
 });
-
-// Include database
-require_once __DIR__ . '/database.php';
-
-// Include LDAP
-require_once __DIR__ . '/ldap.php';
 ?>
 
