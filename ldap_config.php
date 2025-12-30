@@ -63,7 +63,8 @@ $ldap_host = $configuracao->getLdapHost();
 $ldap_base_dn = $configuracao->getLdapBaseDn();
 $ldap_bind_dn = $configuracao->getLdapBindDn();
 $ldap_user_attribute = $configuracao->getLdapUserAttribute();
-// Don't retrieve password for security reasons
+// Don't retrieve password for security reasons - always leave empty in form
+$ldap_bind_password = '';
 
 // End output buffering before including header
 ob_end_flush();
@@ -188,7 +189,9 @@ require_once 'includes/header.php';
                                class="form-control" 
                                id="ldap_bind_password" 
                                name="ldap_bind_password" 
-                               placeholder="Deixe em branco para manter a senha atual">
+                               value=""
+                               placeholder="Deixe em branco para manter a senha atual"
+                               autocomplete="new-password">
                         <div class="form-text">
                             <i class="bi bi-shield-lock"></i> A senha atual não é exibida por segurança. 
                             Deixe em branco para manter a senha atual ou preencha para alterá-la.
