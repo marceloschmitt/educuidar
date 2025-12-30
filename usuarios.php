@@ -250,8 +250,8 @@ $usuarios = $user->getAll();
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-sm">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="font-size: 0.875rem;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.875rem;">
                         <i class="bi bi-save"></i> Criar
                     </button>
                 </div>
@@ -315,8 +315,8 @@ $usuarios = $user->getAll();
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary btn-sm">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" style="font-size: 0.875rem;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary btn-sm" style="font-size: 0.875rem;">
                         <i class="bi bi-save"></i> Salvar
                     </button>
                 </div>
