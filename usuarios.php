@@ -205,7 +205,7 @@ $usuarios = $user->getAll();
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="" id="createUserForm">
-                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                <div class="modal-body" style="max-height: 60vh; overflow-y: auto; font-size: 0.875rem;">
                     <input type="hidden" name="action" value="create">
                     
                     <div class="mb-3">
@@ -269,7 +269,7 @@ $usuarios = $user->getAll();
                     <h5 class="modal-title" id="editUserModalLabel"><i class="bi bi-pencil"></i> Editar Usuário</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                <div class="modal-body" style="max-height: 60vh; overflow-y: auto; font-size: 0.875rem;">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="id" id="edit_user_id">
                     
