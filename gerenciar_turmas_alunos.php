@@ -156,7 +156,7 @@ require_once 'includes/header.php';
                         <form method="GET" action="" class="mb-3">
                             <label for="turma_id" class="form-label">Selecionar Turma</label>
                             <div class="input-group">
-                                <select class="form-select" id="turma_id" name="turma_id">
+                                <select class="form-select" id="turma_id" name="turma_id" onchange="this.form.submit();">
                                     <option value="">Selecione uma turma...</option>
                                     <?php 
                                     // Group turmas by curso and ano_civil
