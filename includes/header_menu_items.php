@@ -55,11 +55,18 @@
         </a>
     </li>
     <?php endif; ?>
+    <?php 
+    // Only show "Alterar Senha" for users with local authentication
+    $user_data = $user->getById($_SESSION['user_id']);
+    $can_change_password = $user_data && ($user_data['auth_type'] ?? 'local') === 'local';
+    if ($can_change_password): 
+    ?>
     <li class="nav-item">
         <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alterar_senha.php' ? 'active' : ''; ?>" href="alterar_senha.php">
             <i class="bi bi-key"></i> Alterar Senha
         </a>
     </li>
+    <?php endif; ?>
     <li class="nav-item">
         <a class="nav-link" href="logout.php">
             <i class="bi bi-box-arrow-right"></i> Sair

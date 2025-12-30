@@ -12,6 +12,13 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
+// Check if user uses LDAP authentication
+$user_data = $user->getById($_SESSION['user_id']);
+if ($user_data && $user_data['auth_type'] === 'ldap') {
+    header('Location: index.php');
+    exit;
+}
+
 $success = '';
 $error = '';
 
