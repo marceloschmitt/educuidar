@@ -157,10 +157,11 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('shown.bs.dropdown', function() {
                 var rect = button.getBoundingClientRect();
                 menu.style.position = 'fixed';
-                menu.style.top = (rect.bottom + window.scrollY) + 'px';
+                menu.style.top = rect.bottom + 'px';
                 menu.style.right = (window.innerWidth - rect.right) + 'px';
                 menu.style.left = 'auto';
                 menu.style.transform = 'none';
+                menu.style.marginTop = '0.125rem';
             });
             
             // Reset when hidden
@@ -170,6 +171,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 menu.style.right = '';
                 menu.style.left = '';
                 menu.style.transform = '';
+                menu.style.marginTop = '';
             });
         }
     });
