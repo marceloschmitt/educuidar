@@ -17,6 +17,7 @@ spl_autoload_register(function ($class) {
     $paths = [
         __DIR__ . '/../classes/',
         __DIR__ . '/../models/',
+        __DIR__ . '/../controllers/',
     ];
     
     foreach ($paths as $path) {
