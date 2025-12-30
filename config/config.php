@@ -2,6 +2,7 @@
 /**
  * Configuration file
  * Fill in your database credentials after installation
+ * 
  */
 
 return [
