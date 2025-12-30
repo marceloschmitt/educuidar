@@ -97,7 +97,7 @@ class Evento {
     public function getByAluno($aluno_id) {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
-                  c.nome as curso_nome, c.codigo as curso_codigo,
+                  c.nome as curso_nome,
                   te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
@@ -119,7 +119,7 @@ class Evento {
                   e.data_evento, e.hora_evento, e.observacoes, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
-                  c.nome as curso_nome, c.codigo as curso_codigo,
+                  c.nome as curso_nome,
                   te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
@@ -150,7 +150,7 @@ class Evento {
     public function getById($id) {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
-                  c.nome as curso_nome, c.codigo as curso_codigo,
+                  c.nome as curso_nome,
                   te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
