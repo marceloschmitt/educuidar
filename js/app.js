@@ -146,32 +146,23 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Fix dropdown positioning in tables to prevent clipping
+    // Fix dropdown positioning in tables - allow overflow when dropdown is open
     var tableDropdowns = document.querySelectorAll('.table .dropdown');
     tableDropdowns.forEach(function(dropdown) {
         var button = dropdown.querySelector('.dropdown-toggle');
-        var menu = dropdown.querySelector('.dropdown-menu');
+        var tableResponsive = dropdown.closest('.table-responsive');
         
-        if (button && menu) {
-            // When dropdown is shown, position it using fixed positioning
+        if (button && tableResponsive) {
+            // When dropdown is shown, allow overflow
             button.addEventListener('shown.bs.dropdown', function() {
-                var rect = button.getBoundingClientRect();
-                menu.style.position = 'fixed';
-                menu.style.top = rect.bottom + 'px';
-                menu.style.right = (window.innerWidth - rect.right) + 'px';
-                menu.style.left = 'auto';
-                menu.style.transform = 'none';
-                menu.style.marginTop = '0.125rem';
+                tableResponsive.style.overflowY = 'visible';
+                tableResponsive.style.paddingBottom = '200px'; // Extra space for dropdown
             });
             
             // Reset when hidden
             button.addEventListener('hidden.bs.dropdown', function() {
-                menu.style.position = '';
-                menu.style.top = '';
-                menu.style.right = '';
-                menu.style.left = '';
-                menu.style.transform = '';
-                menu.style.marginTop = '';
+                tableResponsive.style.overflowY = '';
+                tableResponsive.style.paddingBottom = '';
             });
         }
     });

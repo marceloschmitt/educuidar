@@ -179,19 +179,19 @@
     padding-top: 20px;
 }
 
-/* Fix dropdown in tables - prevent clipping */
-/* Remove overflow restriction when dropdown is open */
+/* Fix dropdown in tables - allow menu to appear within table boundaries */
 .table-responsive {
     overflow-x: auto;
-    overflow-y: visible;
+    overflow-y: auto;
+    position: relative;
 }
 
-/* Ensure dropdowns in table cells can escape the container */
+/* Ensure dropdowns in table cells are positioned correctly */
 .table td .dropdown {
     position: static;
 }
 
-/* Make dropdown menu escape the table boundaries */
+/* Dropdown menu positioning - opens over the row */
 .table td .dropdown-menu {
     position: absolute !important;
     z-index: 1050 !important;
@@ -202,15 +202,10 @@
     transform: none !important;
 }
 
-/* When dropdown is shown, allow overflow on table-responsive */
-.table-responsive:has(.dropdown-menu.show) {
-    overflow: visible !important;
-}
-
-/* Alternative approach: use fixed positioning when dropdown is open */
-.table td .dropdown.show .dropdown-menu {
-    position: fixed !important;
-    z-index: 1050 !important;
+/* When dropdown is shown, allow overflow and add padding for last rows */
+.table-responsive:has(.dropdown.show) {
+    overflow-y: visible !important;
+    padding-bottom: 200px !important;
 }
 
 /* Estilos de Impressão */
