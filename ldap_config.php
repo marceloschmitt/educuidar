@@ -42,13 +42,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($configuracao->setLdapBindDn($ldap_bind_dn)) $success_count++;
         if ($configuracao->setLdapUserAttribute($ldap_user_attribute)) $success_count++;
         
-        // Only update password if provided (to allow clearing it)
+        // Only update password if provided (leave empty to keep current password)
         if ($ldap_bind_password !== '') {
             if ($configuracao->setLdapBindPassword($ldap_bind_password)) $success_count++;
-        } else {
-            // If empty, clear the password
-            if ($configuracao->setLdapBindPassword('')) $success_count++;
         }
+        // If empty, don't update password - keep the current one
         
         if ($success_count > 0) {
             $success = 'Configurações LDAP salvas com sucesso!';
