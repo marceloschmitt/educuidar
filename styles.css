@@ -1,35 +1,73 @@
 /* Estilos do Sistema de Controle IFRS */
 
 /* Modal de usuário - fonte menor para caber melhor */
+#createUserModal .modal-dialog,
+#editUserModal .modal-dialog {
+    max-height: 90vh;
+    margin: 1rem auto;
+}
+
+#createUserModal .modal-content,
+#editUserModal .modal-content {
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#createUserModal .modal-header,
+#editUserModal .modal-header {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+}
+
 #createUserModal .modal-body,
 #editUserModal .modal-body {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0.75rem 1rem;
 }
 
 #createUserModal .form-label,
 #editUserModal .form-label {
-    font-size: 0.875rem;
-    margin-bottom: 0.4rem;
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
 }
 
 #createUserModal .form-control,
 #editUserModal .form-control,
 #createUserModal .form-select,
 #editUserModal .form-select {
-    font-size: 0.875rem;
-    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    line-height: 1.3;
+    height: calc(1.3em + 0.6rem + 2px);
 }
 
 #createUserModal .form-text,
 #editUserModal .form-text,
 #createUserModal small,
 #editUserModal small {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
 }
 
 #createUserModal .mb-3,
 #editUserModal .mb-3 {
-    margin-bottom: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+#createUserModal .modal-footer,
+#editUserModal .modal-footer {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+}
+
+#createUserModal .modal-footer .btn,
+#editUserModal .modal-footer .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
 }
 
 /* Password field with eye icon */
