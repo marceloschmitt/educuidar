@@ -51,7 +51,8 @@ class LDAPAuth {
         
         $ldap = @ldap_connect($this->ldap_host);
         if (!$ldap) {
-            $this->last_error = 'Falha ao conectar ao servidor LDAP';
+            $ldap_error = @ldap_error($ldap) ?: 'Erro desconhecido';
+            $this->last_error = 'Falha ao conectar ao servidor LDAP: ' . $ldap_error;
             return false;
         }
         
@@ -61,13 +62,15 @@ class LDAPAuth {
         // 1️⃣ Bind administrativo
         if (!empty($this->ldap_bind_dn) && !empty($this->ldap_bind_password)) {
             if (!@ldap_bind($ldap, $this->ldap_bind_dn, $this->ldap_bind_password)) {
-                $this->last_error = 'Falha no bind administrativo';
+                $ldap_error = @ldap_error($ldap) ?: 'Erro desconhecido';
+                $this->last_error = 'Falha no bind administrativo: ' . $ldap_error;
                 ldap_close($ldap);
                 return false;
             }
         } else {
             if (!@ldap_bind($ldap)) {
-                $this->last_error = 'Falha no bind anônimo';
+                $ldap_error = @ldap_error($ldap) ?: 'Erro desconhecido';
+                $this->last_error = 'Falha no bind anônimo: ' . $ldap_error;
                 ldap_close($ldap);
                 return false;
             }
@@ -79,14 +82,16 @@ class LDAPAuth {
         
         $search = @ldap_search($ldap, $this->ldap_base_dn, $filter, ['dn']);
         if (!$search) {
-            $this->last_error = 'Falha na busca do usuário';
+            $ldap_error = @ldap_error($ldap) ?: 'Erro desconhecido';
+            $this->last_error = 'Falha na busca do usuário: ' . $ldap_error;
             ldap_close($ldap);
             return false;
         }
         
         $entries = @ldap_get_entries($ldap, $search);
-        if ($entries['count'] !== 1) {
-            $this->last_error = 'Usuário não encontrado ou duplicado';
+        if (!$entries || $entries['count'] !== 1) {
+            $count = $entries ? $entries['count'] : 0;
+            $this->last_error = 'Usuário não encontrado ou duplicado (encontrados: ' . $count . ')';
             ldap_close($ldap);
             return false;
         }
@@ -95,22 +100,23 @@ class LDAPAuth {
         
         // 3️⃣ Bind como usuário final (valida senha)
         if (!@ldap_bind($ldap, $user_dn, $password)) {
-            $this->last_error = 'Senha inválida';
+            $ldap_error = @ldap_error($ldap) ?: 'Erro desconhecido';
+            $this->last_error = 'Senha inválida: ' . $ldap_error;
             ldap_close($ldap);
             return false;
         }
         
-        // Busca atributos do usuário
+        // Busca atributos do usuário (após bind bem-sucedido)
         $attributes = ['cn', 'mail', 'displayName', 'sn', 'givenName', 'name', 'userPrincipalName', 'sAMAccountName'];
-        $search = @ldap_search($ldap, $this->ldap_base_dn, $filter, $attributes);
+        $search_attrs = @ldap_search($ldap, $this->ldap_base_dn, $filter, $attributes);
         
         $full_name = $username;
         $email = '';
         
-        if ($search) {
-            $entries = @ldap_get_entries($ldap, $search);
-            if ($entries && $entries['count'] > 0) {
-                $entry = $entries[0];
+        if ($search_attrs) {
+            $entries_attrs = @ldap_get_entries($ldap, $search_attrs);
+            if ($entries_attrs && $entries_attrs['count'] > 0) {
+                $entry = $entries_attrs[0];
                 
                 if (isset($entry['displayName'][0])) {
                     $full_name = $entry['displayName'][0];
