@@ -64,8 +64,50 @@ function editAluno(aluno) {
     modal.show();
 }
 
+// Initialize password toggles function
+function initPasswordToggles() {
+    // Find all password fields and add toggle functionality
+    document.querySelectorAll('input[type="password"]').forEach(function(passwordInput) {
+        // Skip if already has toggle
+        if (passwordInput.parentElement && passwordInput.parentElement.classList.contains('password-wrapper')) {
+            return;
+        }
+        
+        // Create wrapper
+        var wrapper = document.createElement('div');
+        wrapper.className = 'password-wrapper';
+        
+        // Create toggle button
+        var toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.className = 'password-toggle';
+        toggleBtn.innerHTML = '<i class="bi bi-eye"></i>';
+        toggleBtn.setAttribute('aria-label', 'Mostrar senha');
+        
+        // Wrap the input
+        passwordInput.parentNode.insertBefore(wrapper, passwordInput);
+        wrapper.appendChild(passwordInput);
+        wrapper.appendChild(toggleBtn);
+        
+        // Add click event
+        toggleBtn.addEventListener('click', function() {
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleBtn.innerHTML = '<i class="bi bi-eye-slash"></i>';
+                toggleBtn.setAttribute('aria-label', 'Ocultar senha');
+            } else {
+                passwordInput.type = 'password';
+                toggleBtn.innerHTML = '<i class="bi bi-eye"></i>';
+                toggleBtn.setAttribute('aria-label', 'Mostrar senha');
+            }
+        });
+    });
+}
+
 // Event listeners quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize password toggles
+    initPasswordToggles();
     // Filtro de curso - limpar turma quando curso mudar
     var filtroCurso = document.getElementById('filtro_curso');
     if (filtroCurso) {
@@ -235,7 +277,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 var passwordInput = document.getElementById('password');
                 var passwordHelp = document.getElementById('password_help');
                 var passwordRequired = document.getElementById('password_required');
-                if (passwordInput) passwordInput.value = '';
+                if (passwordInput) {
+                    passwordInput.value = '';
+                    passwordInput.disabled = false;
+                }
                 if (passwordHelp) {
                     passwordHelp.textContent = '';
                     passwordHelp.className = 'text-muted';
@@ -256,6 +301,14 @@ document.addEventListener('DOMContentLoaded', function() {
         editUserTypeSelect.addEventListener('change', toggleEditPasswordField);
         editAuthTypeSelect.addEventListener('change', toggleEditPasswordField);
     }
+    
+    // Re-initialize password toggles when modals are shown (for dynamic content)
+    var modals = document.querySelectorAll('.modal');
+    modals.forEach(function(modal) {
+        modal.addEventListener('shown.bs.modal', function() {
+            initPasswordToggles();
+        });
+    });
     
     // Formulários de confirmação
     var confirmForms = document.querySelectorAll('.form-confirm, .form-delete-turma, .form-delete-curso');
@@ -409,6 +462,7 @@ function toggleFields() {
     
     if (authTypeValue === 'ldap') {
         passwordInput.required = false;
+        passwordInput.disabled = true;
         passwordInput.value = '';
         passwordHelp.textContent = 'Usuários com autenticação LDAP não precisam de senha local. A autenticação será feita no servidor LDAP.';
         passwordHelp.className = 'text-muted';
@@ -417,6 +471,7 @@ function toggleFields() {
         }
     } else if (authTypeValue === 'local') {
         passwordInput.required = true;
+        passwordInput.disabled = false;
         passwordHelp.textContent = 'Senha obrigatória para autenticação local.';
         passwordHelp.className = 'text-muted';
         if (passwordRequired) {
@@ -424,6 +479,7 @@ function toggleFields() {
         }
     } else {
         passwordInput.required = false;
+        passwordInput.disabled = true;
         passwordHelp.textContent = 'Selecione o tipo de autenticação primeiro.';
         passwordHelp.className = 'text-muted';
         if (passwordRequired) {
@@ -446,14 +502,16 @@ function toggleEditPasswordField() {
     
     if (authTypeValue === 'ldap') {
         passwordInput.required = false;
+        passwordInput.disabled = true;
         passwordInput.value = '';
         passwordHelp.textContent = 'Usuários com autenticação LDAP não usam senha local. A senha deve ser alterada no servidor LDAP.';
         passwordHelp.className = 'text-muted';
         if (passwordField) {
-            passwordField.style.display = 'none';
+            passwordField.style.display = 'block';
         }
     } else if (authTypeValue === 'local') {
         passwordInput.required = false;
+        passwordInput.disabled = false;
         passwordHelp.textContent = 'Deixe em branco para manter a senha atual. Preencha apenas se desejar alterar a senha.';
         passwordHelp.className = 'text-muted';
         if (passwordField) {
@@ -461,10 +519,12 @@ function toggleEditPasswordField() {
         }
     } else {
         passwordInput.required = false;
+        passwordInput.disabled = true;
         passwordHelp.textContent = '';
         if (passwordField) {
             passwordField.style.display = 'block';
         }
     }
 }
+
 
