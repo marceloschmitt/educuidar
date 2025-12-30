@@ -5,13 +5,13 @@
 
 class LDAPAuth {
     private $ldap_host;
-    private $ldap_port;
     private $ldap_base_dn;
     private $ldap_bind_dn;
     private $ldap_bind_password;
     private $ldap_user_attribute;
     private $configuracao;
     private $last_error = '';
+    private $bind_admin_error = '';
     
     public function __construct($db) {
         if (!$db) {
@@ -22,7 +22,6 @@ class LDAPAuth {
         require_once __DIR__ . '/../models/Configuracao.php';
         $this->configuracao = new Configuracao($db);
         $this->ldap_host = $this->configuracao->getLdapHost();
-        $this->ldap_port = (int)$this->configuracao->getLdapPort();
         $this->ldap_base_dn = $this->configuracao->getLdapBaseDn();
         $this->ldap_bind_dn = $this->configuracao->getLdapBindDn();
         $this->ldap_bind_password = $this->configuracao->getLdapBindPassword();
@@ -45,6 +44,7 @@ class LDAPAuth {
      */
     public function authenticate($username, $password) {
         $this->last_error = '';
+        $this->bind_admin_error = '';
         
         if (empty($username) || empty($password)) {
             $this->last_error = 'Usuário ou senha não informados';
@@ -53,9 +53,9 @@ class LDAPAuth {
         }
         
         // Check if LDAP is configured
-        if (empty($this->ldap_host) || empty($this->ldap_port) || empty($this->ldap_base_dn) || empty($this->ldap_user_attribute)) {
+        if (empty($this->ldap_host) || empty($this->ldap_base_dn) || empty($this->ldap_user_attribute)) {
             $this->last_error = 'LDAP não configurado. Verifique as configurações em Configuração LDAP.';
-            error_log("LDAP Auth: LDAP not configured - host: " . ($this->ldap_host ?: 'empty') . ", port: " . ($this->ldap_port ?: 'empty') . ", base_dn: " . ($this->ldap_base_dn ?: 'empty') . ", attribute: " . ($this->ldap_user_attribute ?: 'empty'));
+            error_log("LDAP Auth: LDAP not configured - host: " . ($this->ldap_host ?: 'empty') . ", base_dn: " . ($this->ldap_base_dn ?: 'empty') . ", attribute: " . ($this->ldap_user_attribute ?: 'empty'));
             return false;
         }
         
@@ -66,22 +66,22 @@ class LDAPAuth {
             return false;
         }
         
-        $ldap_conn = @ldap_connect($this->ldap_host, $this->ldap_port);
+        $ldap_conn = @ldap_connect($this->ldap_host);
         
         if (!$ldap_conn) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-            $this->last_error = "❌ Falha ao conectar ao servidor LDAP {$this->ldap_host}:{$this->ldap_port}.\nErro: {$ldap_error}\n\nVerifique se:\n- O servidor LDAP está acessível\n- O endereço e porta estão corretos\n- Não há firewall bloqueando a conexão";
-            error_log("LDAP Auth: Connection failed to {$this->ldap_host}:{$this->ldap_port} - {$ldap_error}");
+            $this->last_error = "❌ Falha ao conectar ao servidor LDAP {$this->ldap_host}.\nErro: {$ldap_error}\n\nVerifique se:\n- O servidor LDAP está acessível\n- O endereço está correto (pode incluir porta: ldap://host:389)\n- Não há firewall bloqueando a conexão";
+            error_log("LDAP Auth: Connection failed to {$this->ldap_host} - {$ldap_error}");
             return false;
         }
         
         // Connection successful
-        error_log("LDAP Auth: Successfully connected to {$this->ldap_host}:{$this->ldap_port}");
+        error_log("LDAP Auth: Successfully connected to {$this->ldap_host}");
         
         // Set LDAP options
         if (!@ldap_set_option($ldap_conn, LDAP_OPT_PROTOCOL_VERSION, 3)) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-            $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}:{$this->ldap_port}.\n❌ Falha ao configurar protocolo LDAP versão 3.\nErro: {$ldap_error}";
+            $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n❌ Falha ao configurar protocolo LDAP versão 3.\nErro: {$ldap_error}";
             error_log("LDAP Auth: Failed to set protocol version - {$ldap_error}");
             ldap_close($ldap_conn);
             return false;
@@ -106,7 +106,22 @@ class LDAPAuth {
             $user_dn = $this->getUserDN($username);
             $search_attempted = true;
             if (!$user_dn) {
-                $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}:{$this->ldap_port}.\n✅ Protocolo LDAP configurado.\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo usado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Filtro: ({$this->ldap_user_attribute}={$username})\n\nVerifique se:\n- O usuário existe no servidor LDAP\n- O atributo está correto\n- A Base DN está correta";
+                $error_msg = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
+                
+                // Add bind status information
+                if (!empty($this->bind_admin_error)) {
+                    $error_msg .= "\n\n" . $this->bind_admin_error;
+                } else {
+                    if (!empty($this->ldap_bind_dn)) {
+                        $error_msg .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
+                    } else {
+                        $error_msg .= "\n✅ Bind anônimo bem-sucedido";
+                    }
+                }
+                
+                $error_msg .= "\n\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo usado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Filtro: ({$this->ldap_user_attribute}={$username})\n\nVerifique se:\n- O usuário existe no servidor LDAP\n- O atributo está correto\n- A Base DN está correta";
+                
+                $this->last_error = $error_msg;
                 error_log("LDAP Auth: User DN not found for username: {$username}");
                 ldap_close($ldap_conn);
                 return false;
@@ -149,6 +164,10 @@ class LDAPAuth {
                 }
             } else {
                 error_log("LDAP Auth: User DN not found via search");
+                // If getUserDN failed, check if it was due to bind error
+                if (!empty($this->bind_admin_error)) {
+                    $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.\n\n" . $this->bind_admin_error . "\n\n❌ Não foi possível buscar o DN do usuário devido à falha no bind.";
+                }
             }
         }
         
@@ -203,7 +222,18 @@ class LDAPAuth {
         // Authentication failed
         if (empty($this->last_error)) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Credenciais inválidas';
-            $error_details = "✅ Conectado ao servidor LDAP {$this->ldap_host}:{$this->ldap_port}.\n✅ Protocolo LDAP configurado.";
+            $error_details = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
+            
+            // Add bind admin status if available
+            if (!empty($this->bind_admin_error)) {
+                $error_details .= "\n\n" . $this->bind_admin_error;
+            } else {
+                if (!empty($this->ldap_bind_dn)) {
+                    $error_details .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
+                } else {
+                    $error_details .= "\n✅ Bind anônimo bem-sucedido";
+                }
+            }
             
             if ($user_dn) {
                 $error_details .= "\n✅ Usuário encontrado no LDAP.\nDN: {$user_dn}";
@@ -233,7 +263,7 @@ class LDAPAuth {
      * @return string|false
      */
     private function getUserDN($username) {
-        $ldap_conn = @ldap_connect($this->ldap_host, $this->ldap_port);
+        $ldap_conn = @ldap_connect($this->ldap_host);
         
         if (!$ldap_conn) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
@@ -246,25 +276,37 @@ class LDAPAuth {
         
         // Try anonymous bind first, or use admin credentials if available
         $bind_success = false;
+        $bind_method = '';
+        $bind_error = '';
+        
         if (!empty($this->ldap_bind_dn) && !empty($this->ldap_bind_password)) {
+            $bind_method = 'administrativo';
             error_log("LDAP getUserDN: Attempting bind with admin DN: {$this->ldap_bind_dn}");
             $bind = @ldap_bind($ldap_conn, $this->ldap_bind_dn, $this->ldap_bind_password);
             if (!$bind) {
                 $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+                $bind_error = $ldap_error;
                 error_log("LDAP getUserDN: Bind failed with admin DN '{$this->ldap_bind_dn}' - {$ldap_error}");
+                // Store bind error for later use
+                $this->bind_admin_error = "❌ Falha no bind administrativo com DN '{$this->ldap_bind_dn}'.\nErro: {$ldap_error}\n\nVerifique se:\n- O DN do bind está correto\n- A senha do bind está correta\n- O usuário administrativo tem permissões para buscar usuários";
             } else {
                 $bind_success = true;
                 error_log("LDAP getUserDN: Bind successful with admin DN");
+                $this->bind_admin_error = '';
             }
         } else {
+            $bind_method = 'anônimo';
             error_log("LDAP getUserDN: Attempting anonymous bind");
             $bind = @ldap_bind($ldap_conn);
             if (!$bind) {
                 $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+                $bind_error = $ldap_error;
                 error_log("LDAP getUserDN: Anonymous bind failed - {$ldap_error}");
+                $this->bind_admin_error = "❌ Falha no bind anônimo.\nErro: {$ldap_error}\n\nNota: Alguns servidores LDAP não permitem bind anônimo. Configure um Bind DN administrativo nas configurações LDAP.";
             } else {
                 $bind_success = true;
                 error_log("LDAP getUserDN: Anonymous bind successful");
+                $this->bind_admin_error = '';
             }
         }
         

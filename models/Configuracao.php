@@ -56,14 +56,6 @@ class Configuracao {
         return $this->set('ldap_host', $host, 'Endereço do servidor LDAP');
     }
 
-    public function getLdapPort() {
-        return $this->get('ldap_port') ?: '';
-    }
-
-    public function setLdapPort($port) {
-        return $this->set('ldap_port', (string)$port, 'Porta do servidor LDAP');
-    }
-
     public function getLdapBaseDn() {
         return $this->get('ldap_base_dn') ?: '';
     }

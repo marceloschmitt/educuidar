@@ -22,7 +22,6 @@ $error = '';
 // Process POST request
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $ldap_host = trim($_POST['ldap_host'] ?? '');
-    $ldap_port = trim($_POST['ldap_port'] ?? '');
     $ldap_base_dn = trim($_POST['ldap_base_dn'] ?? '');
     $ldap_bind_dn = trim($_POST['ldap_bind_dn'] ?? '');
     $ldap_bind_password = $_POST['ldap_bind_password'] ?? '';
@@ -31,45 +30,36 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     // Validate required fields
     if (empty($ldap_host)) {
         $error = 'Por favor, informe o endereço do servidor LDAP!';
-    } elseif (empty($ldap_port) || !is_numeric($ldap_port)) {
-        $error = 'Por favor, informe uma porta válida!';
     } elseif (empty($ldap_base_dn)) {
         $error = 'Por favor, informe a Base DN!';
     } elseif (empty($ldap_user_attribute)) {
         $error = 'Por favor, informe o atributo de usuário!';
     } else {
-        $ldap_port = (int)$ldap_port;
-        if ($ldap_port < 1 || $ldap_port > 65535) {
-            $error = 'Por favor, informe uma porta entre 1 e 65535!';
+        // Save all LDAP configurations
+        $success_count = 0;
+        if ($configuracao->setLdapHost($ldap_host)) $success_count++;
+        if ($configuracao->setLdapBaseDn($ldap_base_dn)) $success_count++;
+        if ($configuracao->setLdapBindDn($ldap_bind_dn)) $success_count++;
+        if ($configuracao->setLdapUserAttribute($ldap_user_attribute)) $success_count++;
+        
+        // Only update password if provided (to allow clearing it)
+        if ($ldap_bind_password !== '') {
+            if ($configuracao->setLdapBindPassword($ldap_bind_password)) $success_count++;
         } else {
-            // Save all LDAP configurations
-            $success_count = 0;
-            if ($configuracao->setLdapHost($ldap_host)) $success_count++;
-            if ($configuracao->setLdapPort($ldap_port)) $success_count++;
-            if ($configuracao->setLdapBaseDn($ldap_base_dn)) $success_count++;
-            if ($configuracao->setLdapBindDn($ldap_bind_dn)) $success_count++;
-            if ($configuracao->setLdapUserAttribute($ldap_user_attribute)) $success_count++;
-            
-            // Only update password if provided (to allow clearing it)
-            if ($ldap_bind_password !== '') {
-                if ($configuracao->setLdapBindPassword($ldap_bind_password)) $success_count++;
-            } else {
-                // If empty, clear the password
-                if ($configuracao->setLdapBindPassword('')) $success_count++;
-            }
-            
-            if ($success_count > 0) {
-                $success = 'Configurações LDAP salvas com sucesso!';
-            } else {
-                $error = 'Erro ao salvar configurações LDAP. Tente novamente.';
-            }
+            // If empty, clear the password
+            if ($configuracao->setLdapBindPassword('')) $success_count++;
+        }
+        
+        if ($success_count > 0) {
+            $success = 'Configurações LDAP salvas com sucesso!';
+        } else {
+            $error = 'Erro ao salvar configurações LDAP. Tente novamente.';
         }
     }
 }
 
 // Get current LDAP configurations
 $ldap_host = $configuracao->getLdapHost();
-$ldap_port = $configuracao->getLdapPort();
 $ldap_base_dn = $configuracao->getLdapBaseDn();
 $ldap_bind_dn = $configuracao->getLdapBindDn();
 $ldap_user_attribute = $configuracao->getLdapUserAttribute();
@@ -125,27 +115,8 @@ require_once 'includes/header.php';
                                placeholder="ldap://ldap.ifrs.edu.br"
                                required>
                         <div class="form-text">
-                            Exemplos: <code>ldap://ldap.ifrs.edu.br</code>, <code>ldaps://ldap.ifrs.edu.br</code>, <code>192.168.1.100</code>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="ldap_port" class="form-label">
-                            <strong>Porta</strong> <span class="text-danger">*</span>
-                        </label>
-                        <p class="text-muted small mb-2">
-                            Porta do servidor LDAP. Geralmente 389 para LDAP padrão ou 636 para LDAPS (LDAP sobre SSL).
-                        </p>
-                        <input type="number" 
-                               class="form-control" 
-                               id="ldap_port" 
-                               name="ldap_port" 
-                               value="<?php echo htmlspecialchars($ldap_port); ?>" 
-                               min="1" 
-                               max="65535" 
-                               required>
-                        <div class="form-text">
-                            Porta padrão: <strong>389</strong> (LDAP) ou <strong>636</strong> (LDAPS)
+                            Exemplos: <code>ldap://ldap.ifrs.edu.br</code>, <code>ldaps://ldap.ifrs.edu.br</code>, <code>ldap://ldap.ifrs.edu.br:389</code>, <code>192.168.1.100</code><br>
+                            <strong>Nota:</strong> A porta pode ser especificada no próprio endereço (ex: <code>ldap://host:389</code>). Se não especificada, será usada a porta padrão (389 para LDAP, 636 para LDAPS).
                         </div>
                     </div>
                     
