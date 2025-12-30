@@ -1,6 +1,13 @@
 <?php
 // Process POST request BEFORE including header (to allow redirects)
 $error = '';
+$ldap_error = '';
+
+// Check for LDAP error from previous login attempt
+if (isset($_SESSION['ldap_error'])) {
+    $ldap_error = $_SESSION['ldap_error'];
+    unset($_SESSION['ldap_error']);
+}
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once 'config/init.php';
@@ -43,7 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: index.php');
                 exit;
             } else {
-                $error = 'Usuário ou senha incorretos!';
+                // Check if there's a specific LDAP error
+                if (isset($_SESSION['ldap_error'])) {
+                    $ldap_error = $_SESSION['ldap_error'];
+                    unset($_SESSION['ldap_error']);
+                    $error = 'Erro na autenticação LDAP!';
+                } else {
+                    $error = 'Usuário ou senha incorretos!';
+                }
             }
         }
     } else {
@@ -67,7 +81,11 @@ require_once 'includes/header.php';
                     
                     <?php if ($error): ?>
                     <div class="alert alert-danger" role="alert">
-                        <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+                        <i class="bi bi-exclamation-triangle"></i> <strong><?php echo htmlspecialchars($error); ?></strong>
+                        <?php if ($ldap_error): ?>
+                        <hr>
+                        <small><strong>Detalhes do erro LDAP:</strong><br><?php echo nl2br(htmlspecialchars($ldap_error)); ?></small>
+                        <?php endif; ?>
                     </div>
                     <?php endif; ?>
                     

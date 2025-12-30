@@ -49,7 +49,7 @@ class Configuracao {
 
     // LDAP Configuration methods
     public function getLdapHost() {
-        return $this->get('ldap_host') ?: 'ldap://ldap.ifrs.edu.br';
+        return $this->get('ldap_host') ?: '';
     }
 
     public function setLdapHost($host) {
@@ -57,7 +57,7 @@ class Configuracao {
     }
 
     public function getLdapPort() {
-        return $this->get('ldap_port') ?: '389';
+        return $this->get('ldap_port') ?: '';
     }
 
     public function setLdapPort($port) {
@@ -65,7 +65,7 @@ class Configuracao {
     }
 
     public function getLdapBaseDn() {
-        return $this->get('ldap_base_dn') ?: 'ou=users,dc=ifrs,dc=edu,dc=br';
+        return $this->get('ldap_base_dn') ?: '';
     }
 
     public function setLdapBaseDn($base_dn) {
@@ -89,7 +89,7 @@ class Configuracao {
     }
 
     public function getLdapUserAttribute() {
-        return $this->get('ldap_user_attribute') ?: 'uid';
+        return $this->get('ldap_user_attribute') ?: '';
     }
 
     public function setLdapUserAttribute($attribute) {

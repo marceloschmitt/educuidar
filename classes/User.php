@@ -48,6 +48,12 @@ class User {
                     $_SESSION['user_type'] = $row['user_type'];
                     $_SESSION['full_name'] = $row['full_name'];
                     return true;
+                } else {
+                    // Store LDAP error in session for display
+                    $ldap_error = $ldap->getLastError();
+                    if ($ldap_error) {
+                        $_SESSION['ldap_error'] = $ldap_error;
+                    }
                 }
                 return false;
             } else {

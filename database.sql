@@ -110,11 +110,6 @@ CREATE TABLE IF NOT EXISTS eventos (
     INDEX idx_data (data_evento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Insert default courses
-INSERT INTO cursos (nome) VALUES
-('Informática'),
-('Administração');
-
 -- Insert default event types
 INSERT INTO tipos_eventos (nome, cor) VALUES
 ('Chegada Atrasada', 'primary'),
@@ -122,18 +117,4 @@ INSERT INTO tipos_eventos (nome, cor) VALUES
 ('Falta', 'danger'),
 ('Atendimento', 'success');
 
--- Insert default admin user (without password - must be set on first login)
--- The password will be set on the first login
-INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
-('admin', 'admin@ifrs.edu.br', NULL, 'Administrador do Sistema', 'administrador', 'local');
-
--- Insert default users nivel1 and nivel2 (passwords: usuario1 and usuario2)
--- These users can use LDAP or local authentication
--- IMPORTANT: Generate new password hashes using: 
---   php -r "echo password_hash('usuario1', PASSWORD_DEFAULT) . PHP_EOL;"
---   php -r "echo password_hash('usuario2', PASSWORD_DEFAULT) . PHP_EOL;"
--- Then update the hashes below before running this script
-INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
-('usuario1', 'usuario1@ifrs.edu.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Usuário Nível 1', 'nivel1', 'ldap'),
-('usuario2', 'usuario2@ifrs.edu.br', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Usuário Nível 2', 'nivel2', 'ldap');
 

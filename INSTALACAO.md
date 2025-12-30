@@ -45,17 +45,18 @@ mysql -u root -p < database.sql
 3. O script irá:
    - Criar o banco de dados `educuidar`
    - Criar todas as tabelas necessárias: `users`, `alunos`, `cursos`, `turmas`, `aluno_turmas`, `eventos`, `tipos_eventos`, `configuracoes`
-   - Inserir o usuário administrador padrão: `admin` / `admin123`
-   - Inserir usuários padrão: `usuario1` (nivel1) / `usuario1` e `usuario2` (nivel2) / `usuario2`
-   - Inserir cursos padrão: Informática e Administração
+   - Inserir tipos de eventos padrão
    - Configurar o ano corrente como o ano atual
 
-### 3. Verificar a Conexão
+### 3. Criar o Primeiro Usuário Administrador
 
-Após configurar, acesse o sistema:
-- URL: `http://localhost/educuidar/login.php`
-- Usuário: `admin`
-- Senha: `admin123`
+Após executar o script SQL, você precisará criar o primeiro usuário administrador:
+
+1. Acesse o sistema: `http://localhost/educuidar/login.php`
+2. No campo "Usuário", digite `admin` (deixe a senha em branco)
+3. Você será redirecionado para definir a senha inicial do administrador
+4. Defina uma senha segura e confirme
+5. Após definir a senha, você estará logado como administrador
 
 ### 4. Estrutura do Banco de Dados
 
@@ -82,7 +83,7 @@ Armazena informações dos alunos (separados dos usuários):
 #### Tabela: `cursos`
 Armazena os cursos disponíveis:
 - `id` - ID único
-- `nome` - Nome do curso (ex: Informática, Administração)
+- `nome` - Nome do curso
 - `created_at` - Data de criação
 
 #### Tabela: `turmas`
@@ -170,8 +171,9 @@ mysql -u root -p educuidar < backup_YYYYMMDD.sql
 ## Segurança
 
 ⚠️ **IMPORTANTE**: 
-- Altere a senha do administrador após o primeiro login
+- Defina uma senha forte para o administrador no primeiro acesso
 - Não exponha o arquivo `config/config.php` publicamente (ele está no .gitignore)
 - Use senhas fortes para o usuário MySQL
 - Configure o MySQL para aceitar apenas conexões locais em produção
+- Crie usuários, cursos e turmas conforme necessário através da interface do sistema
 

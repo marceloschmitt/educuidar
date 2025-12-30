@@ -12,7 +12,7 @@ Sistema desenvolvido em PHP 8 com interface Bootstrap para controle de aspectos 
 **Nota**: Alunos não são usuários do sistema. Eles são gerenciados como uma entidade separada na tabela `alunos`.
 
 ### Sistema de Cursos e Turmas
-- **Cursos**: Entidades que agrupam turmas (ex: Informática, Administração)
+- **Cursos**: Entidades que agrupam turmas
 - **Turmas**: Identificadas pelo curso, ano civil e ano do curso (1º, 2º ou 3º ano)
 - **Ano Corrente**: Configuração definida pelo administrador que determina quais turmas aparecem no controle de eventos
 - **Alunos**: Podem pertencer a múltiplas turmas simultaneamente
@@ -52,21 +52,21 @@ Os tipos de eventos são configuráveis pelo administrador:
    - Execute o script SQL: `database.sql` para criar todas as tabelas e dados iniciais
    - O script cria automaticamente:
      * Tabelas: `users`, `alunos`, `cursos`, `turmas`, `aluno_turmas`, `eventos`, `tipos_eventos`, `configuracoes`
-     * Usuário administrador padrão: `admin` / `admin123`
-     * Usuários padrão: `usuario1` (nivel1) / `usuario1` e `usuario2` (nivel2) / `usuario2`
-     * Cursos padrão: Informática e Administração
+     * Tipos de eventos padrão
      * Ano corrente: ano atual
 
-3. Configure o LDAP (opcional):
-   - Acesse a tela "Configuração LDAP" no menu (apenas para administradores)
-   - Configure os parâmetros do servidor LDAP através da interface web
-   - As configurações são armazenadas no banco de dados
+3. Criar o primeiro usuário administrador:
+   - Acesse: `http://localhost/educuidar/login.php`
+   - Digite `admin` no campo usuário (deixe a senha em branco)
+   - Você será redirecionado para definir a senha inicial do administrador
+   - Defina uma senha segura e confirme
+   - Após definir a senha, você estará logado como administrador
 
-4. Acesse o sistema:
-   - URL: `http://localhost/educuidar/login.php`
-   - Usuário padrão: `admin`
-   - Senha padrão: `admin123`
-   - **IMPORTANTE**: Altere a senha do administrador após o primeiro login!
+4. Configure o sistema:
+   - Crie cursos através do menu "Cursos"
+   - Crie turmas através do menu "Turmas"
+   - Crie usuários adicionais através do menu "Usuários" (se necessário)
+   - Configure o LDAP (opcional) através do menu "Configuração LDAP"
 
 ### Autenticação
 
