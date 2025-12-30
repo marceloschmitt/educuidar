@@ -5,6 +5,8 @@
 #editUserModal .modal-dialog {
     max-height: 90vh;
     margin: 1rem auto;
+    display: flex;
+    flex-direction: column;
 }
 
 #createUserModal .modal-content,
@@ -12,6 +14,7 @@
     max-height: 90vh;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
 }
 
 #createUserModal .modal-header,
@@ -23,10 +26,20 @@
 #createUserModal .modal-body,
 #editUserModal .modal-body {
     font-size: 0.75rem;
-    overflow-y: auto;
+    overflow-y: auto !important;
+    overflow-x: hidden;
     flex: 1 1 auto;
     min-height: 0;
+    max-height: calc(90vh - 140px);
     padding: 0.75rem 1rem;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Garantir que o scroll funcione mesmo com zoom */
+#createUserModal .modal-dialog-scrollable .modal-body,
+#editUserModal .modal-dialog-scrollable .modal-body {
+    overflow-y: auto !important;
+    max-height: calc(90vh - 140px) !important;
 }
 
 #createUserModal .form-label,
