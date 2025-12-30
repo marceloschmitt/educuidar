@@ -105,47 +105,82 @@ class LDAPAuth {
         
         error_log("LDAP Auth: LDAP options configured successfully (protocol v3, referrals disabled, compatible with Active Directory)");
         
-        // Always search for user DN first to ensure we search in subcontextos
-        // This is important for Active Directory and LDAP servers where users may be in subcontextos
-        error_log("LDAP Auth: Searching for user DN with attribute '{$this->ldap_user_attribute}' (searching in all subcontextos)");
-        $user_dn = $this->getUserDN($username);
+        // For Active Directory, Moodle uses different authentication methods
+        // Instead of binding with full DN, AD often works better with:
+        // 1. userPrincipalName (username@domain)
+        // 2. sAMAccountName (DOMAIN\username or just username)
+        // 3. Full DN (fallback)
         
-        if (!$user_dn) {
-            $error_msg = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
-            
-            // Add bind status information
-            if (!empty($this->bind_admin_error)) {
-                $error_msg .= "\n\n" . $this->bind_admin_error;
-            } else {
-                if (!empty($this->ldap_bind_dn)) {
-                    $error_msg .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
-                } else {
-                    $error_msg .= "\n✅ Bind anônimo bem-sucedido";
-                }
-            }
-            
-            $error_msg .= "\n\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo usado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Filtro: ({$this->ldap_user_attribute}={$username})\n- Escopo: Subtree (busca em TODOS os subcontextos)\n\n⚠️ IMPORTANTE: A busca foi realizada em TODOS os subcontextos da Base DN.\n\nVerifique se:\n- O usuário existe no servidor LDAP\n- O atributo está correto (ex: uid, sAMAccountName, userPrincipalName, cn)\n- A Base DN está correta e contém o usuário ou seus subcontextos\n- O usuário está dentro da Base DN ou em algum subcontexto abaixo dela";
-            
-            $this->last_error = $error_msg;
-            error_log("LDAP Auth: User DN not found for username: {$username} (searched in all subcontextos)");
-            ldap_close($ldap_conn);
-            return false;
-        }
-        
-        error_log("LDAP Auth: User DN found: {$user_dn}");
-        
-        // Now try to bind with the found DN
         $bind = false;
         $bind_attempts = [];
+        $user_dn = null;
         
-        error_log("LDAP Auth: Attempting bind with DN: {$user_dn}");
-        $bind = @ldap_bind($ldap_conn, $user_dn, $password);
+        // Strategy 1: Try Active Directory style authentication first
+        // This is what Moodle does when user_type = 'ad'
+        // Try with sAMAccountName (most common in AD)
+        error_log("LDAP Auth: Attempting AD-style bind with sAMAccountName: {$username}");
+        $bind = @ldap_bind($ldap_conn, $username, $password);
         if (!$bind) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-            $bind_attempts[] = "DN: {$user_dn} - Erro: {$ldap_error}";
-            error_log("LDAP Auth: Bind failed with DN '{$user_dn}' - {$ldap_error}");
+            $bind_attempts[] = "sAMAccountName: {$username} - Erro: {$ldap_error}";
+            error_log("LDAP Auth: Bind failed with sAMAccountName '{$username}' - {$ldap_error}");
         } else {
-            error_log("LDAP Auth: Bind successful with DN: {$user_dn}");
+            error_log("LDAP Auth: Bind successful with sAMAccountName: {$username}");
+            // Authentication successful, now get user DN for info retrieval
+            $user_dn = $this->getUserDN($username);
+        }
+        
+        // Strategy 2: If sAMAccountName failed, try to find DN and bind with it
+        if (!$bind) {
+            error_log("LDAP Auth: Searching for user DN with attribute '{$this->ldap_user_attribute}' (searching in all subcontextos)");
+            $user_dn = $this->getUserDN($username);
+            
+            if ($user_dn) {
+                error_log("LDAP Auth: User DN found: {$user_dn}");
+                error_log("LDAP Auth: Attempting bind with DN: {$user_dn}");
+                $bind = @ldap_bind($ldap_conn, $user_dn, $password);
+                if (!$bind) {
+                    $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+                    $bind_attempts[] = "DN: {$user_dn} - Erro: {$ldap_error}";
+                    error_log("LDAP Auth: Bind failed with DN '{$user_dn}' - {$ldap_error}");
+                } else {
+                    error_log("LDAP Auth: Bind successful with DN: {$user_dn}");
+                }
+            } else {
+                // User not found
+                $error_msg = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
+                
+                // Add bind status information
+                if (!empty($this->bind_admin_error)) {
+                    $error_msg .= "\n\n" . $this->bind_admin_error;
+                } else {
+                    if (!empty($this->ldap_bind_dn)) {
+                        $error_msg .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
+                    } else {
+                        $error_msg .= "\n✅ Bind anônimo bem-sucedido";
+                    }
+                }
+                
+                // Build list of tried filters for error message
+                $filters_info = "Filtros tentados:\n";
+                if ($this->ldap_user_attribute === 'uid') {
+                    $filters_info .= "- (uid={$username})\n";
+                    $filters_info .= "- (&(objectClass=user)(uid={$username}))\n";
+                    $filters_info .= "- (&(objectClass=person)(uid={$username}))\n";
+                    $filters_info .= "- (&(objectClass=organizationalPerson)(uid={$username}))\n";
+                    $filters_info .= "- (sAMAccountName={$username})\n";
+                    $filters_info .= "- (&(objectClass=user)(sAMAccountName={$username}))";
+                } else {
+                    $filters_info .= "- ({$this->ldap_user_attribute}={$username})";
+                }
+                
+                $error_msg .= "\n\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo configurado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Escopo: Subtree (busca em TODOS os subcontextos)\n\n{$filters_info}\n\n⚠️ IMPORTANTE: A busca foi realizada em TODOS os subcontextos da Base DN usando múltiplas estratégias.\n\nSugestões:\n1. Verifique se o usuário existe no servidor LDAP/Active Directory\n2. Teste com outros atributos:\n   - Para Active Directory: tente 'sAMAccountName' ou 'userPrincipalName'\n   - Para LDAP padrão: tente 'uid' ou 'cn'\n3. Verifique se a Base DN está correta e contém o usuário ou seus subcontextos\n4. Use uma ferramenta LDAP (como ldapsearch) para testar a busca manualmente:\n   ldapsearch -H ldap://sol.poa.ifrs.edu.br -D 'CN=Administrator,CN=Users,DC=ad,DC=poa,DC=ifrs,DC=edu,DC=br' -W -b 'dc=ad,dc=poa,dc=ifrs,dc=edu,dc=br' '(uid=marceloschmitt)'";
+                
+                $this->last_error = $error_msg;
+                error_log("LDAP Auth: User DN not found for username: {$username} (searched in all subcontextos)");
+                ldap_close($ldap_conn);
+                return false;
+            }
         }
         
         if ($bind) {
@@ -304,6 +339,22 @@ class LDAPAuth {
             return false;
         }
         
+        // Diagnostic: Try to search for any user to verify search is working
+        // This helps identify if the problem is with the specific user or with search in general
+        $test_filter = "(objectClass=user)";
+        $test_search = @ldap_search($ldap_conn, $this->ldap_base_dn, $test_filter, ['dn'], 0, 5, 5, LDAP_DEREF_NEVER);
+        if ($test_search) {
+            $test_entries = @ldap_get_entries($ldap_conn, $test_search);
+            if ($test_entries && $test_entries['count'] > 0) {
+                error_log("LDAP getUserDN: Diagnostic search successful - found {$test_entries['count']} user(s) in base DN (search is working)");
+            } else {
+                error_log("LDAP getUserDN: Diagnostic search found no users - this may indicate a problem with Base DN or permissions");
+            }
+        } else {
+            $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+            error_log("LDAP getUserDN: Diagnostic search failed - {$ldap_error}");
+        }
+        
         // Search for user using configured attribute
         // For Active Directory, we need to search in all subcontextos (subtree scope)
         // ldap_search() uses LDAP_SCOPE_SUBTREE by default, which searches entire subtree
@@ -314,23 +365,28 @@ class LDAPAuth {
         // Try multiple filter strategies like Moodle does for Active Directory
         $filters_to_try = [];
         
-        // Strategy 1: Simple filter with configured attribute
-        $filters_to_try[] = "(" . $this->ldap_user_attribute . "=" . $escaped_username . ")";
-        
-        // Strategy 2: For Active Directory with uid, also try with objectClass
-        // Moodle often uses objectClass in filters for AD
+        // For Active Directory, Moodle uses (&(objectClass=user)(sAMAccountName=username))
+        // When user_attribute is 'uid', Moodle still searches with sAMAccountName for AD
         if ($this->ldap_user_attribute === 'uid') {
-            // Try with user objectClass (common in AD)
-            $filters_to_try[] = "(&(objectClass=user)(" . $this->ldap_user_attribute . "=" . $escaped_username . "))";
-            $filters_to_try[] = "(&(objectClass=person)(" . $this->ldap_user_attribute . "=" . $escaped_username . "))";
-            $filters_to_try[] = "(&(objectClass=organizationalPerson)(" . $this->ldap_user_attribute . "=" . $escaped_username . "))";
-            // Also try sAMAccountName as fallback (common in AD)
-            $filters_to_try[] = "(sAMAccountName=" . $escaped_username . ")";
+            // Primary AD filter: (&(objectClass=user)(sAMAccountName=username)) - This is what Moodle does!
             $filters_to_try[] = "(&(objectClass=user)(sAMAccountName=" . $escaped_username . "))";
+            // Also try without objectClass
+            $filters_to_try[] = "(sAMAccountName=" . $escaped_username . ")";
+            // Try with configured attribute and objectClass
+            $filters_to_try[] = "(&(objectClass=user)(" . $this->ldap_user_attribute . "=" . $escaped_username . "))";
+            // Simple filter with configured attribute
+            $filters_to_try[] = "(" . $this->ldap_user_attribute . "=" . $escaped_username . ")";
+        } else {
+            // For other attributes, try with objectClass=user (AD standard)
+            $filters_to_try[] = "(&(objectClass=user)(" . $this->ldap_user_attribute . "=" . $escaped_username . "))";
+            // Simple filter
+            $filters_to_try[] = "(" . $this->ldap_user_attribute . "=" . $escaped_username . ")";
         }
         
         // Try each filter strategy
+        $tried_filters = [];
         foreach ($filters_to_try as $filter) {
+            $tried_filters[] = $filter;
             error_log("LDAP getUserDN: Trying filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos)");
             
             // Use ldap_search() which uses LDAP_SCOPE_SUBTREE (searches entire subtree/subcontextos)
@@ -340,7 +396,8 @@ class LDAPAuth {
             
             if (!$search) {
                 $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-                error_log("LDAP getUserDN: Search failed with filter '{$filter}' - {$ldap_error}");
+                $ldap_errno = @ldap_errno($ldap_conn);
+                error_log("LDAP getUserDN: Search failed with filter '{$filter}' - Error: {$ldap_error} (Code: {$ldap_errno})");
                 continue; // Try next filter
             }
             
@@ -352,11 +409,14 @@ class LDAPAuth {
                 return $entries[0]['dn'];
             }
             
-            error_log("LDAP getUserDN: No results with filter '{$filter}'");
+            error_log("LDAP getUserDN: No results with filter '{$filter}' (count: " . ($entries ? $entries['count'] : 0) . ")");
         }
         
         ldap_close($ldap_conn);
-        error_log("LDAP getUserDN: User '{$username}' not found with any filter strategy in base '{$this->ldap_base_dn}' (searched in all subcontextos with SUBTREE scope)");
+        
+        // Build detailed error message with all tried filters
+        $filters_list = implode("\n- ", $tried_filters);
+        error_log("LDAP getUserDN: User '{$username}' not found with any filter strategy. Tried filters:\n- {$filters_list}");
         
         return false;
     }
