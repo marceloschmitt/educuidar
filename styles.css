@@ -1,5 +1,37 @@
 /* Estilos do Sistema de Controle IFRS */
 
+/* Modal de usuário - fonte menor para caber melhor */
+#createUserModal .modal-body,
+#editUserModal .modal-body {
+    font-size: 0.9rem;
+}
+
+#createUserModal .form-label,
+#editUserModal .form-label {
+    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+}
+
+#createUserModal .form-control,
+#editUserModal .form-control,
+#createUserModal .form-select,
+#editUserModal .form-select {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+}
+
+#createUserModal .form-text,
+#editUserModal .form-text,
+#createUserModal small,
+#editUserModal small {
+    font-size: 0.8rem;
+}
+
+#createUserModal .mb-3,
+#editUserModal .mb-3 {
+    margin-bottom: 0.75rem !important;
+}
+
 /* Password field with eye icon */
 .password-wrapper {
     position: relative;
