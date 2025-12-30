@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             
             // Update password
             if ($user->updatePassword($admin_id, $password)) {
+                // Mark system as installed
+                $configuracao = new Configuracao($db);
+                $configuracao->setSistemaInstalado(true);
+                
                 // Clear setup session
                 unset($_SESSION['setup_admin_password']);
                 unset($_SESSION['setup_admin_username']);

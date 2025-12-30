@@ -45,9 +45,10 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     INDEX idx_chave (chave)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Inserir ano corrente padrão (ano atual)
+-- Inserir configurações iniciais
 INSERT INTO configuracoes (chave, valor, descricao) VALUES
-('ano_corrente', YEAR(CURDATE()), 'Ano civil corrente para controle de eventos');
+('ano_corrente', YEAR(CURDATE()), 'Ano civil corrente para controle de eventos'),
+('sistema_instalado', '0', 'Indica se o sistema foi instalado e configurado (0 = não instalado, 1 = instalado)');
 
 -- Alunos table
 CREATE TABLE IF NOT EXISTS alunos (
@@ -80,6 +81,10 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_auth_type (auth_type),
     INDEX idx_ativo (ativo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create initial admin user (password will be set on first login)
+INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
+('admin', 'admin@educuidar.local', NULL, 'Administrador', 'administrador', 'local');
 
 -- Aluno-Turma relationship table (many-to-many)
 CREATE TABLE IF NOT EXISTS aluno_turmas (

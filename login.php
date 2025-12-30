@@ -18,8 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $database = new Database();
         $db = $database->getConnection();
         $user = new User($db);
+        $configuracao = new Configuracao($db);
         
-        // Check if admin user exists and has no password
+        // Check if system is installed
+        $is_installed = $configuracao->isSistemaInstalado();
+        
+        // Check if admin user exists and has no password (first installation)
         $check_query = "SELECT id, user_type, password FROM users WHERE username = :username OR email = :email LIMIT 1";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':username', $username);
@@ -29,12 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $is_admin_without_password = false;
         if ($check_stmt->rowCount() > 0) {
             $check_user = $check_stmt->fetch();
-            if ($check_user['user_type'] === 'administrador' && empty($check_user['password'])) {
+            if ($check_user['user_type'] === 'administrador' && empty($check_user['password']) && !$is_installed) {
                 $is_admin_without_password = true;
             }
         }
         
-        // Password is required unless it's admin's first login
+        // Password is required unless it's admin's first login (system not installed)
         if (empty($password) && !$is_admin_without_password) {
             $error = 'Por favor, informe a senha!';
         } else {

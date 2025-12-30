@@ -87,6 +87,16 @@ class Configuracao {
     public function setLdapUserAttribute($attribute) {
         return $this->set('ldap_user_attribute', $attribute, 'Atributo LDAP usado para buscar usuários (ex: uid, sAMAccountName, userPrincipalName)');
     }
+
+    // System installation status
+    public function isSistemaInstalado() {
+        $valor = $this->get('sistema_instalado');
+        return $valor === '1' || $valor === 1;
+    }
+
+    public function setSistemaInstalado($instalado = true) {
+        return $this->set('sistema_instalado', $instalado ? '1' : '0', 'Indica se o sistema foi instalado e configurado');
+    }
 }
 ?>
 
