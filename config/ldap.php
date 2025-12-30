@@ -94,81 +94,47 @@ class LDAPAuth {
         
         error_log("LDAP Auth: LDAP options configured successfully");
         
-        // Try to bind with user credentials
-        // First try: direct bind with attribute=username,base_dn (for simple LDAP)
-        // For Active Directory, we'll search for the user DN first
-        $user_dn = null;
-        $search_attempted = false;
+        // Always search for user DN first to ensure we search in subcontextos
+        // This is important for Active Directory and LDAP servers where users may be in subcontextos
+        error_log("LDAP Auth: Searching for user DN with attribute '{$this->ldap_user_attribute}' (searching in all subcontextos)");
+        $user_dn = $this->getUserDN($username);
         
-        if ($this->ldap_user_attribute === 'sAMAccountName' || $this->ldap_user_attribute === 'userPrincipalName') {
-            // Active Directory: search for user DN first
-            error_log("LDAP Auth: Searching for user DN (Active Directory mode)");
-            $user_dn = $this->getUserDN($username);
-            $search_attempted = true;
-            if (!$user_dn) {
-                $error_msg = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
-                
-                // Add bind status information
-                if (!empty($this->bind_admin_error)) {
-                    $error_msg .= "\n\n" . $this->bind_admin_error;
+        if (!$user_dn) {
+            $error_msg = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.";
+            
+            // Add bind status information
+            if (!empty($this->bind_admin_error)) {
+                $error_msg .= "\n\n" . $this->bind_admin_error;
+            } else {
+                if (!empty($this->ldap_bind_dn)) {
+                    $error_msg .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
                 } else {
-                    if (!empty($this->ldap_bind_dn)) {
-                        $error_msg .= "\n✅ Bind administrativo bem-sucedido com DN: {$this->ldap_bind_dn}";
-                    } else {
-                        $error_msg .= "\n✅ Bind anônimo bem-sucedido";
-                    }
+                    $error_msg .= "\n✅ Bind anônimo bem-sucedido";
                 }
-                
-                $error_msg .= "\n\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo usado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Filtro: ({$this->ldap_user_attribute}={$username})\n\nVerifique se:\n- O usuário existe no servidor LDAP\n- O atributo está correto\n- A Base DN está correta";
-                
-                $this->last_error = $error_msg;
-                error_log("LDAP Auth: User DN not found for username: {$username}");
-                ldap_close($ldap_conn);
-                return false;
             }
-            error_log("LDAP Auth: User DN found: {$user_dn}");
-        } else {
-            // Standard LDAP: try direct bind
-            $user_dn = $this->ldap_user_attribute . "=$username," . $this->ldap_base_dn;
-            error_log("LDAP Auth: Using direct DN format: {$user_dn}");
+            
+            $error_msg .= "\n\n❌ Usuário '{$username}' não encontrado no LDAP.\n\nDetalhes:\n- Atributo usado: {$this->ldap_user_attribute}\n- Base DN: {$this->ldap_base_dn}\n- Filtro: ({$this->ldap_user_attribute}={$username})\n- Escopo: Subtree (busca em TODOS os subcontextos)\n\n⚠️ IMPORTANTE: A busca foi realizada em TODOS os subcontextos da Base DN.\n\nVerifique se:\n- O usuário existe no servidor LDAP\n- O atributo está correto (ex: uid, sAMAccountName, userPrincipalName, cn)\n- A Base DN está correta e contém o usuário ou seus subcontextos\n- O usuário está dentro da Base DN ou em algum subcontexto abaixo dela";
+            
+            $this->last_error = $error_msg;
+            error_log("LDAP Auth: User DN not found for username: {$username} (searched in all subcontextos)");
+            ldap_close($ldap_conn);
+            return false;
         }
         
+        error_log("LDAP Auth: User DN found: {$user_dn}");
+        
+        // Now try to bind with the found DN
         $bind = false;
         $bind_attempts = [];
         
-        if ($user_dn) {
-            error_log("LDAP Auth: Attempting bind with DN: {$user_dn}");
-            $bind = @ldap_bind($ldap_conn, $user_dn, $password);
-            if (!$bind) {
-                $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-                $bind_attempts[] = "DN: {$user_dn} - Erro: {$ldap_error}";
-                error_log("LDAP Auth: Bind failed with DN '{$user_dn}' - {$ldap_error}");
-            } else {
-                error_log("LDAP Auth: Bind successful with DN: {$user_dn}");
-            }
-        }
-        
-        // If direct bind fails, try to find user DN first
-        if (!$bind && !$search_attempted && $user_dn && strpos($user_dn, ',') !== false) {
-            error_log("LDAP Auth: Direct bind failed, searching for user DN");
-            $user_dn = $this->getUserDN($username);
-            if ($user_dn) {
-                error_log("LDAP Auth: User DN found via search: {$user_dn}");
-                $bind = @ldap_bind($ldap_conn, $user_dn, $password);
-                if (!$bind) {
-                    $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
-                    $bind_attempts[] = "DN (buscado): {$user_dn} - Erro: {$ldap_error}";
-                    error_log("LDAP Auth: Bind failed with searched DN '{$user_dn}' - {$ldap_error}");
-                } else {
-                    error_log("LDAP Auth: Bind successful with searched DN: {$user_dn}");
-                }
-            } else {
-                error_log("LDAP Auth: User DN not found via search");
-                // If getUserDN failed, check if it was due to bind error
-                if (!empty($this->bind_admin_error)) {
-                    $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n✅ Protocolo LDAP configurado.\n\n" . $this->bind_admin_error . "\n\n❌ Não foi possível buscar o DN do usuário devido à falha no bind.";
-                }
-            }
+        error_log("LDAP Auth: Attempting bind with DN: {$user_dn}");
+        $bind = @ldap_bind($ldap_conn, $user_dn, $password);
+        if (!$bind) {
+            $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+            $bind_attempts[] = "DN: {$user_dn} - Erro: {$ldap_error}";
+            error_log("LDAP Auth: Bind failed with DN '{$user_dn}' - {$ldap_error}");
+        } else {
+            error_log("LDAP Auth: Bind successful with DN: {$user_dn}");
         }
         
         if ($bind) {
@@ -176,7 +142,13 @@ class LDAPAuth {
             $filter = "(" . $this->ldap_user_attribute . "=$username)";
             // Search for user attributes - include Active Directory attributes
             $attributes = ['cn', 'mail', 'displayName', 'sn', 'givenName', 'name', 'userPrincipalName', 'sAMAccountName'];
+            // Use ldap_search which searches in entire subtree (subcontextos) by default
+            error_log("LDAP Auth: Searching for user attributes with filter '{$filter}' in base '{$this->ldap_base_dn}' (including subcontextos)");
             $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, $attributes);
+            if (!$search) {
+                $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
+                error_log("LDAP Auth: Search failed - {$ldap_error}");
+            }
             $entries = @ldap_get_entries($ldap_conn, $search);
             
             ldap_close($ldap_conn);
@@ -316,8 +288,9 @@ class LDAPAuth {
         }
         
         // Search for user using configured attribute
+        // Use ldap_search which searches in entire subtree (subcontextos) by default
         $filter = "(" . $this->ldap_user_attribute . "=$username)";
-        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}'");
+        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}' (including subcontextos/subtree)");
         $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, ['dn']);
         
         if (!$search) {
@@ -331,11 +304,11 @@ class LDAPAuth {
         ldap_close($ldap_conn);
         
         if ($entries && $entries['count'] > 0) {
-            error_log("LDAP getUserDN: User found, DN: {$entries[0]['dn']}");
+            error_log("LDAP getUserDN: User found in subcontextos, DN: {$entries[0]['dn']}");
             return $entries[0]['dn'];
         }
         
-        error_log("LDAP getUserDN: User '{$username}' not found with filter '{$filter}' in base '{$this->ldap_base_dn}'");
+        error_log("LDAP getUserDN: User '{$username}' not found with filter '{$filter}' in base '{$this->ldap_base_dn}' (searched in all subcontextos)");
         
         // Try alternative: attribute=username,base_dn format (for simple LDAP)
         if ($this->ldap_user_attribute !== 'sAMAccountName' && $this->ldap_user_attribute !== 'userPrincipalName') {
