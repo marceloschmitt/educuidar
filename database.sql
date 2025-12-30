@@ -1,4 +1,5 @@
 -- Database schema for IFRS Control System
+-- Improved version with better indexes, constraints, and audit fields
 
 CREATE DATABASE IF NOT EXISTS educuidar CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -8,22 +9,29 @@ USE educuidar;
 CREATE TABLE IF NOT EXISTS cursos (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(200) NOT NULL,
+    ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_nome (nome)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_nome (nome),
+    INDEX idx_ativo (ativo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Turmas table
 CREATE TABLE IF NOT EXISTS turmas (
     id INT AUTO_INCREMENT PRIMARY KEY,
     curso_id INT NOT NULL,
-    ano_civil INT NOT NULL,
+    ano_civil INT NOT NULL CHECK (ano_civil >= 2000 AND ano_civil <= 2100),
     ano_curso TINYINT NOT NULL CHECK (ano_curso IN (1, 2, 3)),
+    ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE,
     UNIQUE KEY unique_turma (curso_id, ano_civil, ano_curso),
     INDEX idx_curso (curso_id),
     INDEX idx_ano_civil (ano_civil),
-    INDEX idx_ano_curso (ano_curso)
+    INDEX idx_ano_curso (ano_curso),
+    INDEX idx_ativo (ativo),
+    INDEX idx_curso_ano (curso_id, ano_civil)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Configurações do sistema
@@ -32,6 +40,7 @@ CREATE TABLE IF NOT EXISTS configuracoes (
     chave VARCHAR(50) UNIQUE NOT NULL,
     valor VARCHAR(200) NOT NULL,
     descricao TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_chave (chave)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -47,8 +56,10 @@ CREATE TABLE IF NOT EXISTS alunos (
     email VARCHAR(100) NULL,
     telefone_celular VARCHAR(20) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_nome (nome),
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_nome_email (nome, email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Users table (only for system users: admin, nivel1, nivel2)
@@ -60,10 +71,14 @@ CREATE TABLE IF NOT EXISTS users (
     full_name VARCHAR(200) NOT NULL,
     user_type ENUM('administrador', 'nivel1', 'nivel2') NOT NULL,
     auth_type ENUM('local', 'ldap') NOT NULL DEFAULT 'local',
+    ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_user_type (user_type),
     INDEX idx_username (username),
-    INDEX idx_email (email)
+    INDEX idx_email (email),
+    INDEX idx_auth_type (auth_type),
+    INDEX idx_ativo (ativo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Aluno-Turma relationship table (many-to-many)
@@ -76,7 +91,8 @@ CREATE TABLE IF NOT EXISTS aluno_turmas (
     FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE CASCADE,
     UNIQUE KEY unique_aluno_turma (aluno_id, turma_id),
     INDEX idx_aluno (aluno_id),
-    INDEX idx_turma (turma_id)
+    INDEX idx_turma (turma_id),
+    INDEX idx_aluno_turma (aluno_id, turma_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tipos de Eventos table
@@ -86,7 +102,9 @@ CREATE TABLE IF NOT EXISTS tipos_eventos (
     cor VARCHAR(20) DEFAULT 'secondary',
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_ativo (ativo)
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ativo (ativo),
+    INDEX idx_nome (nome)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Events table
@@ -100,6 +118,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     observacoes TEXT NULL,
     registrado_por INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
     FOREIGN KEY (turma_id) REFERENCES turmas(id) ON DELETE SET NULL,
     FOREIGN KEY (tipo_evento_id) REFERENCES tipos_eventos(id) ON DELETE RESTRICT,
@@ -107,7 +126,13 @@ CREATE TABLE IF NOT EXISTS eventos (
     INDEX idx_aluno (aluno_id),
     INDEX idx_turma (turma_id),
     INDEX idx_tipo (tipo_evento_id),
-    INDEX idx_data (data_evento)
+    INDEX idx_data (data_evento),
+    INDEX idx_registrado_por (registrado_por),
+    -- Composite indexes for common queries
+    INDEX idx_aluno_data (aluno_id, data_evento),
+    INDEX idx_turma_data (turma_id, data_evento),
+    INDEX idx_registrado_data (registrado_por, data_evento),
+    INDEX idx_data_tipo (data_evento, tipo_evento_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Insert default event types
@@ -116,5 +141,3 @@ INSERT INTO tipos_eventos (nome, cor) VALUES
 ('Saída Antecipada', 'warning'),
 ('Falta', 'danger'),
 ('Atendimento', 'success');
-
-
