@@ -189,7 +189,7 @@ require_once 'includes/header.php';
                                     <optgroup label="<?php echo htmlspecialchars($grupo['curso']); ?> - Ano <?php echo htmlspecialchars($grupo['ano_civil']); ?><?php echo $is_ano_corrente ? ' (Corrente)' : ''; ?>">
                                         <?php foreach ($grupo['turmas'] as $t): ?>
                                         <option value="<?php echo $t['id']; ?>" <?php echo ($turma_id_selecionada == $t['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
+                                            <?php echo htmlspecialchars($t['curso_nome'] ?? $grupo['curso']); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
                                         </option>
                                         <?php endforeach; ?>
                                     </optgroup>
@@ -303,7 +303,7 @@ require_once 'includes/header.php';
                                             <?php foreach ($grupo['turmas'] as $t): ?>
                                                 <?php if ($t['id'] != $turma_selecionada['id']): ?>
                                                 <option value="<?php echo $t['id']; ?>">
-                                                    <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
+                                                    <?php echo htmlspecialchars($t['curso_nome'] ?? $grupo['curso']); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
                                                 </option>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
