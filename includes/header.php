@@ -4,7 +4,8 @@ require_once __DIR__ . '/../config/init.php';
 $user = new User((new Database())->getConnection());
 
 // Check login and redirect if needed (before any output)
-if (!$user->isLoggedIn() && basename($_SERVER['PHP_SELF']) != 'login.php') {
+$allowed_pages = ['login.php', 'definir_senha_admin.php'];
+if (!$user->isLoggedIn() && !in_array(basename($_SERVER['PHP_SELF']), $allowed_pages)) {
     header('Location: login.php');
     exit;
 }

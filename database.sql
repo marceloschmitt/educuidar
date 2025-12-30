@@ -122,10 +122,10 @@ INSERT INTO tipos_eventos (nome, cor) VALUES
 ('Falta', 'danger'),
 ('Atendimento', 'success');
 
--- Insert default admin user (password: admin123)
--- Change this password after first login!
+-- Insert default admin user (without password - must be set on first login)
+-- The password will be set on the first login
 INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
-('admin', 'admin@ifrs.edu.br', '$2y$12$vxhmFBKqmR5QV7WoqQh6hO82QbrCK/baMwdkRnIaU5qIyB7eJuh4i', 'Administrador do Sistema', 'administrador', 'local');
+('admin', 'admin@ifrs.edu.br', NULL, 'Administrador do Sistema', 'administrador', 'local');
 
 -- Insert default users nivel1 and nivel2 (passwords: usuario1 and usuario2)
 -- These users can use LDAP or local authentication

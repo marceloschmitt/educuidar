@@ -51,6 +51,12 @@ class User {
                 }
                 return false;
             } else {
+                // Check if admin user has no password set (first login)
+                if (empty($row['password']) && $row['user_type'] === 'administrador') {
+                    // Return special code to indicate password needs to be set
+                    return 'SET_PASSWORD';
+                }
+                
                 // Local authentication - verify password from database
                 if (!empty($row['password']) && password_verify($password, $row['password'])) {
                     $_SESSION['user_id'] = $row['id'];
