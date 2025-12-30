@@ -150,13 +150,15 @@ class LDAPAuth {
         
         if ($bind) {
             // Authentication successful, get user info
-            $filter = "(" . $this->ldap_user_attribute . "=$username)";
+            // Escape special LDAP characters in username to prevent injection
+            $escaped_username = ldap_escape($username, '', LDAP_ESCAPE_FILTER);
+            $filter = "(" . $this->ldap_user_attribute . "=" . $escaped_username . ")";
             // Search for user attributes - include Active Directory attributes
             $attributes = ['cn', 'mail', 'displayName', 'sn', 'givenName', 'name', 'userPrincipalName', 'sAMAccountName'];
             // Use ldap_search which uses LDAP_SCOPE_SUBTREE by default (searches entire subtree/subcontextos)
-            // This is the correct scope for Active Directory to find users in any OU
-            error_log("LDAP Auth: Searching for user attributes with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos)");
-            $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, $attributes);
+            // This matches Moodle's "Search subcontexts: Yes" behavior for Active Directory
+            error_log("LDAP Auth: Searching for user attributes with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos, like Moodle)");
+            $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, $attributes, 0, 1000, 30, LDAP_DEREF_NEVER);
             if (!$search) {
                 $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
                 error_log("LDAP Auth: Search failed - {$ldap_error}");
@@ -303,14 +305,19 @@ class LDAPAuth {
         }
         
         // Search for user using configured attribute
-        // ldap_search uses LDAP_SCOPE_SUBTREE by default, which searches in all subcontextos
-        // This is the correct scope for Active Directory to find users in any OU
-        $filter = "(" . $this->ldap_user_attribute . "=$username)";
-        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos)");
+        // For Active Directory, we need to search in all subcontextos (subtree scope)
+        // ldap_search() uses LDAP_SCOPE_SUBTREE by default, which searches entire subtree
+        // This matches Moodle's "Search subcontexts: Yes" behavior
+        // Escape special LDAP characters in username to prevent injection
+        $escaped_username = ldap_escape($username, '', LDAP_ESCAPE_FILTER);
+        $filter = "(" . $this->ldap_user_attribute . "=" . $escaped_username . ")";
+        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos, like Moodle)");
         
-        // Use ldap_search which automatically uses LDAP_SCOPE_SUBTREE (searches entire subtree/subcontextos)
-        // This is equivalent to ldap_search() with scope SUBTREE, which is what AD clients use
-        $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, ['dn']);
+        // Use ldap_search() which uses LDAP_SCOPE_SUBTREE (searches entire subtree/subcontextos)
+        // This is exactly what Moodle does when "Search subcontexts: Yes"
+        // Parameters: link, base_dn, filter, attributes, attrsonly, sizelimit, timelimit, deref
+        // LDAP_DEREF_NEVER matches Moodle's "Dereference aliases: No"
+        $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, ['dn'], 0, 1000, 30, LDAP_DEREF_NEVER);
         
         if (!$search) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
@@ -327,14 +334,7 @@ class LDAPAuth {
             return $entries[0]['dn'];
         }
         
-        error_log("LDAP getUserDN: User '{$username}' not found with filter '{$filter}' in base '{$this->ldap_base_dn}' (searched in all subcontextos)");
-        
-        // Try alternative: attribute=username,base_dn format (for simple LDAP)
-        if ($this->ldap_user_attribute !== 'sAMAccountName' && $this->ldap_user_attribute !== 'userPrincipalName') {
-            $user_dn = $this->ldap_user_attribute . "=$username," . $this->ldap_base_dn;
-            error_log("LDAP getUserDN: Using alternative DN format: {$user_dn}");
-            return $user_dn;
-        }
+        error_log("LDAP getUserDN: User '{$username}' not found with filter '{$filter}' in base '{$this->ldap_base_dn}' (searched in all subcontextos with SUBTREE scope)");
         
         return false;
     }
