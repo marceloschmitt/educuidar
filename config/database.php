@@ -25,10 +25,16 @@ class Database {
         }
         
         $db_config = $config['database'];
-        $this->host = $db_config['host'] ?? 'localhost';
-        $this->db_name = $db_config['db_name'] ?? 'educuidar';
-        $this->username = $db_config['username'] ?? 'root';
-        $this->password = $db_config['password'] ?? '';
+        
+        if (!isset($db_config['host']) || !isset($db_config['db_name']) || 
+            !isset($db_config['username']) || !isset($db_config['password'])) {
+            throw new Exception('Database configuration incomplete. Please check config/config.php and ensure all required fields (host, db_name, username, password) are set.');
+        }
+        
+        $this->host = $db_config['host'];
+        $this->db_name = $db_config['db_name'];
+        $this->username = $db_config['username'];
+        $this->password = $db_config['password'];
     }
 
     public function getConnection() {
