@@ -1,5 +1,22 @@
 /* Estilos do Sistema de Controle IFRS */
 
+/* Force mobile recognition */
+@viewport {
+    width: device-width;
+    initial-scale: 1.0;
+}
+
+/* Ensure proper mobile rendering */
+html {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+}
+
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 /* Modal de usuário - fonte menor para caber melhor */
 #createUserModal .modal-dialog,
 #editUserModal .modal-dialog {
