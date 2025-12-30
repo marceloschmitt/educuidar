@@ -179,35 +179,6 @@
     padding-top: 20px;
 }
 
-/* Fix dropdown in tables - allow menu to appear within table boundaries */
-.table-responsive {
-    overflow-x: auto;
-    overflow-y: auto;
-    position: relative;
-}
-
-/* Ensure dropdowns in table cells are positioned correctly */
-.table td .dropdown {
-    position: static;
-}
-
-/* Dropdown menu positioning - opens over the row */
-.table td .dropdown-menu {
-    position: absolute !important;
-    z-index: 1050 !important;
-    right: 0 !important;
-    left: auto !important;
-    top: 100% !important;
-    margin-top: 0.125rem !important;
-    transform: none !important;
-}
-
-/* When dropdown is shown, allow overflow and add padding for last rows */
-.table-responsive:has(.dropdown.show) {
-    overflow-y: visible !important;
-    padding-bottom: 200px !important;
-}
-
 /* Estilos de Impressão */
 @media print {
     /* Esconder elementos não imprimíveis - usar display: none para garantir */

@@ -146,27 +146,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Fix dropdown positioning in tables - allow overflow when dropdown is open
-    var tableDropdowns = document.querySelectorAll('.table .dropdown');
-    tableDropdowns.forEach(function(dropdown) {
-        var button = dropdown.querySelector('.dropdown-toggle');
-        var tableResponsive = dropdown.closest('.table-responsive');
-        
-        if (button && tableResponsive) {
-            // When dropdown is shown, allow overflow
-            button.addEventListener('shown.bs.dropdown', function() {
-                tableResponsive.style.overflowY = 'visible';
-                tableResponsive.style.paddingBottom = '200px'; // Extra space for dropdown
-            });
-            
-            // Reset when hidden
-            button.addEventListener('hidden.bs.dropdown', function() {
-                tableResponsive.style.overflowY = '';
-                tableResponsive.style.paddingBottom = '';
-            });
-        }
-    });
-    
     // Botão de imprimir
     var btnImprimir = document.getElementById('btnImprimir');
     if (btnImprimir) {
