@@ -78,7 +78,8 @@ class LDAPAuth {
         // Connection successful
         error_log("LDAP Auth: Successfully connected to {$this->ldap_host}");
         
-        // Set LDAP options
+        // Set LDAP options for Active Directory compatibility
+        // Protocol version 3 is required for Active Directory
         if (!@ldap_set_option($ldap_conn, LDAP_OPT_PROTOCOL_VERSION, 3)) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
             $this->last_error = "✅ Conectado ao servidor LDAP {$this->ldap_host}.\n❌ Falha ao configurar protocolo LDAP versão 3.\nErro: {$ldap_error}";
@@ -87,12 +88,22 @@ class LDAPAuth {
             return false;
         }
         
+        // Disable referrals for Active Directory (prevents following referrals to other domains)
         if (!@ldap_set_option($ldap_conn, LDAP_OPT_REFERRALS, 0)) {
             $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
             error_log("LDAP Auth: Failed to set referrals option - {$ldap_error}");
         }
         
-        error_log("LDAP Auth: LDAP options configured successfully");
+        // Set network timeout for better AD compatibility
+        @ldap_set_option($ldap_conn, LDAP_OPT_NETWORK_TIMEOUT, 10);
+        
+        // Set timelimit for searches (30 seconds)
+        @ldap_set_option($ldap_conn, LDAP_OPT_TIMELIMIT, 30);
+        
+        // Set sizelimit for searches (1000 results)
+        @ldap_set_option($ldap_conn, LDAP_OPT_SIZELIMIT, 1000);
+        
+        error_log("LDAP Auth: LDAP options configured successfully (protocol v3, referrals disabled, compatible with Active Directory)");
         
         // Always search for user DN first to ensure we search in subcontextos
         // This is important for Active Directory and LDAP servers where users may be in subcontextos
@@ -142,8 +153,9 @@ class LDAPAuth {
             $filter = "(" . $this->ldap_user_attribute . "=$username)";
             // Search for user attributes - include Active Directory attributes
             $attributes = ['cn', 'mail', 'displayName', 'sn', 'givenName', 'name', 'userPrincipalName', 'sAMAccountName'];
-            // Use ldap_search which searches in entire subtree (subcontextos) by default
-            error_log("LDAP Auth: Searching for user attributes with filter '{$filter}' in base '{$this->ldap_base_dn}' (including subcontextos)");
+            // Use ldap_search which uses LDAP_SCOPE_SUBTREE by default (searches entire subtree/subcontextos)
+            // This is the correct scope for Active Directory to find users in any OU
+            error_log("LDAP Auth: Searching for user attributes with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos)");
             $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, $attributes);
             if (!$search) {
                 $ldap_error = @ldap_error($ldap_conn) ?: 'Erro desconhecido';
@@ -245,6 +257,9 @@ class LDAPAuth {
         
         @ldap_set_option($ldap_conn, LDAP_OPT_PROTOCOL_VERSION, 3);
         @ldap_set_option($ldap_conn, LDAP_OPT_REFERRALS, 0);
+        @ldap_set_option($ldap_conn, LDAP_OPT_NETWORK_TIMEOUT, 10);
+        @ldap_set_option($ldap_conn, LDAP_OPT_TIMELIMIT, 30);
+        @ldap_set_option($ldap_conn, LDAP_OPT_SIZELIMIT, 1000);
         
         // Try anonymous bind first, or use admin credentials if available
         $bind_success = false;
@@ -288,9 +303,13 @@ class LDAPAuth {
         }
         
         // Search for user using configured attribute
-        // Use ldap_search which searches in entire subtree (subcontextos) by default
+        // ldap_search uses LDAP_SCOPE_SUBTREE by default, which searches in all subcontextos
+        // This is the correct scope for Active Directory to find users in any OU
         $filter = "(" . $this->ldap_user_attribute . "=$username)";
-        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}' (including subcontextos/subtree)");
+        error_log("LDAP getUserDN: Searching with filter '{$filter}' in base '{$this->ldap_base_dn}' (scope: SUBTREE - all subcontextos)");
+        
+        // Use ldap_search which automatically uses LDAP_SCOPE_SUBTREE (searches entire subtree/subcontextos)
+        // This is equivalent to ldap_search() with scope SUBTREE, which is what AD clients use
         $search = @ldap_search($ldap_conn, $this->ldap_base_dn, $filter, ['dn']);
         
         if (!$search) {
