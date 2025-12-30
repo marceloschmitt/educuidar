@@ -179,6 +179,28 @@
     padding-top: 20px;
 }
 
+/* Fix dropdown in tables - prevent clipping */
+.table-responsive {
+    position: relative;
+}
+
+.table-responsive .dropdown-menu {
+    position: absolute !important;
+    z-index: 1050 !important;
+}
+
+/* Ensure dropdowns in table cells are visible */
+.table td .dropdown {
+    position: static;
+}
+
+.table td .dropdown-menu {
+    position: absolute !important;
+    right: 0;
+    left: auto;
+    z-index: 1050 !important;
+}
+
 /* Estilos de Impressão */
 @media print {
     /* Esconder elementos não imprimíveis - usar display: none para garantir */
