@@ -180,24 +180,36 @@
 }
 
 /* Fix dropdown in tables - prevent clipping */
+/* Remove overflow restriction when dropdown is open */
 .table-responsive {
-    position: relative;
+    overflow-x: auto;
+    overflow-y: visible;
 }
 
-.table-responsive .dropdown-menu {
-    position: absolute !important;
-    z-index: 1050 !important;
-}
-
-/* Ensure dropdowns in table cells are visible */
+/* Ensure dropdowns in table cells can escape the container */
 .table td .dropdown {
     position: static;
 }
 
+/* Make dropdown menu escape the table boundaries */
 .table td .dropdown-menu {
     position: absolute !important;
-    right: 0;
-    left: auto;
+    z-index: 1050 !important;
+    right: 0 !important;
+    left: auto !important;
+    top: 100% !important;
+    margin-top: 0.125rem !important;
+    transform: none !important;
+}
+
+/* When dropdown is shown, allow overflow on table-responsive */
+.table-responsive:has(.dropdown-menu.show) {
+    overflow: visible !important;
+}
+
+/* Alternative approach: use fixed positioning when dropdown is open */
+.table td .dropdown.show .dropdown-menu {
+    position: fixed !important;
     z-index: 1050 !important;
 }
 

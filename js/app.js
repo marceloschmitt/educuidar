@@ -146,6 +146,34 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Fix dropdown positioning in tables to prevent clipping
+    var tableDropdowns = document.querySelectorAll('.table .dropdown');
+    tableDropdowns.forEach(function(dropdown) {
+        var button = dropdown.querySelector('.dropdown-toggle');
+        var menu = dropdown.querySelector('.dropdown-menu');
+        
+        if (button && menu) {
+            // When dropdown is shown, position it using fixed positioning
+            button.addEventListener('shown.bs.dropdown', function() {
+                var rect = button.getBoundingClientRect();
+                menu.style.position = 'fixed';
+                menu.style.top = (rect.bottom + window.scrollY) + 'px';
+                menu.style.right = (window.innerWidth - rect.right) + 'px';
+                menu.style.left = 'auto';
+                menu.style.transform = 'none';
+            });
+            
+            // Reset when hidden
+            button.addEventListener('hidden.bs.dropdown', function() {
+                menu.style.position = '';
+                menu.style.top = '';
+                menu.style.right = '';
+                menu.style.left = '';
+                menu.style.transform = '';
+            });
+        }
+    });
+    
     // Botão de imprimir
     var btnImprimir = document.getElementById('btnImprimir');
     if (btnImprimir) {
