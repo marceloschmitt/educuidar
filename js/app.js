@@ -1,4 +1,5 @@
 // JavaScript para Sistema de Controle IFRS
+console.log('DEBUG: app.js carregado!');
 
 // Função para editar evento
 function editEvento(evento) {
@@ -144,6 +145,9 @@ function initPasswordToggles() {
 
 // Event listeners quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DEBUG: DOMContentLoaded executado!');
+    console.log('DEBUG: Verificando se modalAluno existe:', document.getElementById('modalAluno'));
+    
     // Initialize password toggles
     initPasswordToggles();
     // Filtro de curso - limpar turma quando curso mudar
