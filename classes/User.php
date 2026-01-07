@@ -193,6 +193,32 @@ class User {
         return false;
     }
 
+    /**
+     * Update user profile (only name and email)
+     * Used by users to update their own data
+     */
+    public function updateProfile($user_id, $full_name, $email) {
+        $query = "UPDATE " . $this->table . " 
+                  SET full_name = :full_name,
+                      email = :email
+                  WHERE id = :id";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(':id', $user_id);
+        $stmt->bindParam(':full_name', $full_name);
+        $stmt->bindParam(':email', $email);
+
+        if ($stmt->execute()) {
+            // Update session if updating own profile
+            if ($user_id == ($_SESSION['user_id'] ?? null)) {
+                $_SESSION['full_name'] = $full_name;
+            }
+            return true;
+        }
+        return false;
+    }
+
     public function updatePassword($user_id, $new_password) {
         // Only update password if user uses local authentication
         $query_check = "SELECT auth_type FROM " . $this->table . " WHERE id = :id LIMIT 1";

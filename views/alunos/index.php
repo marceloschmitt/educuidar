@@ -17,11 +17,13 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Alunos</h5>
-                <?php if ($user->isAdmin()): ?>
+                <?php if ($user->isAdmin() || $user->isAssistenciaEstudantil()): ?>
                 <div>
+                    <?php if ($user->isAdmin()): ?>
                     <a href="importar_alunos.php" class="btn btn-success btn-sm me-2">
                         <i class="bi bi-upload"></i> Importar CSV
                     </a>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalAluno" id="btnNovoAluno">
                         <i class="bi bi-plus-circle"></i> Novo Aluno
                     </button>
@@ -141,12 +143,14 @@
                                                     <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
                                                 </a>
                                             </li>
-                                            <?php if ($user->isAdmin()): ?>
+                                            <?php if ($user->isAdmin() || $user->isAssistenciaEstudantil()): ?>
                                             <li>
                                                 <button class="dropdown-item btn-edit-aluno" type="button" data-aluno='<?php echo htmlspecialchars(json_encode($a)); ?>'>
                                                     <i class="bi bi-pencil text-primary"></i> Editar
                                                 </button>
                                             </li>
+                                            <?php endif; ?>
+                                            <?php if ($user->isAdmin()): ?>
                                             <li>
                                                 <a class="dropdown-item" href="aluno_turmas.php?id=<?php echo $a['id']; ?>">
                                                     <i class="bi bi-collection text-info"></i> Gerenciar Turmas

@@ -56,6 +56,11 @@
         </a>
     </li>
     <?php endif; ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'meus_dados.php' ? 'active' : ''; ?>" href="meus_dados.php">
+            <i class="bi bi-person"></i> Meus Dados
+        </a>
+    </li>
     <?php 
     // Only show "Alterar Senha" for users with local authentication
     $user_data = $user->getById($_SESSION['user_id']);
