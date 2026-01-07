@@ -241,6 +241,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    // Garantir scroll no modal de aluno quando aberto
+    var modalAluno = document.getElementById('modalAluno');
+    if (modalAluno) {
+        modalAluno.addEventListener('shown.bs.modal', function() {
+            var modalBody = this.querySelector('.modal-body');
+            if (modalBody) {
+                modalBody.style.overflowY = 'auto';
+                modalBody.style.maxHeight = 'calc(90vh - 140px)';
+                modalBody.style.flex = '1 1 auto';
+                modalBody.style.minHeight = '0';
+            }
+            var modalContent = this.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.style.display = 'flex';
+                modalContent.style.flexDirection = 'column';
+                modalContent.style.maxHeight = '90vh';
+                modalContent.style.overflow = 'hidden';
+            }
+            var form = this.querySelector('#formAluno');
+            if (form) {
+                form.style.display = 'flex';
+                form.style.flexDirection = 'column';
+                form.style.flex = '1 1 auto';
+                form.style.minHeight = '0';
+                form.style.overflow = 'hidden';
+            }
+        });
+    }
+    
     // Botão novo aluno - resetar formulário
     var btnNovoAluno = document.getElementById('btnNovoAluno');
     if (btnNovoAluno) {

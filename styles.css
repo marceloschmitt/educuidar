@@ -101,26 +101,42 @@ body {
 }
 
 /* Modal de aluno - mesmo esquema dos modais de usuário */
-#modalAluno .modal-dialog {
+#modalAluno .modal-dialog,
+#modalAluno.modal .modal-dialog {
     max-height: 90vh;
     margin: 1rem auto;
     display: flex;
     flex-direction: column;
 }
 
-#modalAluno .modal-content {
+#modalAluno .modal-content,
+#modalAluno.modal .modal-content {
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
 }
 
-#modalAluno .modal-header {
+#modalAluno .modal-header,
+#modalAluno.modal .modal-header {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
 }
 
-#modalAluno .modal-body {
+#modalAluno form,
+#modalAluno.modal form,
+#modalAluno #formAluno {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#modalAluno .modal-body,
+#modalAluno.modal .modal-body,
+#modalAluno form .modal-body,
+#modalAluno #formAluno .modal-body {
     font-size: 0.75rem;
     overflow-y: auto !important;
     overflow-x: hidden;
@@ -132,19 +148,30 @@ body {
 }
 
 /* Garantir que o scroll funcione mesmo com zoom */
-#modalAluno .modal-dialog-scrollable .modal-body {
+#modalAluno .modal-dialog-scrollable .modal-body,
+#modalAluno.modal .modal-dialog-scrollable .modal-body,
+#modalAluno .modal-dialog-scrollable form .modal-body,
+#modalAluno .modal-dialog-scrollable #formAluno .modal-body,
+#modalAluno.modal .modal-dialog-scrollable form .modal-body,
+#modalAluno.modal .modal-dialog-scrollable #formAluno .modal-body {
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     max-height: calc(90vh - 140px) !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
 }
 
-#modalAluno .form-label {
+#modalAluno .form-label,
+#modalAluno.modal .form-label {
     font-size: 0.75rem;
     margin-bottom: 0.25rem;
     font-weight: 500;
 }
 
 #modalAluno .form-control,
-#modalAluno .form-select {
+#modalAluno .form-select,
+#modalAluno.modal .form-control,
+#modalAluno.modal .form-select {
     font-size: 0.75rem;
     padding: 0.3rem 0.6rem;
     line-height: 1.3;
@@ -152,20 +179,27 @@ body {
 }
 
 #modalAluno .form-text,
-#modalAluno small {
+#modalAluno small,
+#modalAluno.modal .form-text,
+#modalAluno.modal small {
     font-size: 0.7rem;
 }
 
-#modalAluno .mb-3 {
+#modalAluno .mb-3,
+#modalAluno.modal .mb-3 {
     margin-bottom: 0.5rem !important;
 }
 
-#modalAluno .modal-footer {
+#modalAluno .modal-footer,
+#modalAluno.modal .modal-footer,
+#modalAluno form .modal-footer,
+#modalAluno #formAluno .modal-footer {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
 }
 
-#modalAluno .modal-footer .btn {
+#modalAluno .modal-footer .btn,
+#modalAluno.modal .modal-footer .btn {
     font-size: 0.8rem;
     padding: 0.4rem 0.8rem;
 }
