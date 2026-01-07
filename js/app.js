@@ -243,31 +243,98 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Garantir scroll no modal de aluno quando aberto
     var modalAluno = document.getElementById('modalAluno');
+    console.log('DEBUG: modalAluno encontrado?', modalAluno);
+    
     if (modalAluno) {
         modalAluno.addEventListener('shown.bs.modal', function() {
+            console.log('DEBUG: Modal de aluno foi aberto');
+            
             var modalBody = this.querySelector('.modal-body');
+            console.log('DEBUG: modalBody encontrado?', modalBody);
             if (modalBody) {
+                console.log('DEBUG: Aplicando estilos ao modalBody');
                 modalBody.style.overflowY = 'auto';
                 modalBody.style.maxHeight = 'calc(90vh - 140px)';
                 modalBody.style.flex = '1 1 auto';
                 modalBody.style.minHeight = '0';
+                modalBody.style.fontSize = '0.75rem';
+                console.log('DEBUG: Estilos aplicados. overflowY:', modalBody.style.overflowY, 'maxHeight:', modalBody.style.maxHeight, 'fontSize:', modalBody.style.fontSize);
+            } else {
+                console.error('DEBUG: modalBody NÃO encontrado!');
             }
+            
             var modalContent = this.querySelector('.modal-content');
+            console.log('DEBUG: modalContent encontrado?', modalContent);
             if (modalContent) {
+                console.log('DEBUG: Aplicando estilos ao modalContent');
                 modalContent.style.display = 'flex';
                 modalContent.style.flexDirection = 'column';
                 modalContent.style.maxHeight = '90vh';
                 modalContent.style.overflow = 'hidden';
+                console.log('DEBUG: Estilos do modalContent aplicados');
+            } else {
+                console.error('DEBUG: modalContent NÃO encontrado!');
             }
+            
             var form = this.querySelector('#formAluno');
+            console.log('DEBUG: form encontrado?', form);
             if (form) {
+                console.log('DEBUG: Aplicando estilos ao form');
                 form.style.display = 'flex';
                 form.style.flexDirection = 'column';
                 form.style.flex = '1 1 auto';
                 form.style.minHeight = '0';
                 form.style.overflow = 'hidden';
+                console.log('DEBUG: Estilos do form aplicados');
+            } else {
+                console.error('DEBUG: form NÃO encontrado!');
             }
+            
+            // Aplicar estilos aos labels e inputs
+            var labels = this.querySelectorAll('.form-label');
+            console.log('DEBUG: Labels encontrados:', labels.length);
+            labels.forEach(function(label, index) {
+                label.style.fontSize = '0.75rem';
+                label.style.marginBottom = '0.25rem';
+                label.style.fontWeight = '500';
+                if (index === 0) {
+                    console.log('DEBUG: Estilos aplicados ao primeiro label. fontSize:', label.style.fontSize);
+                }
+            });
+            
+            var inputs = this.querySelectorAll('.form-control, .form-select');
+            console.log('DEBUG: Inputs encontrados:', inputs.length);
+            inputs.forEach(function(input, index) {
+                input.style.fontSize = '0.75rem';
+                input.style.padding = '0.3rem 0.6rem';
+                input.style.lineHeight = '1.3';
+                input.style.height = 'calc(1.3em + 0.6rem + 2px)';
+                if (index === 0) {
+                    console.log('DEBUG: Estilos aplicados ao primeiro input. fontSize:', input.style.fontSize);
+                }
+            });
+            
+            var smalls = this.querySelectorAll('small');
+            console.log('DEBUG: Small elements encontrados:', smalls.length);
+            smalls.forEach(function(small) {
+                small.style.fontSize = '0.7rem';
+            });
+            
+            var mb3s = this.querySelectorAll('.mb-3');
+            console.log('DEBUG: .mb-3 encontrados:', mb3s.length);
+            mb3s.forEach(function(mb3) {
+                mb3.style.marginBottom = '0.5rem';
+            });
+            
+            console.log('DEBUG: Todos os estilos aplicados ao modal de aluno');
         });
+        
+        // Também aplicar quando o modal for mostrado (antes de aparecer)
+        modalAluno.addEventListener('show.bs.modal', function() {
+            console.log('DEBUG: Modal de aluno está sendo mostrado (show.bs.modal)');
+        });
+    } else {
+        console.error('DEBUG: modalAluno NÃO encontrado no DOM!');
     }
     
     // Botão novo aluno - resetar formulário
