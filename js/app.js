@@ -411,61 +411,90 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Modal de aluno - garantir scroll e fontes (mesmo esquema dos modais de usuário)
+    // Função para aplicar estilos de scroll e fonte em modais
+    function applyModalStyles(modal) {
+        var modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+            modalBody.style.overflowY = 'auto';
+            modalBody.style.maxHeight = 'calc(90vh - 140px)';
+            modalBody.style.flex = '1 1 auto';
+            modalBody.style.minHeight = '0';
+            modalBody.style.fontSize = '0.75rem';
+        }
+        
+        var modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            modalContent.style.display = 'flex';
+            modalContent.style.flexDirection = 'column';
+            modalContent.style.maxHeight = '90vh';
+            modalContent.style.overflow = 'hidden';
+        }
+        
+        var form = modal.querySelector('form');
+        if (form) {
+            form.style.display = 'flex';
+            form.style.flexDirection = 'column';
+            form.style.flex = '1 1 auto';
+            form.style.minHeight = '0';
+            form.style.overflow = 'hidden';
+        }
+        
+        // Aplicar fontes menores
+        var labels = modal.querySelectorAll('.form-label');
+        labels.forEach(function(label) {
+            label.style.fontSize = '0.75rem';
+            label.style.marginBottom = '0.25rem';
+            label.style.fontWeight = '500';
+        });
+        
+        var inputs = modal.querySelectorAll('.form-control, .form-select');
+        inputs.forEach(function(input) {
+            input.style.fontSize = '0.75rem';
+            input.style.padding = '0.3rem 0.6rem';
+            input.style.lineHeight = '1.3';
+            input.style.height = 'calc(1.3em + 0.6rem + 2px)';
+        });
+        
+        var smalls = modal.querySelectorAll('small');
+        smalls.forEach(function(small) {
+            small.style.fontSize = '0.7rem';
+        });
+        
+        var mb3s = modal.querySelectorAll('.mb-3');
+        mb3s.forEach(function(mb3) {
+            mb3.style.marginBottom = '0.5rem';
+        });
+    }
+    
+    // Modais de usuário - aplicar estilos quando abertos
+    var createUserModal = document.getElementById('createUserModal');
+    if (createUserModal) {
+        createUserModal.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
+        createUserModal.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
+        });
+    }
+    
+    var editUserModal = document.getElementById('editUserModal');
+    if (editUserModal) {
+        editUserModal.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
+        editUserModal.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
+        });
+    }
+    
+    // Modal de aluno - aplicar estilos quando aberto
     var modalAluno = document.getElementById('modalAluno');
     if (modalAluno) {
+        modalAluno.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
         modalAluno.addEventListener('shown.bs.modal', function() {
-            var modalBody = this.querySelector('.modal-body');
-            if (modalBody) {
-                modalBody.style.overflowY = 'auto';
-                modalBody.style.maxHeight = 'calc(90vh - 140px)';
-                modalBody.style.flex = '1 1 auto';
-                modalBody.style.minHeight = '0';
-                modalBody.style.fontSize = '0.75rem';
-            }
-            
-            var modalContent = this.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.style.display = 'flex';
-                modalContent.style.flexDirection = 'column';
-                modalContent.style.maxHeight = '90vh';
-                modalContent.style.overflow = 'hidden';
-            }
-            
-            var form = this.querySelector('#formAluno');
-            if (form) {
-                form.style.display = 'flex';
-                form.style.flexDirection = 'column';
-                form.style.flex = '1 1 auto';
-                form.style.minHeight = '0';
-                form.style.overflow = 'hidden';
-            }
-            
-            // Aplicar fontes menores
-            var labels = this.querySelectorAll('.form-label');
-            labels.forEach(function(label) {
-                label.style.fontSize = '0.75rem';
-                label.style.marginBottom = '0.25rem';
-                label.style.fontWeight = '500';
-            });
-            
-            var inputs = this.querySelectorAll('.form-control, .form-select');
-            inputs.forEach(function(input) {
-                input.style.fontSize = '0.75rem';
-                input.style.padding = '0.3rem 0.6rem';
-                input.style.lineHeight = '1.3';
-                input.style.height = 'calc(1.3em + 0.6rem + 2px)';
-            });
-            
-            var smalls = this.querySelectorAll('small');
-            smalls.forEach(function(small) {
-                small.style.fontSize = '0.7rem';
-            });
-            
-            var mb3s = this.querySelectorAll('.mb-3');
-            mb3s.forEach(function(mb3) {
-                mb3.style.marginBottom = '0.5rem';
-            });
+            applyModalStyles(this);
         });
     }
     

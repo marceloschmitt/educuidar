@@ -1,0 +1,135 @@
+<?php
+/**
+ * Usuarios Controller
+ */
+
+class UsuariosController extends Controller {
+    private $user;
+    
+    public function __construct() {
+        parent::__construct();
+        $this->user = new User($this->db);
+    }
+    
+    /**
+     * Lista de usuários
+     */
+    public function index() {
+        $this->requireAdmin();
+        
+        // Process POST requests
+        if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $this->handlePost();
+            return;
+        }
+        
+        // Get success/error messages from session
+        $success = $this->getSuccess();
+        $error = $this->getError();
+        
+        // Get all users
+        $usuarios = $this->user->getAll();
+        
+        // Include header
+        $page_title = 'Usuários';
+        require_once __DIR__ . '/../includes/header.php';
+        
+        // Render view
+        $this->render('usuarios/index', [
+            'success' => $success,
+            'error' => $error,
+            'usuarios' => $usuarios,
+            'user' => $this->user
+        ]);
+        
+        // Include footer
+        require_once __DIR__ . '/../includes/footer.php';
+    }
+    
+    /**
+     * Handle POST requests
+     */
+    private function handlePost() {
+        $action = $_POST['action'] ?? 'create';
+        
+        if ($action == 'create') {
+            $this->create();
+        } elseif ($action == 'update') {
+            $this->update();
+        }
+    }
+    
+    /**
+     * Create a new user
+     */
+    private function create() {
+        $this->user->username = $_POST['username'] ?? '';
+        $this->user->email = $_POST['email'] ?? '';
+        $this->user->password = $_POST['password'] ?? '';
+        $this->user->full_name = $_POST['full_name'] ?? '';
+        $this->user->user_type = $_POST['user_type'] ?? '';
+        $this->user->auth_type = $_POST['auth_type'] ?? '';
+        
+        // Validar campos obrigatórios
+        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type) || empty($this->user->auth_type)) {
+            $this->setError('Por favor, preencha todos os campos obrigatórios!');
+            $this->redirect('usuarios.php');
+            return;
+        } elseif ($this->user->auth_type === 'local' && empty($this->user->password)) {
+            $this->setError('Senha é obrigatória para autenticação local!');
+            $this->redirect('usuarios.php');
+            return;
+        }
+        
+        if ($this->user->create()) {
+            $this->setSuccess('Usuário criado com sucesso!');
+        } else {
+            $this->setError('Erro ao criar usuário. Tente novamente.');
+        }
+        
+        $this->redirect('usuarios.php');
+    }
+    
+    /**
+     * Update an existing user
+     */
+    private function update() {
+        $this->user->id = $_POST['id'] ?? null;
+        $this->user->username = $_POST['username'] ?? '';
+        $this->user->email = $_POST['email'] ?? '';
+        $this->user->full_name = $_POST['full_name'] ?? '';
+        $this->user->user_type = $_POST['user_type'] ?? '';
+        $this->user->auth_type = $_POST['auth_type'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        
+        if (empty($this->user->id)) {
+            $this->setError('ID do usuário não fornecido.');
+            $this->redirect('usuarios.php');
+            return;
+        }
+        
+        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type) || empty($this->user->auth_type)) {
+            $this->setError('Por favor, preencha todos os campos obrigatórios!');
+            $this->redirect('usuarios.php');
+            return;
+        }
+        
+        if ($this->user->update()) {
+            // Update password if provided and using local auth
+            if (!empty($new_password) && $this->user->auth_type === 'local') {
+                if ($this->user->updatePassword($this->user->id, $new_password)) {
+                    $this->setSuccess('Usuário e senha atualizados com sucesso!');
+                } else {
+                    $this->setSuccess('Usuário atualizado, mas houve erro ao atualizar a senha.');
+                }
+            } else {
+                $this->setSuccess('Usuário atualizado com sucesso!');
+            }
+        } else {
+            $this->setError('Erro ao atualizar usuário. Tente novamente.');
+        }
+        
+        $this->redirect('usuarios.php');
+    }
+}
+
