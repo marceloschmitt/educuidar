@@ -158,57 +158,72 @@ function initPasswordToggles() {
 
 // Função para aplicar estilos de scroll e fonte em modais (deve estar no escopo global)
 function applyModalStyles(modal) {
+    if (!modal) {
+        console.log('DEBUG: applyModalStyles - modal é null');
+        return;
+    }
+    
+    console.log('DEBUG: applyModalStyles chamada para modal:', modal.id || 'sem id');
+    
     var modalBody = modal.querySelector('.modal-body');
     if (modalBody) {
-        modalBody.style.overflowY = 'auto';
-        modalBody.style.maxHeight = 'calc(90vh - 140px)';
-        modalBody.style.flex = '1 1 auto';
-        modalBody.style.minHeight = '0';
-        modalBody.style.fontSize = '0.75rem';
+        console.log('DEBUG: Aplicando estilos ao modalBody');
+        modalBody.style.setProperty('overflow-y', 'auto', 'important');
+        modalBody.style.setProperty('max-height', 'calc(90vh - 140px)', 'important');
+        modalBody.style.setProperty('flex', '1 1 auto', 'important');
+        modalBody.style.setProperty('min-height', '0', 'important');
+        modalBody.style.setProperty('font-size', '0.75rem', 'important');
+        console.log('DEBUG: fontSize aplicado:', modalBody.style.fontSize);
+    } else {
+        console.log('DEBUG: modalBody não encontrado');
     }
     
     var modalContent = modal.querySelector('.modal-content');
     if (modalContent) {
-        modalContent.style.display = 'flex';
-        modalContent.style.flexDirection = 'column';
-        modalContent.style.maxHeight = '90vh';
-        modalContent.style.overflow = 'hidden';
+        modalContent.style.setProperty('display', 'flex', 'important');
+        modalContent.style.setProperty('flex-direction', 'column', 'important');
+        modalContent.style.setProperty('max-height', '90vh', 'important');
+        modalContent.style.setProperty('overflow', 'hidden', 'important');
     }
     
     var form = modal.querySelector('form');
     if (form) {
-        form.style.display = 'flex';
-        form.style.flexDirection = 'column';
-        form.style.flex = '1 1 auto';
-        form.style.minHeight = '0';
-        form.style.overflow = 'hidden';
+        form.style.setProperty('display', 'flex', 'important');
+        form.style.setProperty('flex-direction', 'column', 'important');
+        form.style.setProperty('flex', '1 1 auto', 'important');
+        form.style.setProperty('min-height', '0', 'important');
+        form.style.setProperty('overflow', 'hidden', 'important');
     }
     
-    // Aplicar fontes menores
+    // Aplicar fontes menores com !important
     var labels = modal.querySelectorAll('.form-label');
+    console.log('DEBUG: Labels encontrados:', labels.length);
     labels.forEach(function(label) {
-        label.style.fontSize = '0.75rem';
-        label.style.marginBottom = '0.25rem';
-        label.style.fontWeight = '500';
+        label.style.setProperty('font-size', '0.75rem', 'important');
+        label.style.setProperty('margin-bottom', '0.25rem', 'important');
+        label.style.setProperty('font-weight', '500', 'important');
     });
     
     var inputs = modal.querySelectorAll('.form-control, .form-select');
+    console.log('DEBUG: Inputs encontrados:', inputs.length);
     inputs.forEach(function(input) {
-        input.style.fontSize = '0.75rem';
-        input.style.padding = '0.3rem 0.6rem';
-        input.style.lineHeight = '1.3';
-        input.style.height = 'calc(1.3em + 0.6rem + 2px)';
+        input.style.setProperty('font-size', '0.75rem', 'important');
+        input.style.setProperty('padding', '0.3rem 0.6rem', 'important');
+        input.style.setProperty('line-height', '1.3', 'important');
+        input.style.setProperty('height', 'calc(1.3em + 0.6rem + 2px)', 'important');
     });
     
     var smalls = modal.querySelectorAll('small');
     smalls.forEach(function(small) {
-        small.style.fontSize = '0.7rem';
+        small.style.setProperty('font-size', '0.7rem', 'important');
     });
     
     var mb3s = modal.querySelectorAll('.mb-3');
     mb3s.forEach(function(mb3) {
-        mb3.style.marginBottom = '0.5rem';
+        mb3.style.setProperty('margin-bottom', '0.5rem', 'important');
     });
+    
+    console.log('DEBUG: applyModalStyles concluída');
 }
 
 // Event listeners quando o DOM estiver pronto
