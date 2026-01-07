@@ -98,7 +98,21 @@ function editAluno(aluno) {
     // Reset file input
     document.getElementById('modal_foto').value = '';
     
-    var modal = new bootstrap.Modal(document.getElementById('modalAluno'));
+    var modalElement = document.getElementById('modalAluno');
+    var modal = new bootstrap.Modal(modalElement);
+    
+    // Aplicar estilos antes de abrir o modal
+    if (modalElement && typeof applyModalStyles === 'function') {
+        applyModalStyles(modalElement);
+    }
+    
+    // Aplicar estilos novamente após o modal ser totalmente mostrado
+    modalElement.addEventListener('shown.bs.modal', function() {
+        if (typeof applyModalStyles === 'function') {
+            applyModalStyles(this);
+        }
+    }, { once: true }); // Usar { once: true } para executar apenas uma vez
+    
     modal.show();
 }
 
@@ -139,6 +153,61 @@ function initPasswordToggles() {
                 toggleBtn.setAttribute('aria-label', 'Mostrar senha');
             }
         });
+    });
+}
+
+// Função para aplicar estilos de scroll e fonte em modais (deve estar no escopo global)
+function applyModalStyles(modal) {
+    var modalBody = modal.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.style.overflowY = 'auto';
+        modalBody.style.maxHeight = 'calc(90vh - 140px)';
+        modalBody.style.flex = '1 1 auto';
+        modalBody.style.minHeight = '0';
+        modalBody.style.fontSize = '0.75rem';
+    }
+    
+    var modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.style.display = 'flex';
+        modalContent.style.flexDirection = 'column';
+        modalContent.style.maxHeight = '90vh';
+        modalContent.style.overflow = 'hidden';
+    }
+    
+    var form = modal.querySelector('form');
+    if (form) {
+        form.style.display = 'flex';
+        form.style.flexDirection = 'column';
+        form.style.flex = '1 1 auto';
+        form.style.minHeight = '0';
+        form.style.overflow = 'hidden';
+    }
+    
+    // Aplicar fontes menores
+    var labels = modal.querySelectorAll('.form-label');
+    labels.forEach(function(label) {
+        label.style.fontSize = '0.75rem';
+        label.style.marginBottom = '0.25rem';
+        label.style.fontWeight = '500';
+    });
+    
+    var inputs = modal.querySelectorAll('.form-control, .form-select');
+    inputs.forEach(function(input) {
+        input.style.fontSize = '0.75rem';
+        input.style.padding = '0.3rem 0.6rem';
+        input.style.lineHeight = '1.3';
+        input.style.height = 'calc(1.3em + 0.6rem + 2px)';
+    });
+    
+    var smalls = modal.querySelectorAll('small');
+    smalls.forEach(function(small) {
+        small.style.fontSize = '0.7rem';
+    });
+    
+    var mb3s = modal.querySelectorAll('.mb-3');
+    mb3s.forEach(function(mb3) {
+        mb3.style.marginBottom = '0.5rem';
     });
 }
 
@@ -410,61 +479,6 @@ document.addEventListener('DOMContentLoaded', function() {
             initPasswordToggles();
         });
     });
-    
-    // Função para aplicar estilos de scroll e fonte em modais
-    function applyModalStyles(modal) {
-        var modalBody = modal.querySelector('.modal-body');
-        if (modalBody) {
-            modalBody.style.overflowY = 'auto';
-            modalBody.style.maxHeight = 'calc(90vh - 140px)';
-            modalBody.style.flex = '1 1 auto';
-            modalBody.style.minHeight = '0';
-            modalBody.style.fontSize = '0.75rem';
-        }
-        
-        var modalContent = modal.querySelector('.modal-content');
-        if (modalContent) {
-            modalContent.style.display = 'flex';
-            modalContent.style.flexDirection = 'column';
-            modalContent.style.maxHeight = '90vh';
-            modalContent.style.overflow = 'hidden';
-        }
-        
-        var form = modal.querySelector('form');
-        if (form) {
-            form.style.display = 'flex';
-            form.style.flexDirection = 'column';
-            form.style.flex = '1 1 auto';
-            form.style.minHeight = '0';
-            form.style.overflow = 'hidden';
-        }
-        
-        // Aplicar fontes menores
-        var labels = modal.querySelectorAll('.form-label');
-        labels.forEach(function(label) {
-            label.style.fontSize = '0.75rem';
-            label.style.marginBottom = '0.25rem';
-            label.style.fontWeight = '500';
-        });
-        
-        var inputs = modal.querySelectorAll('.form-control, .form-select');
-        inputs.forEach(function(input) {
-            input.style.fontSize = '0.75rem';
-            input.style.padding = '0.3rem 0.6rem';
-            input.style.lineHeight = '1.3';
-            input.style.height = 'calc(1.3em + 0.6rem + 2px)';
-        });
-        
-        var smalls = modal.querySelectorAll('small');
-        smalls.forEach(function(small) {
-            small.style.fontSize = '0.7rem';
-        });
-        
-        var mb3s = modal.querySelectorAll('.mb-3');
-        mb3s.forEach(function(mb3) {
-            mb3.style.marginBottom = '0.5rem';
-        });
-    }
     
     // Modais de usuário - aplicar estilos quando abertos
     var createUserModal = document.getElementById('createUserModal');
