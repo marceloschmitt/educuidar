@@ -44,8 +44,17 @@ function resetForm() {
     document.getElementById('formAction').value = 'create';
     document.getElementById('formId').value = '';
     document.getElementById('modal_nome').value = '';
+    document.getElementById('modal_nome_social').value = '';
     document.getElementById('modal_email').value = '';
     document.getElementById('modal_telefone_celular').value = '';
+    document.getElementById('modal_data_nascimento').value = '';
+    document.getElementById('modal_numero_matricula').value = '';
+    document.getElementById('modal_endereco').value = '';
+    document.getElementById('modal_foto').value = '';
+    document.getElementById('foto_preview').innerHTML = '';
+    document.getElementById('foto_atual').innerHTML = '';
+    document.getElementById('remover_foto_container').style.display = 'none';
+    document.getElementById('remover_foto').checked = false;
     document.getElementById('modalTitle').textContent = 'Novo Aluno';
     document.getElementById('modalSubmitText').textContent = 'Criar';
 }
@@ -55,10 +64,39 @@ function editAluno(aluno) {
     document.getElementById('formAction').value = 'update';
     document.getElementById('formId').value = aluno.id || '';
     document.getElementById('modal_nome').value = aluno.nome || '';
+    document.getElementById('modal_nome_social').value = aluno.nome_social || '';
     document.getElementById('modal_email').value = aluno.email || '';
     document.getElementById('modal_telefone_celular').value = aluno.telefone_celular || '';
+    document.getElementById('modal_data_nascimento').value = aluno.data_nascimento || '';
+    document.getElementById('modal_numero_matricula').value = aluno.numero_matricula || '';
+    document.getElementById('modal_endereco').value = aluno.endereco || '';
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';
+    
+    // Handle photo preview
+    var fotoPreview = document.getElementById('foto_preview');
+    var fotoAtual = document.getElementById('foto_atual');
+    var removerFotoContainer = document.getElementById('remover_foto_container');
+    var removerFoto = document.getElementById('remover_foto');
+    
+    fotoPreview.innerHTML = '';
+    fotoAtual.innerHTML = '';
+    removerFotoContainer.style.display = 'none';
+    removerFoto.checked = false;
+    
+    if (aluno.foto) {
+        var img = document.createElement('img');
+        img.src = aluno.foto;
+        img.className = 'img-thumbnail';
+        img.style.maxWidth = '150px';
+        img.style.maxHeight = '150px';
+        fotoAtual.innerHTML = '<small class="text-muted">Foto atual:</small><br>';
+        fotoAtual.appendChild(img);
+        removerFotoContainer.style.display = 'block';
+    }
+    
+    // Reset file input
+    document.getElementById('modal_foto').value = '';
     
     var modal = new bootstrap.Modal(document.getElementById('modalAluno'));
     modal.show();
@@ -151,6 +189,55 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnImprimir) {
         btnImprimir.addEventListener('click', function() {
             window.print();
+        });
+    }
+    
+    // Preview de foto ao selecionar arquivo
+    var fotoInput = document.getElementById('modal_foto');
+    if (fotoInput) {
+        fotoInput.addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            var fotoPreview = document.getElementById('foto_preview');
+            var fotoAtual = document.getElementById('foto_atual');
+            
+            if (file) {
+                // Hide current photo when new file is selected
+                fotoAtual.innerHTML = '';
+                document.getElementById('remover_foto_container').style.display = 'none';
+                document.getElementById('remover_foto').checked = false;
+                
+                // Validate file type
+                var allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+                if (!allowedTypes.includes(file.type)) {
+                    alert('Tipo de arquivo não permitido. Use apenas imagens (JPG, PNG, GIF).');
+                    e.target.value = '';
+                    fotoPreview.innerHTML = '';
+                    return;
+                }
+                
+                // Validate file size (5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('Arquivo muito grande. Tamanho máximo: 5MB.');
+                    e.target.value = '';
+                    fotoPreview.innerHTML = '';
+                    return;
+                }
+                
+                // Show preview
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'img-thumbnail';
+                    img.style.maxWidth = '150px';
+                    img.style.maxHeight = '150px';
+                    fotoPreview.innerHTML = '<small class="text-muted">Nova foto:</small><br>';
+                    fotoPreview.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                fotoPreview.innerHTML = '';
+            }
         });
     }
     

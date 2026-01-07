@@ -178,12 +178,70 @@ class AlunosController extends Controller {
     }
     
     /**
+     * Handle photo upload
+     */
+    private function uploadFoto($aluno_id = null) {
+        if (!isset($_FILES['foto']) || $_FILES['foto']['error'] !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        
+        $upload_dir = __DIR__ . '/../uploads/fotos/';
+        if (!is_dir($upload_dir)) {
+            if (!mkdir($upload_dir, 0755, true)) {
+                error_log("Erro ao criar diretório de uploads: " . $upload_dir);
+                return null;
+            }
+        }
+        
+        $file = $_FILES['foto'];
+        $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        $max_size = 5 * 1024 * 1024; // 5MB
+        
+        if (!in_array($file['type'], $allowed_types)) {
+            $this->setError('Tipo de arquivo não permitido. Use apenas imagens (JPG, PNG, GIF).');
+            return null;
+        }
+        
+        if ($file['size'] > $max_size) {
+            $this->setError('Arquivo muito grande. Tamanho máximo: 5MB.');
+            return null;
+        }
+        
+        // Generate unique filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $filename = 'aluno_' . ($aluno_id ?? time()) . '_' . uniqid() . '.' . $extension;
+        $filepath = $upload_dir . $filename;
+        
+        if (move_uploaded_file($file['tmp_name'], $filepath)) {
+            return 'uploads/fotos/' . $filename;
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Delete old photo if exists
+     */
+    private function deleteFoto($foto_path) {
+        if (!empty($foto_path)) {
+            $filepath = __DIR__ . '/../' . $foto_path;
+            if (file_exists($filepath)) {
+                @unlink($filepath);
+            }
+        }
+    }
+    
+    /**
      * Create aluno
      */
     private function create() {
         $this->aluno->nome = $_POST['nome'] ?? '';
+        $this->aluno->nome_social = $_POST['nome_social'] ?? '';
         $this->aluno->email = $_POST['email'] ?? '';
         $this->aluno->telefone_celular = $_POST['telefone_celular'] ?? '';
+        $this->aluno->data_nascimento = $_POST['data_nascimento'] ?? '';
+        $this->aluno->numero_matricula = $_POST['numero_matricula'] ?? '';
+        $this->aluno->endereco = $_POST['endereco'] ?? '';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
@@ -192,10 +250,23 @@ class AlunosController extends Controller {
         }
         
         try {
+            // Upload foto antes de criar o aluno
+            $foto_path = $this->uploadFoto();
+            if ($foto_path === null && isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+                // Se houve erro no upload e não foi "arquivo não enviado", já foi setado o erro
+                $this->redirect('alunos.php');
+                return;
+            }
+            $this->aluno->foto = $foto_path;
+            
             if ($this->aluno->create()) {
                 $this->setSuccess('Aluno criado com sucesso!');
                 $this->redirect('alunos.php?success=created');
             } else {
+                // Se falhou ao criar, deletar foto enviada
+                if ($foto_path) {
+                    $this->deleteFoto($foto_path);
+                }
                 $errorInfo = $this->db->errorInfo();
                 $errorMsg = 'Erro ao criar aluno.';
                 if (!empty($errorInfo[2])) {
@@ -205,10 +276,18 @@ class AlunosController extends Controller {
                 $this->redirect('alunos.php');
             }
         } catch (PDOException $e) {
+            // Se falhou, deletar foto enviada
+            if (isset($foto_path) && $foto_path) {
+                $this->deleteFoto($foto_path);
+            }
             $this->setError('Erro ao criar aluno: ' . $e->getMessage());
             error_log("PDO Error ao criar aluno: " . $e->getMessage());
             $this->redirect('alunos.php');
         } catch (Exception $e) {
+            // Se falhou, deletar foto enviada
+            if (isset($foto_path) && $foto_path) {
+                $this->deleteFoto($foto_path);
+            }
             $this->setError('Erro ao criar aluno: ' . $e->getMessage());
             error_log("Error ao criar aluno: " . $e->getMessage());
             $this->redirect('alunos.php');
@@ -221,8 +300,12 @@ class AlunosController extends Controller {
     private function update() {
         $this->aluno->id = $_POST['id'];
         $this->aluno->nome = $_POST['nome'] ?? '';
+        $this->aluno->nome_social = $_POST['nome_social'] ?? '';
         $this->aluno->email = $_POST['email'] ?? '';
         $this->aluno->telefone_celular = $_POST['telefone_celular'] ?? '';
+        $this->aluno->data_nascimento = $_POST['data_nascimento'] ?? '';
+        $this->aluno->numero_matricula = $_POST['numero_matricula'] ?? '';
+        $this->aluno->endereco = $_POST['endereco'] ?? '';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
@@ -230,10 +313,46 @@ class AlunosController extends Controller {
             return;
         }
         
+        // Get current aluno data to check for existing photo
+        $aluno_atual = $this->aluno->getById($this->aluno->id);
+        $foto_antiga = $aluno_atual['foto'] ?? null;
+        
+        // Handle photo upload
+        $foto_path = $this->uploadFoto($this->aluno->id);
+        if ($foto_path === null && isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
+            // Se houve erro no upload e não foi "arquivo não enviado", já foi setado o erro
+            $this->redirect('alunos.php');
+            return;
+        }
+        
+        // Se nova foto foi enviada, usar ela; senão, manter a antiga
+        if ($foto_path) {
+            $this->aluno->foto = $foto_path;
+            // Delete old photo if exists
+            if ($foto_antiga) {
+                $this->deleteFoto($foto_antiga);
+            }
+        } else {
+            // Keep existing photo
+            $this->aluno->foto = $foto_antiga;
+        }
+        
+        // Check if user wants to delete photo
+        if (isset($_POST['remover_foto']) && $_POST['remover_foto'] == '1') {
+            if ($foto_antiga) {
+                $this->deleteFoto($foto_antiga);
+            }
+            $this->aluno->foto = null;
+        }
+        
         if ($this->aluno->update()) {
             $this->setSuccess('Aluno atualizado com sucesso!');
             $this->redirect('alunos.php?success=updated');
         } else {
+            // Se falhou ao atualizar, deletar nova foto se foi enviada
+            if ($foto_path && $foto_path !== $foto_antiga) {
+                $this->deleteFoto($foto_path);
+            }
             $this->setError('Erro ao atualizar aluno.');
             $this->redirect('alunos.php');
         }
@@ -244,6 +363,13 @@ class AlunosController extends Controller {
      */
     private function delete() {
         $this->aluno->id = $_POST['id'];
+        
+        // Get aluno data to delete photo
+        $aluno_data = $this->aluno->getById($this->aluno->id);
+        if ($aluno_data && !empty($aluno_data['foto'])) {
+            $this->deleteFoto($aluno_data['foto']);
+        }
+        
         if ($this->aluno->delete()) {
             $this->setSuccess('Aluno excluído com sucesso!');
             $this->redirect('alunos.php?success=deleted');

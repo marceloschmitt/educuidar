@@ -9,8 +9,13 @@ class Aluno {
 
     public $id;
     public $nome;
+    public $nome_social;
     public $email;
     public $telefone_celular;
+    public $data_nascimento;
+    public $numero_matricula;
+    public $endereco;
+    public $foto;
     public $created_at;
 
     public function __construct($db) {
@@ -19,16 +24,26 @@ class Aluno {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, email, telefone_celular) 
-                  VALUES (:nome, :email, :telefone_celular)";
+                  (nome, nome_social, email, telefone_celular, data_nascimento, numero_matricula, endereco, foto) 
+                  VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto)";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nome', $this->nome);
+        $nome_social = !empty($this->nome_social) ? $this->nome_social : null;
+        $stmt->bindParam(':nome_social', $nome_social);
         $email = !empty($this->email) ? $this->email : null;
         $stmt->bindParam(':email', $email);
         $telefone = !empty($this->telefone_celular) ? $this->telefone_celular : null;
         $stmt->bindParam(':telefone_celular', $telefone);
+        $data_nascimento = !empty($this->data_nascimento) ? $this->data_nascimento : null;
+        $stmt->bindParam(':data_nascimento', $data_nascimento);
+        $numero_matricula = !empty($this->numero_matricula) ? $this->numero_matricula : null;
+        $stmt->bindParam(':numero_matricula', $numero_matricula);
+        $endereco = !empty($this->endereco) ? $this->endereco : null;
+        $stmt->bindParam(':endereco', $endereco);
+        $foto = !empty($this->foto) ? $this->foto : null;
+        $stmt->bindParam(':foto', $foto);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -60,19 +75,34 @@ class Aluno {
 
     public function update() {
         $query = "UPDATE " . $this->table . " 
-                  SET nome = :nome, 
+                  SET nome = :nome,
+                      nome_social = :nome_social,
                       email = :email,
-                      telefone_celular = :telefone_celular
+                      telefone_celular = :telefone_celular,
+                      data_nascimento = :data_nascimento,
+                      numero_matricula = :numero_matricula,
+                      endereco = :endereco,
+                      foto = :foto
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':nome', $this->nome);
+        $nome_social = !empty($this->nome_social) ? $this->nome_social : null;
+        $stmt->bindParam(':nome_social', $nome_social);
         $email = !empty($this->email) ? $this->email : null;
         $stmt->bindParam(':email', $email);
         $telefone = !empty($this->telefone_celular) ? $this->telefone_celular : null;
         $stmt->bindParam(':telefone_celular', $telefone);
+        $data_nascimento = !empty($this->data_nascimento) ? $this->data_nascimento : null;
+        $stmt->bindParam(':data_nascimento', $data_nascimento);
+        $numero_matricula = !empty($this->numero_matricula) ? $this->numero_matricula : null;
+        $stmt->bindParam(':numero_matricula', $numero_matricula);
+        $endereco = !empty($this->endereco) ? $this->endereco : null;
+        $stmt->bindParam(':endereco', $endereco);
+        $foto = !empty($this->foto) ? $this->foto : null;
+        $stmt->bindParam(':foto', $foto);
 
         if ($stmt->execute()) {
             return true;

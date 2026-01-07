@@ -83,6 +83,7 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>Foto</th>
                                 <th>Nome</th>
                                 <th>E-mail</th>
                                 <th>Telefone</th>
@@ -95,7 +96,25 @@
                         <tbody>
                             <?php foreach ($alunos as $a): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($a['nome']); ?></td>
+                                <td>
+                                    <?php if (!empty($a['foto'])): ?>
+                                        <img src="<?php echo htmlspecialchars($a['foto']); ?>" 
+                                             alt="Foto de <?php echo htmlspecialchars($a['nome']); ?>" 
+                                             class="img-thumbnail" 
+                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center" 
+                                             style="width: 50px; height: 50px;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars($a['nome']); ?>
+                                    <?php if (!empty($a['nome_social'])): ?>
+                                        <br><small class="text-muted">(<?php echo htmlspecialchars($a['nome_social']); ?>)</small>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($a['email'] ?? '-'); ?></td>
                                 <td><?php echo htmlspecialchars($a['telefone_celular'] ?? '-'); ?></td>
                                 <td>
@@ -191,25 +210,72 @@
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="" id="formAluno">
+            <form method="POST" action="" id="formAluno" enctype="multipart/form-data">
                 <div class="modal-body">
                     <input type="hidden" name="action" id="formAction" value="create">
                     <input type="hidden" name="id" id="formId" value="">
                     
-                    <div class="mb-3">
-                        <label for="modal_nome" class="form-label">Nome <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="modal_nome" name="nome" required>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="modal_nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="modal_nome" name="nome" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="modal_foto" class="form-label">Foto</label>
+                                <input type="file" class="form-control" id="modal_foto" name="foto" accept="image/jpeg,image/jpg,image/png,image/gif">
+                                <small class="text-muted">Máximo 5MB (JPG, PNG, GIF)</small>
+                                <div id="foto_preview" class="mt-2"></div>
+                                <div id="foto_atual" class="mt-2"></div>
+                                <div id="remover_foto_container" class="mt-2" style="display: none;">
+                                    <input type="checkbox" id="remover_foto" name="remover_foto" value="1">
+                                    <label for="remover_foto" class="form-label">Remover foto atual</label>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="modal_email" class="form-label">E-mail</label>
-                        <input type="email" class="form-control" id="modal_email" name="email">
+                        <label for="modal_nome_social" class="form-label">Nome Social</label>
+                        <input type="text" class="form-control" id="modal_nome_social" name="nome_social">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_email" class="form-label">E-mail</label>
+                                <input type="email" class="form-control" id="modal_email" name="email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_telefone_celular" class="form-label">Telefone Celular</label>
+                                <input type="text" class="form-control" id="modal_telefone_celular" name="telefone_celular" 
+                                       placeholder="(51) 99999-9999">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_data_nascimento" class="form-label">Data de Nascimento</label>
+                                <input type="date" class="form-control" id="modal_data_nascimento" name="data_nascimento">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_numero_matricula" class="form-label">Número de Matrícula</label>
+                                <input type="text" class="form-control" id="modal_numero_matricula" name="numero_matricula">
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="modal_telefone_celular" class="form-label">Telefone Celular</label>
-                        <input type="text" class="form-control" id="modal_telefone_celular" name="telefone_celular" 
-                               placeholder="(51) 99999-9999">
+                        <label for="modal_endereco" class="form-label">Endereço</label>
+                        <textarea class="form-control" id="modal_endereco" name="endereco" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
