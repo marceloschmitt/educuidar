@@ -4,11 +4,8 @@
  */
 
 class UsuariosController extends Controller {
-    private $user;
-    
     public function __construct() {
         parent::__construct();
-        $this->user = new User($this->db);
     }
     
     /**
