@@ -156,7 +156,7 @@ class User {
     public function getAll() {
         $query = "SELECT u.id, u.username, u.email, u.full_name, u.user_type, u.auth_type, u.created_at
                   FROM " . $this->table . " u
-                  ORDER BY u.created_at DESC";
+                  ORDER BY u.full_name ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();

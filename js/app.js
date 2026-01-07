@@ -291,6 +291,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Inicializar campos quando o modal for aberto
         createUserModal.addEventListener('show.bs.modal', function() {
+            // Limpar todos os campos antes de abrir o modal
+            var form = document.getElementById('createUserForm');
+            if (form) {
+                form.reset();
+                // Garantir que os campos estejam vazios
+                var usernameInput = document.getElementById('username');
+                var emailInput = document.getElementById('email');
+                var passwordInput = document.getElementById('password');
+                var fullNameInput = document.getElementById('full_name');
+                if (usernameInput) usernameInput.value = '';
+                if (emailInput) emailInput.value = '';
+                if (passwordInput) passwordInput.value = '';
+                if (fullNameInput) fullNameInput.value = '';
+            }
             toggleFields();
         });
     }

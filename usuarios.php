@@ -206,18 +206,18 @@ $usuarios = $user->getAll();
                 <h5 class="modal-title" id="createUserModalLabel"><i class="bi bi-person-plus"></i> Novo Usuário</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form method="POST" action="" id="createUserForm">
+            <form method="POST" action="" id="createUserForm" autocomplete="off">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="create">
                     
                     <div class="mb-3">
                         <label for="username" class="form-label">Usuário <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="username" name="username" required>
+                        <input type="text" class="form-control" id="username" name="username" required autocomplete="off" value="">
                     </div>
                     
                     <div class="mb-3">
                         <label for="email" class="form-label">E-mail <span class="text-danger">*</span></label>
-                        <input type="email" class="form-control" id="email" name="email" required>
+                        <input type="email" class="form-control" id="email" name="email" required autocomplete="off" value="">
                     </div>
                     
                     <div class="mb-3">
@@ -243,13 +243,13 @@ $usuarios = $user->getAll();
                     
                     <div class="mb-3" id="password_field">
                         <label for="password" class="form-label">Senha <span id="password_required" class="text-danger">*</span></label>
-                        <input type="password" class="form-control" id="password" name="password">
+                        <input type="password" class="form-control" id="password" name="password" autocomplete="new-password" value="">
                         <small class="text-muted" id="password_help"></small>
                     </div>
                     
                     <div class="mb-3">
                         <label for="full_name" class="form-label">Nome Completo <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="full_name" name="full_name" required>
+                        <input type="text" class="form-control" id="full_name" name="full_name" required autocomplete="off" value="">
                     </div>
                 </div>
                 <div class="modal-footer">
