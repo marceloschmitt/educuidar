@@ -614,7 +614,21 @@ function editUser(user) {
     document.getElementById('edit_new_password').value = '';
     toggleEditPasswordField();
     
-    var modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+    var modalElement = document.getElementById('editUserModal');
+    var modal = new bootstrap.Modal(modalElement);
+    
+    // Aplicar estilos antes de abrir o modal
+    if (modalElement && typeof applyModalStyles === 'function') {
+        applyModalStyles(modalElement);
+    }
+    
+    // Aplicar estilos novamente após o modal ser totalmente mostrado
+    modalElement.addEventListener('shown.bs.modal', function() {
+        if (typeof applyModalStyles === 'function') {
+            applyModalStyles(this);
+        }
+    }, { once: true }); // Usar { once: true } para executar apenas uma vez
+    
     modal.show();
 }
 
