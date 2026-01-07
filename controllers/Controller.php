@@ -36,11 +36,11 @@ class Controller {
     }
     
     /**
-     * Verifica se o usuário tem permissão (admin, nivel1 ou nivel2)
+     * Verifica se o usuário tem permissão (admin, nivel1, nivel2 ou assistencia_estudantil)
      */
     protected function requirePermission() {
         $this->requireLogin();
-        if (!$this->user->isAdmin() && !$this->user->isNivel1() && !$this->user->isNivel2()) {
+        if (!$this->user->isAdmin() && !$this->user->isNivel1() && !$this->user->isNivel2() && !$this->user->isAssistenciaEstudantil()) {
             header('Location: index.php');
             exit;
         }

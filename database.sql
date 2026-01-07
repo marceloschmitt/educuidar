@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS alunos (
     INDEX idx_nome_email (nome, email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Users table (only for system users: admin, nivel1, nivel2)
+-- Users table (only for system users: admin, nivel1, nivel2, assistencia_estudantil)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NULL,
     full_name VARCHAR(200) NOT NULL,
-    user_type ENUM('administrador', 'nivel1', 'nivel2') NOT NULL,
+    user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil') NOT NULL,
     auth_type ENUM('local', 'ldap') NOT NULL DEFAULT 'local',
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

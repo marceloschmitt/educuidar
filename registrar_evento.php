@@ -12,8 +12,8 @@ $turma = new Turma($db);
 $curso = new Curso($db);
 $configuracao = new Configuracao($db);
 
-// Only admin, nivel1 and nivel2 can register events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2()) {
+// Only admin, nivel1, nivel2 and assistencia_estudantil can register events
+if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
     exit;
 }
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             } else {
                 $_SESSION['error'] = 'Erro ao atualizar evento.';
             }
-        } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+        } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
                 $_SESSION['success'] = 'Evento atualizado com sucesso!';
@@ -72,8 +72,8 @@ if (isset($_GET['delete'])) {
             header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
             exit;
         }
-    } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
-        // Nivel1 e Nivel2 podem deletar apenas seus próprios eventos criados há menos de 1 hora
+    } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+        // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             $_SESSION['success'] = 'Evento excluído com sucesso!';
             header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
@@ -284,7 +284,7 @@ if ($aluno_id) {
                                         // Admin pode editar e deletar qualquer evento
                                         $can_edit = true;
                                         $can_delete = true;
-                                    } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+                                    } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
                                         // Nivel1 e Nivel2 só podem editar/deletar seus próprios eventos criados há menos de 1 hora
                                         if ($ev['registrado_por'] == $user_id) {
                                             $created_at = strtotime($ev['created_at'] ?? '');

@@ -155,9 +155,9 @@ class AlunosController extends Controller {
      * Handle POST requests
      */
     private function handlePost() {
-        // Only admin can create/update/delete alunos
-        if (!$this->user->isAdmin()) {
-            $this->setError('Apenas administradores podem criar, editar ou excluir alunos.');
+        // Only admin and assistencia_estudantil can create/update/delete alunos
+        if (!$this->user->isAdmin() && !$this->user->isAssistenciaEstudantil()) {
+            $this->setError('Apenas administradores e assistência estudantil podem criar, editar ou excluir alunos.');
             $this->redirect('alunos.php');
             return;
         }

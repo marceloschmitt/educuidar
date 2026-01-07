@@ -158,13 +158,15 @@ $usuarios = $user->getAll();
                                     <span class="badge bg-<?php 
                                         echo $usr['user_type'] === 'administrador' ? 'danger' : 
                                             ($usr['user_type'] === 'nivel1' ? 'primary' : 
-                                            ($usr['user_type'] === 'nivel2' ? 'info' : 'secondary')); 
+                                            ($usr['user_type'] === 'nivel2' ? 'info' : 
+                                            ($usr['user_type'] === 'assistencia_estudantil' ? 'success' : 'secondary'))); 
                                     ?>">
                                         <?php 
                                         $tipo_nome = [
                                             'administrador' => 'Administrador',
                                             'nivel1' => 'Nível 1',
-                                            'nivel2' => 'Nível 2'
+                                            'nivel2' => 'Nível 2',
+                                            'assistencia_estudantil' => 'Assistência Estudantil'
                                         ];
                                         echo $tipo_nome[$usr['user_type']] ?? ucfirst($usr['user_type']); 
                                         ?>
@@ -225,6 +227,7 @@ $usuarios = $user->getAll();
                             <option value="administrador">Administrador</option>
                             <option value="nivel1">Usuário Nível 1</option>
                             <option value="nivel2">Usuário Nível 2</option>
+                            <option value="assistencia_estudantil">Assistência Estudantil</option>
                         </select>
                     </div>
                     
@@ -290,6 +293,7 @@ $usuarios = $user->getAll();
                             <option value="administrador">Administrador</option>
                             <option value="nivel1">Usuário Nível 1</option>
                             <option value="nivel2">Usuário Nível 2</option>
+                            <option value="assistencia_estudantil">Assistência Estudantil</option>
                         </select>
                     </div>
                     

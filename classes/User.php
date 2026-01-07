@@ -100,6 +100,10 @@ class User {
         return $this->getUserType() === 'nivel2';
     }
 
+    public function isAssistenciaEstudantil() {
+        return $this->getUserType() === 'assistencia_estudantil';
+    }
+
     public function create() {
         // Set default auth_type if not provided
         if (empty($this->auth_type)) {
