@@ -98,21 +98,38 @@ function editAluno(aluno) {
     // Reset file input
     document.getElementById('modal_foto').value = '';
     
+    console.log('DEBUG: editAluno - antes de abrir modal');
+    console.log('DEBUG: applyModalStyles existe?', typeof applyModalStyles);
+    
     var modalElement = document.getElementById('modalAluno');
+    console.log('DEBUG: modalElement encontrado?', modalElement);
+    
+    if (!modalElement) {
+        console.error('DEBUG: modalElement não encontrado!');
+        return;
+    }
+    
     var modal = new bootstrap.Modal(modalElement);
     
     // Aplicar estilos antes de abrir o modal
-    if (modalElement && typeof applyModalStyles === 'function') {
+    console.log('DEBUG: Tentando aplicar estilos antes de abrir');
+    if (typeof applyModalStyles === 'function') {
+        console.log('DEBUG: Chamando applyModalStyles');
         applyModalStyles(modalElement);
+    } else {
+        console.error('DEBUG: applyModalStyles não é uma função!');
     }
     
     // Aplicar estilos novamente após o modal ser totalmente mostrado
     modalElement.addEventListener('shown.bs.modal', function() {
+        console.log('DEBUG: shown.bs.modal disparado');
         if (typeof applyModalStyles === 'function') {
+            console.log('DEBUG: Chamando applyModalStyles no shown.bs.modal');
             applyModalStyles(this);
         }
     }, { once: true }); // Usar { once: true } para executar apenas uma vez
     
+    console.log('DEBUG: Abrindo modal');
     modal.show();
 }
 
@@ -518,13 +535,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Modal de aluno - aplicar estilos quando aberto
     var modalAluno = document.getElementById('modalAluno');
+    console.log('DEBUG: DOMContentLoaded - modalAluno encontrado?', modalAluno);
     if (modalAluno) {
+        console.log('DEBUG: Adicionando event listeners ao modalAluno');
         modalAluno.addEventListener('show.bs.modal', function() {
+            console.log('DEBUG: show.bs.modal disparado para modalAluno');
             applyModalStyles(this);
         });
         modalAluno.addEventListener('shown.bs.modal', function() {
+            console.log('DEBUG: shown.bs.modal disparado para modalAluno');
             applyModalStyles(this);
         });
+    } else {
+        console.error('DEBUG: modalAluno NÃO encontrado no DOMContentLoaded!');
     }
     
     // Formulários de confirmação
