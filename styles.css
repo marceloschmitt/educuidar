@@ -100,59 +100,55 @@ body {
     padding: 0.4rem 0.8rem;
 }
 
-/* Modal de aluno - garantir scroll */
-#modalAluno.modal .modal-dialog.modal-dialog-scrollable {
+/* Modal de aluno - garantir scroll (mesmo padrão dos modais de usuário) */
+#modalAluno .modal-dialog.modal-dialog-scrollable {
     max-height: 90vh !important;
     margin: 1rem auto;
     display: flex !important;
     flex-direction: column;
-    height: auto;
 }
 
-#modalAluno.modal .modal-content {
+#modalAluno .modal-content {
     max-height: 90vh !important;
     display: flex !important;
     flex-direction: column;
     overflow: hidden;
-    height: auto;
 }
 
-#modalAluno.modal .modal-header {
+#modalAluno .modal-header {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
 }
 
-#modalAluno.modal form {
+#modalAluno #formAluno {
     display: flex !important;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
-    height: 100%;
 }
 
-#modalAluno.modal .modal-body {
+#modalAluno #formAluno .modal-body {
+    font-size: 0.875rem;
     overflow-y: auto !important;
     overflow-x: hidden !important;
     flex: 1 1 auto !important;
     min-height: 0 !important;
-    max-height: 100% !important;
+    max-height: calc(90vh - 140px) !important;
     padding: 0.75rem 1rem;
     -webkit-overflow-scrolling: touch;
 }
 
 /* Garantir que o scroll funcione mesmo com zoom */
-#modalAluno.modal .modal-dialog-scrollable .modal-body {
+#modalAluno .modal-dialog-scrollable #formAluno .modal-body {
     overflow-y: auto !important;
     overflow-x: hidden !important;
-    max-height: 100% !important;
-    height: auto !important;
+    max-height: calc(90vh - 140px) !important;
 }
 
-#modalAluno.modal .modal-footer {
+#modalAluno #formAluno .modal-footer {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
-    margin-top: 0;
 }
 
 /* Password field with eye icon */
