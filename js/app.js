@@ -1,5 +1,4 @@
 // JavaScript para Sistema de Controle IFRS
-console.log('DEBUG: app.js carregado!');
 
 // Função para editar evento
 function editEvento(evento) {
@@ -99,38 +98,25 @@ function editAluno(aluno) {
     // Reset file input
     document.getElementById('modal_foto').value = '';
     
-    console.log('DEBUG: editAluno - antes de abrir modal');
-    console.log('DEBUG: applyModalStyles existe?', typeof applyModalStyles);
-    
     var modalElement = document.getElementById('modalAluno');
-    console.log('DEBUG: modalElement encontrado?', modalElement);
-    
     if (!modalElement) {
-        console.error('DEBUG: modalElement não encontrado!');
         return;
     }
     
     var modal = new bootstrap.Modal(modalElement);
     
-    // Aplicar estilos antes de abrir o modal
-    console.log('DEBUG: Tentando aplicar estilos antes de abrir');
+    // Aplicar estilos antes de abrir o modal (se a função existir)
     if (typeof applyModalStyles === 'function') {
-        console.log('DEBUG: Chamando applyModalStyles');
         applyModalStyles(modalElement);
-    } else {
-        console.error('DEBUG: applyModalStyles não é uma função!');
     }
     
     // Aplicar estilos novamente após o modal ser totalmente mostrado
     modalElement.addEventListener('shown.bs.modal', function() {
-        console.log('DEBUG: shown.bs.modal disparado');
         if (typeof applyModalStyles === 'function') {
-            console.log('DEBUG: Chamando applyModalStyles no shown.bs.modal');
             applyModalStyles(this);
         }
-    }, { once: true }); // Usar { once: true } para executar apenas uma vez
+    }, { once: true });
     
-    console.log('DEBUG: Abrindo modal');
     modal.show();
 }
 
@@ -176,24 +162,15 @@ function initPasswordToggles() {
 
 // Função para aplicar estilos de scroll e fonte em modais (deve estar no escopo global)
 function applyModalStyles(modal) {
-    if (!modal) {
-        console.log('DEBUG: applyModalStyles - modal é null');
-        return;
-    }
-    
-    console.log('DEBUG: applyModalStyles chamada para modal:', modal.id || 'sem id');
+    if (!modal) return;
     
     var modalBody = modal.querySelector('.modal-body');
     if (modalBody) {
-        console.log('DEBUG: Aplicando estilos ao modalBody');
         modalBody.style.setProperty('overflow-y', 'auto', 'important');
         modalBody.style.setProperty('max-height', 'calc(90vh - 140px)', 'important');
         modalBody.style.setProperty('flex', '1 1 auto', 'important');
         modalBody.style.setProperty('min-height', '0', 'important');
         modalBody.style.setProperty('font-size', '0.75rem', 'important');
-        console.log('DEBUG: fontSize aplicado:', modalBody.style.fontSize);
-    } else {
-        console.log('DEBUG: modalBody não encontrado');
     }
     
     var modalContent = modal.querySelector('.modal-content');
@@ -215,7 +192,6 @@ function applyModalStyles(modal) {
     
     // Aplicar fontes menores com !important
     var labels = modal.querySelectorAll('.form-label');
-    console.log('DEBUG: Labels encontrados:', labels.length);
     labels.forEach(function(label) {
         label.style.setProperty('font-size', '0.75rem', 'important');
         label.style.setProperty('margin-bottom', '0.25rem', 'important');
@@ -223,7 +199,6 @@ function applyModalStyles(modal) {
     });
     
     var inputs = modal.querySelectorAll('.form-control, .form-select');
-    console.log('DEBUG: Inputs encontrados:', inputs.length);
     inputs.forEach(function(input) {
         input.style.setProperty('font-size', '0.75rem', 'important');
         input.style.setProperty('padding', '0.3rem 0.6rem', 'important');
@@ -240,13 +215,10 @@ function applyModalStyles(modal) {
     mb3s.forEach(function(mb3) {
         mb3.style.setProperty('margin-bottom', '0.5rem', 'important');
     });
-    
-    console.log('DEBUG: applyModalStyles concluída');
 }
 
 // Event listeners quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DEBUG: DOMContentLoaded executado!');
     // Initialize password toggles
     initPasswordToggles();
     // Filtro de curso - limpar turma quando curso mudar
@@ -537,19 +509,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Modal de aluno - aplicar estilos quando aberto
     var modalAluno = document.getElementById('modalAluno');
-    console.log('DEBUG: DOMContentLoaded - modalAluno encontrado?', modalAluno);
     if (modalAluno) {
-        console.log('DEBUG: Adicionando event listeners ao modalAluno');
         modalAluno.addEventListener('show.bs.modal', function() {
-            console.log('DEBUG: show.bs.modal disparado para modalAluno');
             applyModalStyles(this);
         });
         modalAluno.addEventListener('shown.bs.modal', function() {
-            console.log('DEBUG: shown.bs.modal disparado para modalAluno');
             applyModalStyles(this);
         });
-    } else {
-        console.error('DEBUG: modalAluno NÃO encontrado no DOMContentLoaded!');
     }
     
     // Formulários de confirmação

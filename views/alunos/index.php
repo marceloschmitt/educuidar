@@ -290,18 +290,12 @@
 </div>
 
 <script>
-// Garantir que os estilos sejam aplicados ao modal de aluno
-console.log('DEBUG: Script inline na view de alunos carregado!');
-
-// Função para aplicar estilos (mesma do app.js)
+// Garantir que os estilos sejam aplicados ao modal de aluno (mesmo esquema dos modais de usuário)
 function applyModalStylesAluno(modal) {
     if (!modal) return;
     
-    console.log('DEBUG: applyModalStylesAluno chamada para modal:', modal.id || 'sem id');
-    
     var modalBody = modal.querySelector('.modal-body');
     if (modalBody) {
-        console.log('DEBUG: Aplicando estilos ao modalBody');
         modalBody.style.setProperty('overflow-y', 'auto', 'important');
         modalBody.style.setProperty('max-height', 'calc(90vh - 140px)', 'important');
         modalBody.style.setProperty('flex', '1 1 auto', 'important');
@@ -328,7 +322,6 @@ function applyModalStylesAluno(modal) {
     
     // Aplicar fontes menores
     var labels = modal.querySelectorAll('.form-label');
-    console.log('DEBUG: Labels encontrados:', labels.length);
     labels.forEach(function(label) {
         label.style.setProperty('font-size', '0.75rem', 'important');
         label.style.setProperty('margin-bottom', '0.25rem', 'important');
@@ -336,7 +329,6 @@ function applyModalStylesAluno(modal) {
     });
     
     var inputs = modal.querySelectorAll('.form-control, .form-select');
-    console.log('DEBUG: Inputs encontrados:', inputs.length);
     inputs.forEach(function(input) {
         input.style.setProperty('font-size', '0.75rem', 'important');
         input.style.setProperty('padding', '0.3rem 0.6rem', 'important');
@@ -353,25 +345,17 @@ function applyModalStylesAluno(modal) {
     mb3s.forEach(function(mb3) {
         mb3.style.setProperty('margin-bottom', '0.5rem', 'important');
     });
-    
-    console.log('DEBUG: applyModalStylesAluno concluída');
 }
 
 // Aplicar quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DEBUG: DOMContentLoaded na view de alunos executado!');
-    
     var modalAluno = document.getElementById('modalAluno');
-    console.log('DEBUG: modalAluno encontrado?', modalAluno);
     
     if (modalAluno) {
-        console.log('DEBUG: Adicionando event listeners ao modalAluno');
         modalAluno.addEventListener('show.bs.modal', function() {
-            console.log('DEBUG: show.bs.modal disparado');
             applyModalStylesAluno(this);
         });
         modalAluno.addEventListener('shown.bs.modal', function() {
-            console.log('DEBUG: shown.bs.modal disparado');
             applyModalStylesAluno(this);
         });
     }
@@ -380,13 +364,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof editAluno === 'function') {
         var originalEditAluno = editAluno;
         window.editAluno = function(aluno) {
-            console.log('DEBUG: editAluno interceptado');
             originalEditAluno(aluno);
             // Aplicar estilos após um pequeno delay para garantir que o modal foi aberto
             setTimeout(function() {
                 var modalElement = document.getElementById('modalAluno');
                 if (modalElement) {
-                    console.log('DEBUG: Aplicando estilos via editAluno interceptado');
                     applyModalStylesAluno(modalElement);
                 }
             }, 100);
