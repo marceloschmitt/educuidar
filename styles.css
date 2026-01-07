@@ -100,17 +100,17 @@ body {
     padding: 0.4rem 0.8rem;
 }
 
-/* Modal de aluno - garantir scroll (mesmo padrão dos modais de usuário) */
-#modalAluno .modal-dialog.modal-dialog-scrollable {
-    max-height: 90vh !important;
+/* Modal de aluno - mesmo esquema dos modais de usuário */
+#modalAluno .modal-dialog {
+    max-height: 90vh;
     margin: 1rem auto;
-    display: flex !important;
+    display: flex;
     flex-direction: column;
 }
 
 #modalAluno .modal-content {
-    max-height: 90vh !important;
-    display: flex !important;
+    max-height: 90vh;
+    display: flex;
     flex-direction: column;
     overflow: hidden;
 }
@@ -120,35 +120,54 @@ body {
     padding: 0.75rem 1rem;
 }
 
-#modalAluno #formAluno {
-    display: flex !important;
-    flex-direction: column;
+#modalAluno .modal-body {
+    font-size: 0.75rem;
+    overflow-y: auto !important;
+    overflow-x: hidden;
     flex: 1 1 auto;
     min-height: 0;
-    overflow: hidden;
-}
-
-#modalAluno #formAluno .modal-body {
-    font-size: 0.875rem;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    flex: 1 1 auto !important;
-    min-height: 0 !important;
-    max-height: calc(90vh - 140px) !important;
+    max-height: calc(90vh - 140px);
     padding: 0.75rem 1rem;
     -webkit-overflow-scrolling: touch;
 }
 
 /* Garantir que o scroll funcione mesmo com zoom */
-#modalAluno .modal-dialog-scrollable #formAluno .modal-body {
+#modalAluno .modal-dialog-scrollable .modal-body {
     overflow-y: auto !important;
-    overflow-x: hidden !important;
     max-height: calc(90vh - 140px) !important;
 }
 
-#modalAluno #formAluno .modal-footer {
+#modalAluno .form-label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+#modalAluno .form-control,
+#modalAluno .form-select {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+    line-height: 1.3;
+    height: calc(1.3em + 0.6rem + 2px);
+}
+
+#modalAluno .form-text,
+#modalAluno small {
+    font-size: 0.7rem;
+}
+
+#modalAluno .mb-3 {
+    margin-bottom: 0.5rem !important;
+}
+
+#modalAluno .modal-footer {
     flex-shrink: 0;
     padding: 0.75rem 1rem;
+}
+
+#modalAluno .modal-footer .btn {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
 }
 
 /* Password field with eye icon */
