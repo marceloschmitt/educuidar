@@ -61,7 +61,15 @@ function resetForm() {
     document.getElementById('modal_outras_observacoes').value = '';
     document.getElementById('modal_foto').value = '';
     document.getElementById('foto_preview').innerHTML = '';
-    document.getElementById('foto_atual').innerHTML = '';
+    var fotoAtual = document.getElementById('foto_atual');
+    fotoAtual.innerHTML = '';
+    // Mostrar imagem padrão quando criar novo aluno
+    var defaultDiv = document.createElement('div');
+    defaultDiv.className = 'bg-secondary text-white rounded d-flex align-items-center justify-content-center';
+    defaultDiv.style.width = '150px';
+    defaultDiv.style.height = '150px';
+    defaultDiv.innerHTML = '<i class="bi bi-person" style="font-size: 3rem;"></i>';
+    fotoAtual.appendChild(defaultDiv);
     document.getElementById('remover_foto_container').style.display = 'none';
     document.getElementById('remover_foto').checked = false;
     document.getElementById('modalTitle').textContent = 'Novo Aluno';
@@ -111,6 +119,15 @@ function editAluno(aluno) {
         fotoAtual.innerHTML = '<small class="text-muted">Foto atual:</small><br>';
         fotoAtual.appendChild(img);
         removerFotoContainer.style.display = 'block';
+    } else {
+        // Mostrar imagem padrão quando não há foto (similar à lista)
+        var defaultDiv = document.createElement('div');
+        defaultDiv.className = 'bg-secondary text-white rounded d-flex align-items-center justify-content-center';
+        defaultDiv.style.width = '150px';
+        defaultDiv.style.height = '150px';
+        defaultDiv.innerHTML = '<i class="bi bi-person" style="font-size: 3rem;"></i>';
+        fotoAtual.innerHTML = '<small class="text-muted">Foto atual:</small><br>';
+        fotoAtual.appendChild(defaultDiv);
     }
     
     // Reset file input
