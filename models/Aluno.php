@@ -86,7 +86,7 @@ class Aluno {
 
     public function getAll() {
         $query = "SELECT a.* FROM " . $this->table . " a
-                  ORDER BY a.nome ASC";
+                  ORDER BY COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
@@ -240,7 +240,7 @@ class Aluno {
             $params[':curso_id'] = $curso_id;
         }
         
-        $query .= " ORDER BY c.nome ASC, t.ano_curso ASC, a.nome ASC";
+        $query .= " ORDER BY c.nome ASC, t.ano_curso ASC, COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
 
         $stmt = $this->conn->prepare($query);
         foreach ($params as $key => $value) {

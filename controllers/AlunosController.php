@@ -98,13 +98,24 @@ class AlunosController extends Controller {
         if ($filtro_nome) {
             $filtro_nome_lower = mb_strtolower($filtro_nome, 'UTF-8');
             $alunos = array_filter($alunos, function($a) use ($filtro_nome_lower) {
-                $nome_lower = mb_strtolower($a['nome'], 'UTF-8');
-                return mb_strpos($nome_lower, $filtro_nome_lower) !== false;
+                $nome_lower = mb_strtolower($a['nome'] ?? '', 'UTF-8');
+                $nome_social_lower = mb_strtolower($a['nome_social'] ?? '', 'UTF-8');
+                $nome_exibicao_lower = !empty($a['nome_social']) ? $nome_social_lower : $nome_lower;
+                return mb_strpos($nome_lower, $filtro_nome_lower) !== false || 
+                       mb_strpos($nome_social_lower, $filtro_nome_lower) !== false ||
+                       mb_strpos($nome_exibicao_lower, $filtro_nome_lower) !== false;
             });
         }
         
         // Re-index array after filtering
         $alunos = array_values($alunos);
+        
+        // Sort by nome_social if exists, otherwise by nome
+        usort($alunos, function($a, $b) {
+            $nome_a = !empty($a['nome_social']) ? $a['nome_social'] : $a['nome'];
+            $nome_b = !empty($b['nome_social']) ? $b['nome_social'] : $b['nome'];
+            return strcasecmp($nome_a, $nome_b);
+        });
         
         // Get aluno for editing if requested
         $aluno_edit = null;

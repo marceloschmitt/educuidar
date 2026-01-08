@@ -174,7 +174,7 @@ if ($aluno_id) {
         <div class="card mb-3 no-print">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-person"></i> <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?>
+                    <i class="bi bi-person"></i> <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
                 <a href="alunos.php" class="btn btn-sm btn-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar para Alunos
@@ -256,7 +256,7 @@ if ($aluno_id) {
                         <?php endif; ?>
                     </div>
                     <div class="col-md-10">
-                        <h4 class="mb-2">Eventos de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?></h4>
+                        <h4 class="mb-2">Eventos de <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?></h4>
                         <p class="mb-1"><strong>Turma:</strong> <?php echo htmlspecialchars($turma_corrente['curso_nome'] ?? ''); ?> - <?php echo htmlspecialchars($turma_corrente['ano_curso'] ?? ''); ?>º Ano - Ano <?php echo htmlspecialchars($turma_corrente['ano_civil'] ?? ''); ?></p>
                         <?php if (!empty($aluno_data['email'])): ?>
                         <p class="mb-1"><strong>E-mail:</strong> <?php echo htmlspecialchars($aluno_data['email']); ?></p>

@@ -110,9 +110,10 @@
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php echo htmlspecialchars($a['nome']); ?>
                                     <?php if (!empty($a['nome_social'])): ?>
-                                        <br><small class="text-muted">(<?php echo htmlspecialchars($a['nome_social']); ?>)</small>
+                                        <?php echo htmlspecialchars($a['nome_social']); ?>
+                                    <?php else: ?>
+                                        <?php echo htmlspecialchars($a['nome']); ?>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($a['email'] ?? '-'); ?></td>
