@@ -358,11 +358,7 @@ if ($aluno_id) {
 
         <!-- Menu contextual para ações do evento (dinâmico) -->
         <div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
-            <button class="dropdown-item" type="button" id="contextMenuVerObservacoes">
-                <i class="bi bi-info-circle text-info"></i> Ver Observações
-            </button>
             <div id="contextMenuEventoActions" style="display: none;">
-                <hr class="dropdown-divider">
                 <button class="dropdown-item" type="button" id="contextMenuEditarEvento">
                     <i class="bi bi-pencil text-primary"></i> Editar
                 </button>

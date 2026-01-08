@@ -726,10 +726,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Preencher dados do evento no menu
             var btnVerObservacoes = document.getElementById('contextMenuVerObservacoes');
-            btnVerObservacoes.onclick = function() {
-                showObservacoes(eventoData);
-                hideEventoContextMenu();
-            };
+            if (btnVerObservacoes) {
+                btnVerObservacoes.onclick = function() {
+                    showObservacoes(eventoData);
+                    hideEventoContextMenu();
+                };
+            }
             
             // Mostrar ações de editar/excluir se tiver permissão
             var eventoActions = document.getElementById('contextMenuEventoActions');
