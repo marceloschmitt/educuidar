@@ -79,6 +79,15 @@
                 <?php if (empty($alunos)): ?>
                 <p class="text-muted text-center">Nenhum aluno encontrado<?php echo ($filtro_curso || $filtro_turma || $filtro_nome) ? ' com os filtros selecionados' : ' cadastrado ainda'; ?>.</p>
                 <?php else: ?>
+                <div class="mb-3">
+                    <p class="text-muted mb-0">
+                        <strong><?php echo count($alunos); ?></strong> 
+                        <?php echo count($alunos) == 1 ? 'aluno encontrado' : 'alunos encontrados'; ?>
+                        <?php if ($filtro_curso || $filtro_turma || $filtro_nome): ?>
+                            <span class="text-muted">(com os filtros selecionados)</span>
+                        <?php endif; ?>
+                    </p>
+                </div>
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
