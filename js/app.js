@@ -371,6 +371,14 @@ function applyModalStyles(modal) {
     mb3s.forEach(function(mb3) {
         mb3.style.setProperty('margin-bottom', '0.5rem', 'important');
     });
+    
+    // Garantir que os botões do modal-footer tenham o mesmo tamanho e fonte dos outros modais
+    var footerButtons = modal.querySelectorAll('.modal-footer .btn');
+    footerButtons.forEach(function(button) {
+        button.style.setProperty('font-size', '0.8rem', 'important');
+        button.style.setProperty('padding', '0.4rem 0.8rem', 'important');
+        button.style.setProperty('line-height', '1.5', 'important');
+    });
 }
 
 // Event listeners quando o DOM estiver pronto
