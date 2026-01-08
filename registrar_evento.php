@@ -281,12 +281,49 @@ if ($aluno_id) {
                                 <th>Tipo</th>
                                 <th>Observações</th>
                                 <th>Registrado por</th>
-                                <th class="no-print" style="display: none;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($eventos_aluno as $ev): ?>
-                            <tr>
+                            <?php
+                            // Verificar permissões para editar/excluir
+                            $user_id = $_SESSION['user_id'] ?? null;
+                            $can_edit = false;
+                            $can_delete = false;
+                            
+                            if ($user->isAdmin()) {
+                                // Admin pode editar e deletar qualquer evento
+                                $can_edit = true;
+                                $can_delete = true;
+                            } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+                                // Nivel1 e Nivel2 só podem editar/deletar seus próprios eventos criados há menos de 1 hora
+                                if ($ev['registrado_por'] == $user_id) {
+                                    $created_at = strtotime($ev['created_at'] ?? '');
+                                    $now = time();
+                                    $diff_seconds = $now - $created_at;
+                                    $can_edit = ($diff_seconds <= 3600); // 1 hora = 3600 segundos
+                                    $can_delete = ($diff_seconds <= 3600);
+                                }
+                            }
+                            ?>
+                            <tr class="evento-row" data-evento='<?php echo htmlspecialchars(json_encode([
+                                'id' => $ev['id'],
+                                'data' => date('d/m/Y', strtotime($ev['data_evento'])),
+                                'hora' => $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-',
+                                'aluno' => $aluno_data['nome'] ?? 'N/A',
+                                'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
+                                'registrado_por' => $ev['registrado_por_nome'] ?? '-',
+                                'observacoes' => $ev['observacoes'] ?? '',
+                                'aluno_id' => $ev['aluno_id'] ?? '',
+                                'turma_id' => $ev['turma_id'] ?? '',
+                                'tipo_evento_id' => $ev['tipo_evento_id'] ?? '',
+                                'data_evento' => $ev['data_evento'] ?? '',
+                                'hora_evento' => $ev['hora_evento'] ?? '',
+                                'registrado_por_id' => $ev['registrado_por'] ?? '',
+                                'created_at' => $ev['created_at'] ?? '',
+                                'can_edit' => $can_edit,
+                                'can_delete' => $can_delete
+                            ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
                                 <td>
@@ -308,68 +345,31 @@ if ($aluno_id) {
                                 </td>
                                 <td><?php echo htmlspecialchars($ev['observacoes'] ?? '-'); ?></td>
                                 <td><?php echo htmlspecialchars($ev['registrado_por_nome'] ?? '-'); ?></td>
-                                <td class="no-print">
-                                    <?php 
-                                    $user_id = $_SESSION['user_id'] ?? null;
-                                    $can_edit = false;
-                                    $can_delete = false;
-                                    
-                                    if ($user->isAdmin()) {
-                                        // Admin pode editar e deletar qualquer evento
-                                        $can_edit = true;
-                                        $can_delete = true;
-                                    } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
-                                        // Nivel1 e Nivel2 só podem editar/deletar seus próprios eventos criados há menos de 1 hora
-                                        if ($ev['registrado_por'] == $user_id) {
-                                            $created_at = strtotime($ev['created_at'] ?? '');
-                                            $now = time();
-                                            $diff_seconds = $now - $created_at;
-                                            $can_edit = ($diff_seconds <= 3600); // 1 hora = 3600 segundos
-                                            $can_delete = ($diff_seconds <= 3600);
-                                        }
-                                    }
-                                    
-                                    if ($can_edit || $can_delete):
-                                    ?>
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton<?php echo $ev['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton<?php echo $ev['id']; ?>">
-                                            <?php if ($can_edit): ?>
-                                            <li>
-                                                <button type="button" class="dropdown-item btn-edit-evento" data-evento='<?php echo htmlspecialchars(json_encode([
-                                                    'id' => $ev['id'],
-                                                    'aluno_id' => $ev['aluno_id'],
-                                                    'turma_id' => $ev['turma_id'],
-                                                    'tipo_evento_id' => $ev['tipo_evento_id'],
-                                                    'data_evento' => $ev['data_evento'],
-                                                    'hora_evento' => $ev['hora_evento'],
-                                                    'observacoes' => $ev['observacoes'] ?? ''
-                                                ])); ?>'>
-                                                    <i class="bi bi-pencil text-primary me-2"></i> Editar
-                                                </button>
-                                            </li>
-                                            <?php endif; ?>
-                                            <?php if ($can_delete): ?>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a href="registrar_evento.php?delete=<?php echo $ev['id']; ?>&aluno_id=<?php echo urlencode($aluno_id); ?>" 
-                                                   class="dropdown-item text-danger btn-delete-evento">
-                                                    <i class="bi bi-trash me-2"></i> Excluir
-                                                </a>
-                                            </li>
-                                            <?php endif; ?>
-                                        </ul>
-                                    </div>
-                                    <?php endif; ?>
-                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <!-- Espaço no final para permitir que o menu contextual apareça completamente -->
+                    <div style="height: 150px;"></div>
                 </div>
                 <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Menu contextual para ações do evento (dinâmico) -->
+        <div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
+            <button class="dropdown-item" type="button" id="contextMenuVerObservacoes">
+                <i class="bi bi-info-circle text-info"></i> Ver Observações
+            </button>
+            <div id="contextMenuEventoActions" style="display: none;">
+                <hr class="dropdown-divider">
+                <button class="dropdown-item" type="button" id="contextMenuEditarEvento">
+                    <i class="bi bi-pencil text-primary"></i> Editar
+                </button>
+                <hr class="dropdown-divider">
+                <a class="dropdown-item text-danger" href="#" id="contextMenuExcluirEvento">
+                    <i class="bi bi-trash"></i> Excluir
+                </a>
             </div>
         </div>
 

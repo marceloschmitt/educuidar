@@ -752,15 +752,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     linkExcluir.style.display = 'block';
                     // Construir URL de exclusão preservando filtros
                     var urlParams = new URLSearchParams(window.location.search);
-                    var deleteUrl = 'eventos.php?delete=' + eventoData.id;
-                    if (urlParams.get('filtro_curso')) {
-                        deleteUrl += '&filtro_curso=' + urlParams.get('filtro_curso');
-                    }
-                    if (urlParams.get('filtro_turma')) {
-                        deleteUrl += '&filtro_turma=' + urlParams.get('filtro_turma');
-                    }
-                    if (urlParams.get('filtro_nome')) {
-                        deleteUrl += '&filtro_nome=' + encodeURIComponent(urlParams.get('filtro_nome'));
+                    var currentPage = window.location.pathname.split('/').pop();
+                    var deleteUrl = currentPage + '?delete=' + eventoData.id;
+                    
+                    // Se estiver em registrar_evento.php, preservar aluno_id
+                    if (currentPage === 'registrar_evento.php' && urlParams.get('aluno_id')) {
+                        deleteUrl += '&aluno_id=' + urlParams.get('aluno_id');
+                    } else {
+                        // Se estiver em eventos.php, preservar filtros
+                        if (urlParams.get('filtro_curso')) {
+                            deleteUrl += '&filtro_curso=' + urlParams.get('filtro_curso');
+                        }
+                        if (urlParams.get('filtro_turma')) {
+                            deleteUrl += '&filtro_turma=' + urlParams.get('filtro_turma');
+                        }
+                        if (urlParams.get('filtro_nome')) {
+                            deleteUrl += '&filtro_nome=' + encodeURIComponent(urlParams.get('filtro_nome'));
+                        }
                     }
                     linkExcluir.href = deleteUrl;
                     linkExcluir.onclick = function(e) {
