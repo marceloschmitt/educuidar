@@ -219,11 +219,11 @@
                         <div class="col-md-8">
                             <div class="mb-3">
                                 <label for="modal_nome" class="form-label">Nome <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="modal_nome" name="nome" required>
+                                <input type="text" class="form-control" id="modal_nome" name="nome" required maxlength="200" size="50">
                             </div>
                             <div class="mb-3">
                                 <label for="modal_nome_social" class="form-label">Nome Social</label>
-                                <input type="text" class="form-control form-control-sm" id="modal_nome_social" name="nome_social" style="max-width: 300px;">
+                                <input type="text" class="form-control form-control-sm" id="modal_nome_social" name="nome_social" maxlength="200" size="50">
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
