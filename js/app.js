@@ -11,6 +11,12 @@ function editEvento(evento) {
     if (document.getElementById('edit_evento_id')) {
         document.getElementById('edit_evento_id').value = evento.id || '';
     }
+    if (document.getElementById('edit_aluno_id')) {
+        document.getElementById('edit_aluno_id').value = evento.aluno_id || '';
+    }
+    if (document.getElementById('edit_turma_id')) {
+        document.getElementById('edit_turma_id').value = evento.turma_id || '';
+    }
     if (document.getElementById('edit_tipo_evento_id')) {
         document.getElementById('edit_tipo_evento_id').value = evento.tipo_evento_id || '';
     }
@@ -681,13 +687,125 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Linhas clicáveis para mostrar observações
+    // Linhas clicáveis para mostrar observações (mantido para compatibilidade)
     var observacoesRows = document.querySelectorAll('.row-observacoes');
     observacoesRows.forEach(function(row) {
         row.addEventListener('click', function() {
             var eventoData = JSON.parse(this.getAttribute('data-evento'));
             showObservacoes(eventoData);
         });
+    });
+    
+    // Menu contextual ao clicar na linha do evento
+    var eventoRows = document.querySelectorAll('.evento-row');
+    var eventoContextMenu = document.getElementById('eventoContextMenu');
+    
+    eventoRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Não mostrar menu se clicar em um link ou botão dentro da linha
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var eventoData = JSON.parse(this.getAttribute('data-evento'));
+            
+            // Posicionar menu próximo ao ponto de clique
+            var rect = this.getBoundingClientRect();
+            var clickX = e.clientX;
+            var clickY = e.clientY;
+            
+            eventoContextMenu.style.display = 'block';
+            eventoContextMenu.style.position = 'fixed';
+            eventoContextMenu.style.top = clickY + 'px';
+            eventoContextMenu.style.left = Math.min(clickX, window.innerWidth - 220) + 'px';
+            eventoContextMenu.style.zIndex = '1050';
+            eventoContextMenu.classList.add('show');
+            
+            // Preencher dados do evento no menu
+            var btnVerObservacoes = document.getElementById('contextMenuVerObservacoes');
+            btnVerObservacoes.onclick = function() {
+                showObservacoes(eventoData);
+                hideEventoContextMenu();
+            };
+            
+            // Mostrar ações de editar/excluir se tiver permissão
+            var eventoActions = document.getElementById('contextMenuEventoActions');
+            if (eventoData.can_edit || eventoData.can_delete) {
+                eventoActions.style.display = 'block';
+                
+                if (eventoData.can_edit) {
+                    var btnEditar = document.getElementById('contextMenuEditarEvento');
+                    btnEditar.style.display = 'block';
+                    btnEditar.onclick = function() {
+                        editEvento(eventoData);
+                        hideEventoContextMenu();
+                    };
+                } else {
+                    document.getElementById('contextMenuEditarEvento').style.display = 'none';
+                }
+                
+                if (eventoData.can_delete) {
+                    var linkExcluir = document.getElementById('contextMenuExcluirEvento');
+                    linkExcluir.style.display = 'block';
+                    // Construir URL de exclusão preservando filtros
+                    var urlParams = new URLSearchParams(window.location.search);
+                    var deleteUrl = 'eventos.php?delete=' + eventoData.id;
+                    if (urlParams.get('filtro_curso')) {
+                        deleteUrl += '&filtro_curso=' + urlParams.get('filtro_curso');
+                    }
+                    if (urlParams.get('filtro_turma')) {
+                        deleteUrl += '&filtro_turma=' + urlParams.get('filtro_turma');
+                    }
+                    if (urlParams.get('filtro_nome')) {
+                        deleteUrl += '&filtro_nome=' + encodeURIComponent(urlParams.get('filtro_nome'));
+                    }
+                    linkExcluir.href = deleteUrl;
+                    linkExcluir.onclick = function(e) {
+                        if (!confirm('Tem certeza que deseja excluir este evento?')) {
+                            e.preventDefault();
+                            hideEventoContextMenu();
+                        }
+                    };
+                } else {
+                    document.getElementById('contextMenuExcluirEvento').style.display = 'none';
+                }
+            } else {
+                eventoActions.style.display = 'none';
+            }
+        });
+    });
+    
+    // Fechar menu ao clicar fora
+    function hideEventoContextMenu() {
+        if (eventoContextMenu) {
+            eventoContextMenu.style.display = 'none';
+            eventoContextMenu.classList.remove('show');
+        }
+    }
+    
+    // Fechar menu ao clicar em links ou botões do menu
+    if (eventoContextMenu) {
+        eventoContextMenu.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                setTimeout(hideEventoContextMenu, 100);
+            }
+        });
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (eventoContextMenu && !eventoContextMenu.contains(e.target) && !e.target.closest('.evento-row')) {
+            hideEventoContextMenu();
+        }
+    });
+    
+    // Fechar menu ao pressionar ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideEventoContextMenu();
+        }
     });
     
     // Selecionar todos os alunos

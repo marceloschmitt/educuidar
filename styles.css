@@ -232,6 +232,22 @@ body {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
+/* Linhas clicáveis de eventos */
+.evento-row {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.evento-row:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+/* Menu contextual de ações do evento */
+#eventoContextMenu {
+    min-width: 200px;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
 /* Password field with eye icon */
 .password-wrapper {
     position: relative;

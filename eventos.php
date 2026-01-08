@@ -287,7 +287,26 @@ require_once 'includes/header.php';
                         </thead>
                         <tbody>
                             <?php foreach ($eventos as $evt): ?>
-                            <tr class="row-observacoes" style="cursor: pointer;" data-evento='<?php echo htmlspecialchars(json_encode([
+                            <?php
+                            // Verificar permissões para editar/excluir
+                            $user_id = $_SESSION['user_id'] ?? null;
+                            $can_edit = false;
+                            $can_delete = false;
+                            
+                            if ($user->isAdmin()) {
+                                $can_edit = true;
+                                $can_delete = true;
+                            } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+                                if ($evt['registrado_por'] == $user_id) {
+                                    $created_at = strtotime($evt['created_at'] ?? '');
+                                    $now = time();
+                                    $diff_seconds = $now - $created_at;
+                                    $can_edit = ($diff_seconds <= 3600); // 1 hora
+                                    $can_delete = ($diff_seconds <= 3600);
+                                }
+                            }
+                            ?>
+                            <tr class="evento-row" data-evento='<?php echo htmlspecialchars(json_encode([
                                 'id' => $evt['id'],
                                 'data' => date('d/m/Y', strtotime($evt['data_evento'])),
                                 'hora' => $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-',
@@ -301,7 +320,9 @@ require_once 'includes/header.php';
                                 'data_evento' => $evt['data_evento'] ?? '',
                                 'hora_evento' => $evt['hora_evento'] ?? '',
                                 'registrado_por_id' => $evt['registrado_por'] ?? '',
-                                'created_at' => $evt['created_at'] ?? ''
+                                'created_at' => $evt['created_at'] ?? '',
+                                'can_edit' => $can_edit,
+                                'can_delete' => $can_delete
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
@@ -320,8 +341,27 @@ require_once 'includes/header.php';
                             <?php endforeach; ?>
                         </tbody>
             </table>
+            <!-- Espaço no final para permitir que o menu contextual apareça completamente -->
+            <div style="height: 150px;"></div>
         </div>
         <?php endif; ?>
+    </div>
+</div>
+
+<!-- Menu contextual para ações do evento (dinâmico) -->
+<div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
+    <button class="dropdown-item" type="button" id="contextMenuVerObservacoes">
+        <i class="bi bi-info-circle text-info"></i> Ver Observações
+    </button>
+    <div id="contextMenuEventoActions" style="display: none;">
+        <hr class="dropdown-divider">
+        <button class="dropdown-item" type="button" id="contextMenuEditarEvento">
+            <i class="bi bi-pencil text-primary"></i> Editar
+        </button>
+        <hr class="dropdown-divider">
+        <a class="dropdown-item text-danger" href="#" id="contextMenuExcluirEvento">
+            <i class="bi bi-trash"></i> Excluir
+        </a>
     </div>
 </div>
 
