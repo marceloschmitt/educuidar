@@ -131,9 +131,6 @@
                                         <span class="badge bg-info">
                                             <?php echo htmlspecialchars($a['ano_curso']); ?>º Ano - 
                                             <?php echo htmlspecialchars($a['ano_civil']); ?>
-                                            <?php if (!empty($a['is_ano_corrente'])): ?>
-                                                <span class="badge bg-success ms-1">Corrente</span>
-                                            <?php endif; ?>
                                         </span>
                                     <?php else: ?>
                                         <span class="text-muted">-</span>
