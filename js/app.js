@@ -724,6 +724,17 @@ document.addEventListener('DOMContentLoaded', function() {
             eventoContextMenu.style.zIndex = '1050';
             eventoContextMenu.classList.add('show');
             
+            // Verificar se está em registrar_evento.php
+            var currentPage = window.location.pathname.split('/').pop();
+            var isRegistrarEvento = (currentPage === 'registrar_evento.php');
+            
+            // Se não tiver permissão para editar ou deletar e estiver em registrar_evento.php, mostrar mensagem
+            if (isRegistrarEvento && !eventoData.can_edit && !eventoData.can_delete) {
+                alert('Não pode ser alterado');
+                hideEventoContextMenu();
+                return;
+            }
+            
             // Preencher dados do evento no menu
             var btnVerObservacoes = document.getElementById('contextMenuVerObservacoes');
             if (btnVerObservacoes) {
@@ -754,11 +765,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     linkExcluir.style.display = 'block';
                     // Construir URL de exclusão preservando filtros
                     var urlParams = new URLSearchParams(window.location.search);
-                    var currentPage = window.location.pathname.split('/').pop();
                     var deleteUrl = currentPage + '?delete=' + eventoData.id;
                     
                     // Se estiver em registrar_evento.php, preservar aluno_id
-                    if (currentPage === 'registrar_evento.php' && urlParams.get('aluno_id')) {
+                    if (isRegistrarEvento && urlParams.get('aluno_id')) {
                         deleteUrl += '&aluno_id=' + urlParams.get('aluno_id');
                     } else {
                         // Se estiver em eventos.php, preservar filtros
