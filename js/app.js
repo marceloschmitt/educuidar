@@ -76,6 +76,132 @@ function resetForm() {
     document.getElementById('modalSubmitText').textContent = 'Criar';
 }
 
+// Função para visualizar ficha do aluno
+function viewFichaAluno(aluno) {
+    // Preencher foto
+    var fotoContainer = document.getElementById('ficha_foto');
+    fotoContainer.innerHTML = '';
+    if (aluno.foto) {
+        var img = document.createElement('img');
+        img.src = aluno.foto;
+        img.className = 'img-thumbnail';
+        img.style.maxWidth = '200px';
+        img.style.maxHeight = '200px';
+        img.style.width = '200px';
+        img.style.height = '200px';
+        img.style.objectFit = 'cover';
+        fotoContainer.appendChild(img);
+    } else {
+        var defaultDiv = document.createElement('div');
+        defaultDiv.className = 'bg-secondary text-white rounded d-flex align-items-center justify-content-center mx-auto';
+        defaultDiv.style.width = '200px';
+        defaultDiv.style.height = '200px';
+        defaultDiv.innerHTML = '<i class="bi bi-person" style="font-size: 4rem;"></i>';
+        fotoContainer.appendChild(defaultDiv);
+    }
+    
+    // Preencher nome
+    document.getElementById('ficha_nome').textContent = aluno.nome || '-';
+    
+    // Preencher nome social
+    var nomeSocialEl = document.getElementById('ficha_nome_social');
+    if (aluno.nome_social && aluno.nome_social.trim() !== '') {
+        nomeSocialEl.textContent = 'Nome Social: ' + aluno.nome_social;
+        nomeSocialEl.style.display = 'block';
+    } else {
+        nomeSocialEl.style.display = 'none';
+    }
+    
+    // Preencher dados de identificação
+    document.getElementById('ficha_email').textContent = aluno.email || '-';
+    document.getElementById('ficha_telefone_celular').textContent = aluno.telefone_celular || '-';
+    
+    // Data de nascimento formatada
+    var dataNasc = aluno.data_nascimento || '';
+    if (dataNasc && dataNasc !== '') {
+        try {
+            var date = new Date(dataNasc);
+            var formattedDate = date.toLocaleDateString('pt-BR');
+            document.getElementById('ficha_data_nascimento').textContent = formattedDate;
+        } catch (e) {
+            document.getElementById('ficha_data_nascimento').textContent = dataNasc;
+        }
+    } else {
+        document.getElementById('ficha_data_nascimento').textContent = '-';
+    }
+    
+    document.getElementById('ficha_numero_matricula').textContent = aluno.numero_matricula || '-';
+    document.getElementById('ficha_endereco').textContent = aluno.endereco || '-';
+    
+    // Preencher informações acadêmicas
+    document.getElementById('ficha_curso').textContent = aluno.curso_nome || '-';
+    
+    var turmaInfo = '-';
+    if (aluno.turma_info) {
+        turmaInfo = aluno.ano_curso + 'º Ano - ' + aluno.ano_civil;
+        if (aluno.is_ano_corrente) {
+            turmaInfo += ' (Corrente)';
+        }
+    }
+    document.getElementById('ficha_turma').textContent = turmaInfo;
+    
+    var totalEventos = aluno.total_eventos || 0;
+    document.getElementById('ficha_total_eventos').textContent = totalEventos;
+    
+    // Preencher pessoa de referência
+    document.getElementById('ficha_pessoa_referencia').textContent = aluno.pessoa_referencia || '-';
+    document.getElementById('ficha_telefone_pessoa_referencia').textContent = aluno.telefone_pessoa_referencia || '-';
+    
+    // Preencher rede de atendimento
+    var redeAtendimentoEl = document.getElementById('ficha_rede_atendimento');
+    if (aluno.rede_atendimento && aluno.rede_atendimento.trim() !== '') {
+        redeAtendimentoEl.textContent = aluno.rede_atendimento;
+    } else {
+        redeAtendimentoEl.textContent = '-';
+    }
+    
+    // Preencher informações adicionais
+    document.getElementById('ficha_auxilio_estudantil').textContent = (aluno.auxilio_estudantil == 1 || aluno.auxilio_estudantil === '1') ? 'Sim' : 'Não';
+    document.getElementById('ficha_indigena').textContent = (aluno.indigena == 1 || aluno.indigena === '1') ? 'Sim' : 'Não';
+    document.getElementById('ficha_pei').textContent = (aluno.pei == 1 || aluno.pei === '1') ? 'Sim' : 'Não';
+    
+    var neeEl = document.getElementById('ficha_nee');
+    if (aluno.nee && aluno.nee.trim() !== '') {
+        neeEl.textContent = aluno.nee;
+    } else {
+        neeEl.textContent = '-';
+    }
+    
+    var profissionaisEl = document.getElementById('ficha_profissionais_referencia');
+    if (aluno.profissionais_referencia && aluno.profissionais_referencia.trim() !== '') {
+        profissionaisEl.textContent = aluno.profissionais_referencia;
+    } else {
+        profissionaisEl.textContent = '-';
+    }
+    
+    var observacoesEl = document.getElementById('ficha_outras_observacoes');
+    if (aluno.outras_observacoes && aluno.outras_observacoes.trim() !== '') {
+        observacoesEl.textContent = aluno.outras_observacoes;
+    } else {
+        observacoesEl.textContent = '-';
+    }
+    
+    // Armazenar dados do aluno para o botão de editar
+    var modalFicha = document.getElementById('modalFichaAluno');
+    if (modalFicha) {
+        modalFicha.setAttribute('data-aluno-data', JSON.stringify(aluno));
+    }
+    
+    // Abrir modal
+    var modalElement = document.getElementById('modalFichaAluno');
+    if (!modalElement) {
+        return;
+    }
+    
+    var modal = new bootstrap.Modal(modalElement);
+    modal.show();
+}
+
 // Função para editar aluno
 function editAluno(aluno) {
     document.getElementById('formAction').value = 'update';
@@ -366,6 +492,41 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Botões de visualizar ficha
+    var viewFichaButtons = document.querySelectorAll('.btn-view-ficha');
+    viewFichaButtons.forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var alunoData = JSON.parse(this.getAttribute('data-aluno'));
+            viewFichaAluno(alunoData);
+        });
+    });
+    
+    // Botão editar da ficha
+    var btnEditarDaFicha = document.getElementById('btnEditarDaFicha');
+    if (btnEditarDaFicha) {
+        btnEditarDaFicha.addEventListener('click', function() {
+            var modalFicha = document.getElementById('modalFichaAluno');
+            if (modalFicha) {
+                var alunoDataStr = modalFicha.getAttribute('data-aluno-data');
+                if (alunoDataStr) {
+                    try {
+                        var alunoData = JSON.parse(alunoDataStr);
+                        // Fechar modal da ficha
+                        var modalInstance = bootstrap.Modal.getInstance(modalFicha);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        // Abrir modal de edição
+                        editAluno(alunoData);
+                    } catch (e) {
+                        console.error('Erro ao processar dados do aluno:', e);
+                    }
+                }
+            }
+        });
+    }
+    
     // Botões de excluir evento - confirmação
     var deleteEventoButtons = document.querySelectorAll('.btn-delete-evento');
     deleteEventoButtons.forEach(function(button) {
@@ -531,6 +692,17 @@ document.addEventListener('DOMContentLoaded', function() {
             applyModalStyles(this);
         });
         modalAluno.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
+        });
+    }
+    
+    // Modal de ficha do aluno - aplicar estilos quando aberto
+    var modalFichaAluno = document.getElementById('modalFichaAluno');
+    if (modalFichaAluno) {
+        modalFichaAluno.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
+        modalFichaAluno.addEventListener('shown.bs.modal', function() {
             applyModalStyles(this);
         });
     }
