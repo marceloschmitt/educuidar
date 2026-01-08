@@ -225,6 +225,25 @@
                                 <label for="modal_nome_social" class="form-label">Nome Social</label>
                                 <input type="text" class="form-control form-control-sm" id="modal_nome_social" name="nome_social" style="max-width: 300px;">
                             </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="modal_email" class="form-label">E-mail</label>
+                                        <input type="email" class="form-control" id="modal_email" name="email">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="modal_telefone_celular" class="form-label">Telefone Celular</label>
+                                        <input type="text" class="form-control" id="modal_telefone_celular" name="telefone_celular" 
+                                               placeholder="(51) 99999-9999">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="modal_endereco" class="form-label">Endereço</label>
+                                <textarea class="form-control" id="modal_endereco" name="endereco" rows="2"></textarea>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
@@ -244,22 +263,6 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label for="modal_email" class="form-label">E-mail</label>
-                                <input type="email" class="form-control" id="modal_email" name="email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_telefone_celular" class="form-label">Telefone Celular</label>
-                                <input type="text" class="form-control" id="modal_telefone_celular" name="telefone_celular" 
-                                       placeholder="(51) 99999-9999">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
                                 <label for="modal_data_nascimento" class="form-label">Data de Nascimento</label>
                                 <input type="date" class="form-control" id="modal_data_nascimento" name="data_nascimento">
                             </div>
@@ -270,11 +273,6 @@
                                 <input type="text" class="form-control" id="modal_numero_matricula" name="numero_matricula">
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="modal_endereco" class="form-label">Endereço</label>
-                        <textarea class="form-control" id="modal_endereco" name="endereco" rows="3"></textarea>
                     </div>
                     
                     <hr>
