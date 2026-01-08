@@ -100,15 +100,15 @@ function viewFichaAluno(aluno) {
         fotoContainer.appendChild(defaultDiv);
     }
     
-    // Preencher nome
-    document.getElementById('ficha_nome').textContent = aluno.nome || '-';
-    
-    // Preencher nome social
+    // Preencher nome: se tem nome social, mostrar ele; senão, mostrar o nome original
     var nomeSocialEl = document.getElementById('ficha_nome_social');
     if (aluno.nome_social && aluno.nome_social.trim() !== '') {
-        nomeSocialEl.textContent = 'Nome Social: ' + aluno.nome_social;
-        nomeSocialEl.style.display = 'block';
+        // Tem nome social: mostrar nome social como nome principal e esconder o elemento de nome social
+        document.getElementById('ficha_nome').textContent = aluno.nome_social;
+        nomeSocialEl.style.display = 'none';
     } else {
+        // Não tem nome social: mostrar nome original e esconder o elemento de nome social
+        document.getElementById('ficha_nome').textContent = aluno.nome || '-';
         nomeSocialEl.style.display = 'none';
     }
     
