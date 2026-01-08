@@ -375,55 +375,53 @@
                         <div id="ficha_foto" class="mb-3"></div>
                     </div>
                     <div class="col-md-9">
-                        <h4 id="ficha_nome" class="mb-2"></h4>
+                        <h4 id="ficha_nome" class="mb-3"></h4>
                         <p id="ficha_nome_social" class="text-muted mb-3"></p>
-                    </div>
-                </div>
-                
-                <hr>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="mb-3"><i class="bi bi-person-badge"></i> Dados de Identificação</h6>
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <th width="40%">E-mail:</th>
-                                <td id="ficha_email">-</td>
-                            </tr>
-                            <tr>
-                                <th>Telefone Celular:</th>
-                                <td id="ficha_telefone_celular">-</td>
-                            </tr>
-                            <tr>
-                                <th>Data de Nascimento:</th>
-                                <td id="ficha_data_nascimento">-</td>
-                            </tr>
-                            <tr>
-                                <th>Número de Matrícula:</th>
-                                <td id="ficha_numero_matricula">-</td>
-                            </tr>
-                            <tr>
-                                <th>Endereço:</th>
-                                <td id="ficha_endereco">-</td>
-                            </tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="mb-3"><i class="bi bi-book"></i> Informações Acadêmicas</h6>
-                        <table class="table table-sm table-borderless">
-                            <tr>
-                                <th width="40%">Curso:</th>
-                                <td id="ficha_curso">-</td>
-                            </tr>
-                            <tr>
-                                <th>Turma:</th>
-                                <td id="ficha_turma">-</td>
-                            </tr>
-                            <tr>
-                                <th>Total de Eventos:</th>
-                                <td id="ficha_total_eventos">-</td>
-                            </tr>
-                        </table>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="bi bi-person-badge"></i> Dados de Identificação</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <th width="40%">E-mail:</th>
+                                        <td id="ficha_email">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Telefone Celular:</th>
+                                        <td id="ficha_telefone_celular">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Data de Nascimento:</th>
+                                        <td id="ficha_data_nascimento">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Número de Matrícula:</th>
+                                        <td id="ficha_numero_matricula">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Endereço:</th>
+                                        <td id="ficha_endereco">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="bi bi-book"></i> Informações Acadêmicas</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <th width="40%">Curso:</th>
+                                        <td id="ficha_curso">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Turma:</th>
+                                        <td id="ficha_turma">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Total de Eventos:</th>
+                                        <td id="ficha_total_eventos">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
