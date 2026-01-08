@@ -513,9 +513,96 @@ document.addEventListener('DOMContentLoaded', function() {
     viewFichaButtons.forEach(function(button) {
         button.addEventListener('click', function(e) {
             e.stopPropagation();
-            var alunoData = JSON.parse(this.getAttribute('data-aluno'));
-            viewFichaAluno(alunoData);
+            var alunoData = this.getAttribute('data-aluno') ? JSON.parse(this.getAttribute('data-aluno')) : null;
+            if (!alunoData && this.closest('.aluno-row')) {
+                alunoData = JSON.parse(this.closest('.aluno-row').getAttribute('data-aluno'));
+            }
+            if (alunoData) {
+                viewFichaAluno(alunoData);
+            }
+            hideContextMenu();
         });
+    });
+    
+    // Menu contextual ao clicar na linha do aluno
+    var alunoRows = document.querySelectorAll('.aluno-row');
+    var contextMenu = document.getElementById('alunoContextMenu');
+    var isAdmin = document.body.getAttribute('data-is-admin') === '1' || 
+                  document.body.getAttribute('data-is-admin') === 'true';
+    
+    alunoRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            // Não mostrar menu se clicar em um link ou botão dentro da linha
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var alunoData = JSON.parse(this.getAttribute('data-aluno'));
+            
+            // Posicionar menu próximo ao ponto de clique
+            var rect = this.getBoundingClientRect();
+            var clickX = e.clientX;
+            var clickY = e.clientY;
+            
+            contextMenu.style.display = 'block';
+            contextMenu.style.position = 'fixed';
+            contextMenu.style.top = clickY + 'px';
+            contextMenu.style.left = Math.min(clickX, window.innerWidth - 220) + 'px';
+            contextMenu.style.zIndex = '1050';
+            contextMenu.classList.add('show');
+            
+            // Preencher dados do aluno no menu
+            var btnViewFicha = contextMenu.querySelector('.btn-view-ficha');
+            btnViewFicha.setAttribute('data-aluno', JSON.stringify(alunoData));
+            
+            var linkVerEventos = document.getElementById('contextMenuVerEventos');
+            linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id;
+            
+            // Mostrar ações de admin se for admin
+            var adminActions = document.getElementById('contextMenuAdminActions');
+            if (isAdmin) {
+                adminActions.style.display = 'block';
+                var linkGerenciarTurmas = document.getElementById('contextMenuGerenciarTurmas');
+                linkGerenciarTurmas.href = 'aluno_turmas.php?id=' + alunoData.id;
+                document.getElementById('contextMenuDeleteId').value = alunoData.id;
+            } else {
+                adminActions.style.display = 'none';
+            }
+        });
+    });
+    
+    // Fechar menu ao clicar fora
+    function hideContextMenu() {
+        if (contextMenu) {
+            contextMenu.style.display = 'none';
+            contextMenu.classList.remove('show');
+        }
+    }
+    
+    // Fechar menu ao clicar em links ou botões do menu
+    if (contextMenu) {
+        contextMenu.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                // Pequeno delay para permitir navegação
+                setTimeout(hideContextMenu, 100);
+            }
+        });
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (contextMenu && !contextMenu.contains(e.target) && !e.target.closest('.aluno-row')) {
+            hideContextMenu();
+        }
+    });
+    
+    // Fechar menu ao pressionar ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            hideContextMenu();
+        }
     });
     
     // Botão editar da ficha

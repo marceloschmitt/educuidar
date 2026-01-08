@@ -90,12 +90,11 @@
                                 <th>Curso</th>
                                 <th>Turma</th>
                                 <th>Eventos</th>
-                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($alunos as $a): ?>
-                            <tr>
+                            <tr class="aluno-row" data-aluno='<?php echo htmlspecialchars(json_encode($a)); ?>'>
                                 <td>
                                     <?php if (!empty($a['foto'])): ?>
                                         <img src="<?php echo htmlspecialchars($a['foto']); ?>" 
@@ -149,49 +148,6 @@
                                         </span>
                                     <?php endif; ?>
                                 </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownMenuButton<?php echo $a['id']; ?>" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bi bi-three-dots-vertical"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton<?php echo $a['id']; ?>">
-                                            <li>
-                                                <button class="dropdown-item btn-view-ficha" type="button" data-aluno='<?php echo htmlspecialchars(json_encode($a)); ?>'>
-                                                    <i class="bi bi-file-text text-info"></i> Ver Ficha
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="registrar_evento.php?aluno_id=<?php echo $a['id']; ?>">
-                                                    <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
-                                                </a>
-                                            </li>
-                                            <?php if ($user->isAdmin() || $user->isAssistenciaEstudantil()): ?>
-                                            <li>
-                                                <button class="dropdown-item btn-edit-aluno" type="button" data-aluno='<?php echo htmlspecialchars(json_encode($a)); ?>'>
-                                                    <i class="bi bi-pencil text-primary"></i> Editar
-                                                </button>
-                                            </li>
-                                            <?php endif; ?>
-                                            <?php if ($user->isAdmin()): ?>
-                                            <li>
-                                                <a class="dropdown-item" href="aluno_turmas.php?id=<?php echo $a['id']; ?>">
-                                                    <i class="bi bi-collection text-info"></i> Gerenciar Turmas
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <form method="POST" action="" class="form-confirm" data-confirm="Tem certeza que deseja excluir este aluno?">
-                                                    <input type="hidden" name="action" value="delete">
-                                                    <input type="hidden" name="id" value="<?php echo $a['id']; ?>">
-                                                    <button type="submit" class="dropdown-item text-danger">
-                                                        <i class="bi bi-trash"></i> Excluir
-                                                    </button>
-                                                </form>
-                                            </li>
-                                            <?php endif; ?>
-                                        </ul>
-                                    </div>
-                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -200,6 +156,29 @@
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Menu contextual para ações do aluno (dinâmico) -->
+<div class="dropdown-menu" id="alunoContextMenu" style="position: absolute; display: none;">
+    <button class="dropdown-item btn-view-ficha" type="button">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha
+    </button>
+    <a class="dropdown-item" href="#" id="contextMenuVerEventos">
+        <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
+    </a>
+    <div id="contextMenuAdminActions" style="display: none;">
+        <a class="dropdown-item" href="#" id="contextMenuGerenciarTurmas">
+            <i class="bi bi-collection text-info"></i> Gerenciar Turmas
+        </a>
+        <hr class="dropdown-divider">
+        <form method="POST" action="" class="form-confirm" data-confirm="Tem certeza que deseja excluir este aluno?">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="contextMenuDeleteId">
+            <button type="submit" class="dropdown-item text-danger">
+                <i class="bi bi-trash"></i> Excluir
+            </button>
+        </form>
     </div>
 </div>
 

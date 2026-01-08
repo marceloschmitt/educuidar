@@ -29,6 +29,10 @@ if (!$user->isLoggedIn() && !in_array(basename($_SERVER['PHP_SELF']), $allowed_p
 if (isset($aluno_edit) && $aluno_edit) {
     echo ' data-aluno-edit=\'' . htmlspecialchars(json_encode($aluno_edit), ENT_QUOTES) . '\'';
 }
+// Passar informação se usuário é admin
+if ($user->isAdmin()) {
+    echo ' data-is-admin="1"';
+}
 ?>>
     
     <?php if ($user->isLoggedIn()): ?>
