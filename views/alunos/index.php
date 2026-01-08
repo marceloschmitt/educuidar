@@ -244,6 +244,20 @@
                                 <label for="modal_endereco" class="form-label">Endereço</label>
                                 <textarea class="form-control" id="modal_endereco" name="endereco" rows="2"></textarea>
                             </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="modal_data_nascimento" class="form-label">Data de Nascimento</label>
+                                        <input type="date" class="form-control form-control-sm" id="modal_data_nascimento" name="data_nascimento" style="max-width: 200px;">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="modal_numero_matricula" class="form-label">Número de Matrícula</label>
+                                        <input type="text" class="form-control form-control-sm" id="modal_numero_matricula" name="numero_matricula" style="max-width: 200px;">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <div class="mb-3">
@@ -256,21 +270,6 @@
                                     <input type="checkbox" id="remover_foto" name="remover_foto" value="1">
                                     <label for="remover_foto" class="form-label">Remover foto atual</label>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_data_nascimento" class="form-label">Data de Nascimento</label>
-                                <input type="date" class="form-control" id="modal_data_nascimento" name="data_nascimento">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="modal_numero_matricula" class="form-label">Número de Matrícula</label>
-                                <input type="text" class="form-control" id="modal_numero_matricula" name="numero_matricula">
                             </div>
                         </div>
                     </div>
