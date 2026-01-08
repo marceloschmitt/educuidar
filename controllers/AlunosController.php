@@ -50,6 +50,23 @@ class AlunosController extends Controller {
         // Process alunos data
         foreach ($alunos as &$a) {
             $turmas_aluno = $this->aluno->getTurmasAluno($a['id']);
+            
+            // Incluir todas as turmas com informações completas
+            $a['todas_turmas'] = [];
+            foreach ($turmas_aluno as $ta) {
+                $turma_completa = $this->turma->getById($ta['id']);
+                if ($turma_completa) {
+                    $a['todas_turmas'][] = [
+                        'id' => $ta['id'],
+                        'curso_nome' => $turma_completa['curso_nome'] ?? '',
+                        'curso_id' => $turma_completa['curso_id'] ?? '',
+                        'ano_curso' => $ta['ano_curso'],
+                        'ano_civil' => $ta['ano_civil'],
+                        'is_ano_corrente' => ($ta['ano_civil'] == $ano_corrente)
+                    ];
+                }
+            }
+            
             // Buscar primeira turma do ano corrente
             $turma_ano_corrente_aluno = null;
             foreach ($turmas_aluno as $ta) {

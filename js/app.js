@@ -136,14 +136,22 @@ function viewFichaAluno(aluno) {
     // Preencher informações acadêmicas
     document.getElementById('ficha_curso').textContent = aluno.curso_nome || '-';
     
-    var turmaInfo = '-';
-    if (aluno.turma_info) {
-        turmaInfo = aluno.ano_curso + 'º Ano - ' + aluno.ano_civil;
-        if (aluno.is_ano_corrente) {
-            turmaInfo += ' (Corrente)';
-        }
+    // Preencher todas as turmas
+    var turmasEl = document.getElementById('ficha_turmas');
+    if (aluno.todas_turmas && aluno.todas_turmas.length > 0) {
+        var turmasHtml = '<ul class="list-unstyled mb-0">';
+        aluno.todas_turmas.forEach(function(turma) {
+            var turmaText = turma.curso_nome + ' - ' + turma.ano_curso + 'º Ano - ' + turma.ano_civil;
+            if (turma.is_ano_corrente) {
+                turmaText += ' <span class="badge bg-success">Corrente</span>';
+            }
+            turmasHtml += '<li>' + turmaText + '</li>';
+        });
+        turmasHtml += '</ul>';
+        turmasEl.innerHTML = turmasHtml;
+    } else {
+        turmasEl.textContent = '-';
     }
-    document.getElementById('ficha_turma').textContent = turmaInfo;
     
     var totalEventos = aluno.total_eventos || 0;
     document.getElementById('ficha_total_eventos').textContent = totalEventos;

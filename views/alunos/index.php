@@ -410,8 +410,8 @@
                                         <td id="ficha_curso">-</td>
                                     </tr>
                                     <tr>
-                                        <th>Turma:</th>
-                                        <td id="ficha_turma">-</td>
+                                        <th>Turmas:</th>
+                                        <td id="ficha_turmas">-</td>
                                     </tr>
                                     <tr>
                                         <th>Total de Eventos:</th>
