@@ -150,14 +150,10 @@
                                 </td>
                             </tr>
                             <?php endforeach; ?>
-                            <!-- Linhas em branco para permitir que o menu contextual apareça completamente -->
-                            <?php for ($i = 0; $i < 5; $i++): ?>
-                            <tr style="height: 50px;">
-                                <td colspan="7">&nbsp;</td>
-                            </tr>
-                            <?php endfor; ?>
                         </tbody>
                     </table>
+                    <!-- Espaço no final para permitir que o menu contextual apareça completamente -->
+                    <div style="height: 150px;"></div>
                 </div>
                 <?php endif; ?>
             </div>
