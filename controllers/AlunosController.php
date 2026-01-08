@@ -242,6 +242,15 @@ class AlunosController extends Controller {
         $this->aluno->data_nascimento = $_POST['data_nascimento'] ?? '';
         $this->aluno->numero_matricula = $_POST['numero_matricula'] ?? '';
         $this->aluno->endereco = $_POST['endereco'] ?? '';
+        $this->aluno->pessoa_referencia = $_POST['pessoa_referencia'] ?? '';
+        $this->aluno->telefone_pessoa_referencia = $_POST['telefone_pessoa_referencia'] ?? '';
+        $this->aluno->rede_atendimento = $_POST['rede_atendimento'] ?? '';
+        $this->aluno->auxilio_estudantil = isset($_POST['auxilio_estudantil']) ? ($_POST['auxilio_estudantil'] == '1') : false;
+        $this->aluno->nee = $_POST['nee'] ?? '';
+        $this->aluno->indigena = isset($_POST['indigena']) ? ($_POST['indigena'] == '1') : false;
+        $this->aluno->pei = isset($_POST['pei']) ? ($_POST['pei'] == '1') : false;
+        $this->aluno->profissionais_referencia = $_POST['profissionais_referencia'] ?? '';
+        $this->aluno->outras_observacoes = $_POST['outras_observacoes'] ?? '';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
@@ -306,6 +315,15 @@ class AlunosController extends Controller {
         $this->aluno->data_nascimento = $_POST['data_nascimento'] ?? '';
         $this->aluno->numero_matricula = $_POST['numero_matricula'] ?? '';
         $this->aluno->endereco = $_POST['endereco'] ?? '';
+        $this->aluno->pessoa_referencia = $_POST['pessoa_referencia'] ?? '';
+        $this->aluno->telefone_pessoa_referencia = $_POST['telefone_pessoa_referencia'] ?? '';
+        $this->aluno->rede_atendimento = $_POST['rede_atendimento'] ?? '';
+        $this->aluno->auxilio_estudantil = isset($_POST['auxilio_estudantil']) ? ($_POST['auxilio_estudantil'] == '1') : false;
+        $this->aluno->nee = $_POST['nee'] ?? '';
+        $this->aluno->indigena = isset($_POST['indigena']) ? ($_POST['indigena'] == '1') : false;
+        $this->aluno->pei = isset($_POST['pei']) ? ($_POST['pei'] == '1') : false;
+        $this->aluno->profissionais_referencia = $_POST['profissionais_referencia'] ?? '';
+        $this->aluno->outras_observacoes = $_POST['outras_observacoes'] ?? '';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');

@@ -16,6 +16,15 @@ class Aluno {
     public $numero_matricula;
     public $endereco;
     public $foto;
+    public $pessoa_referencia;
+    public $telefone_pessoa_referencia;
+    public $rede_atendimento;
+    public $auxilio_estudantil;
+    public $nee;
+    public $indigena;
+    public $pei;
+    public $profissionais_referencia;
+    public $outras_observacoes;
     public $created_at;
 
     public function __construct($db) {
@@ -24,8 +33,12 @@ class Aluno {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, nome_social, email, telefone_celular, data_nascimento, numero_matricula, endereco, foto) 
-                  VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto)";
+                  (nome, nome_social, email, telefone_celular, data_nascimento, numero_matricula, endereco, foto, 
+                   pessoa_referencia, telefone_pessoa_referencia, rede_atendimento, auxilio_estudantil, nee, 
+                   indigena, pei, profissionais_referencia, outras_observacoes) 
+                  VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
+                          :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
+                          :indigena, :pei, :profissionais_referencia, :outras_observacoes)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -44,6 +57,25 @@ class Aluno {
         $stmt->bindParam(':endereco', $endereco);
         $foto = !empty($this->foto) ? $this->foto : null;
         $stmt->bindParam(':foto', $foto);
+        
+        $pessoa_referencia = !empty($this->pessoa_referencia) ? $this->pessoa_referencia : null;
+        $stmt->bindParam(':pessoa_referencia', $pessoa_referencia);
+        $telefone_pessoa_referencia = !empty($this->telefone_pessoa_referencia) ? $this->telefone_pessoa_referencia : null;
+        $stmt->bindParam(':telefone_pessoa_referencia', $telefone_pessoa_referencia);
+        $rede_atendimento = !empty($this->rede_atendimento) ? $this->rede_atendimento : null;
+        $stmt->bindParam(':rede_atendimento', $rede_atendimento);
+        $auxilio_estudantil = isset($this->auxilio_estudantil) ? ($this->auxilio_estudantil ? 1 : 0) : 0;
+        $stmt->bindParam(':auxilio_estudantil', $auxilio_estudantil, PDO::PARAM_INT);
+        $nee = !empty($this->nee) ? $this->nee : null;
+        $stmt->bindParam(':nee', $nee);
+        $indigena = isset($this->indigena) ? ($this->indigena ? 1 : 0) : 0;
+        $stmt->bindParam(':indigena', $indigena, PDO::PARAM_INT);
+        $pei = isset($this->pei) ? ($this->pei ? 1 : 0) : 0;
+        $stmt->bindParam(':pei', $pei, PDO::PARAM_INT);
+        $profissionais_referencia = !empty($this->profissionais_referencia) ? $this->profissionais_referencia : null;
+        $stmt->bindParam(':profissionais_referencia', $profissionais_referencia);
+        $outras_observacoes = !empty($this->outras_observacoes) ? $this->outras_observacoes : null;
+        $stmt->bindParam(':outras_observacoes', $outras_observacoes);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -82,7 +114,16 @@ class Aluno {
                       data_nascimento = :data_nascimento,
                       numero_matricula = :numero_matricula,
                       endereco = :endereco,
-                      foto = :foto
+                      foto = :foto,
+                      pessoa_referencia = :pessoa_referencia,
+                      telefone_pessoa_referencia = :telefone_pessoa_referencia,
+                      rede_atendimento = :rede_atendimento,
+                      auxilio_estudantil = :auxilio_estudantil,
+                      nee = :nee,
+                      indigena = :indigena,
+                      pei = :pei,
+                      profissionais_referencia = :profissionais_referencia,
+                      outras_observacoes = :outras_observacoes
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -103,6 +144,25 @@ class Aluno {
         $stmt->bindParam(':endereco', $endereco);
         $foto = !empty($this->foto) ? $this->foto : null;
         $stmt->bindParam(':foto', $foto);
+        
+        $pessoa_referencia = !empty($this->pessoa_referencia) ? $this->pessoa_referencia : null;
+        $stmt->bindParam(':pessoa_referencia', $pessoa_referencia);
+        $telefone_pessoa_referencia = !empty($this->telefone_pessoa_referencia) ? $this->telefone_pessoa_referencia : null;
+        $stmt->bindParam(':telefone_pessoa_referencia', $telefone_pessoa_referencia);
+        $rede_atendimento = !empty($this->rede_atendimento) ? $this->rede_atendimento : null;
+        $stmt->bindParam(':rede_atendimento', $rede_atendimento);
+        $auxilio_estudantil = isset($this->auxilio_estudantil) ? ($this->auxilio_estudantil ? 1 : 0) : 0;
+        $stmt->bindParam(':auxilio_estudantil', $auxilio_estudantil, PDO::PARAM_INT);
+        $nee = !empty($this->nee) ? $this->nee : null;
+        $stmt->bindParam(':nee', $nee);
+        $indigena = isset($this->indigena) ? ($this->indigena ? 1 : 0) : 0;
+        $stmt->bindParam(':indigena', $indigena, PDO::PARAM_INT);
+        $pei = isset($this->pei) ? ($this->pei ? 1 : 0) : 0;
+        $stmt->bindParam(':pei', $pei, PDO::PARAM_INT);
+        $profissionais_referencia = !empty($this->profissionais_referencia) ? $this->profissionais_referencia : null;
+        $stmt->bindParam(':profissionais_referencia', $profissionais_referencia);
+        $outras_observacoes = !empty($this->outras_observacoes) ? $this->outras_observacoes : null;
+        $stmt->bindParam(':outras_observacoes', $outras_observacoes);
 
         if ($stmt->execute()) {
             return true;

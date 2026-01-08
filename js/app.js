@@ -50,6 +50,15 @@ function resetForm() {
     document.getElementById('modal_data_nascimento').value = '';
     document.getElementById('modal_numero_matricula').value = '';
     document.getElementById('modal_endereco').value = '';
+    document.getElementById('modal_pessoa_referencia').value = '';
+    document.getElementById('modal_telefone_pessoa_referencia').value = '';
+    document.getElementById('modal_rede_atendimento').value = '';
+    document.getElementById('modal_auxilio_estudantil').value = '0';
+    document.getElementById('modal_nee').value = '';
+    document.getElementById('modal_indigena').value = '0';
+    document.getElementById('modal_pei').value = '0';
+    document.getElementById('modal_profissionais_referencia').value = '';
+    document.getElementById('modal_outras_observacoes').value = '';
     document.getElementById('modal_foto').value = '';
     document.getElementById('foto_preview').innerHTML = '';
     document.getElementById('foto_atual').innerHTML = '';
@@ -70,6 +79,15 @@ function editAluno(aluno) {
     document.getElementById('modal_data_nascimento').value = aluno.data_nascimento || '';
     document.getElementById('modal_numero_matricula').value = aluno.numero_matricula || '';
     document.getElementById('modal_endereco').value = aluno.endereco || '';
+    document.getElementById('modal_pessoa_referencia').value = aluno.pessoa_referencia || '';
+    document.getElementById('modal_telefone_pessoa_referencia').value = aluno.telefone_pessoa_referencia || '';
+    document.getElementById('modal_rede_atendimento').value = aluno.rede_atendimento || '';
+    document.getElementById('modal_auxilio_estudantil').value = (aluno.auxilio_estudantil == 1 || aluno.auxilio_estudantil === '1') ? '1' : '0';
+    document.getElementById('modal_nee').value = aluno.nee || '';
+    document.getElementById('modal_indigena').value = (aluno.indigena == 1 || aluno.indigena === '1') ? '1' : '0';
+    document.getElementById('modal_pei').value = (aluno.pei == 1 || aluno.pei === '1') ? '1' : '0';
+    document.getElementById('modal_profissionais_referencia').value = aluno.profissionais_referencia || '';
+    document.getElementById('modal_outras_observacoes').value = aluno.outras_observacoes || '';
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';
     
@@ -104,19 +122,6 @@ function editAluno(aluno) {
     }
     
     var modal = new bootstrap.Modal(modalElement);
-    
-    // Aplicar estilos antes de abrir o modal (se a função existir)
-    if (typeof applyModalStyles === 'function') {
-        applyModalStyles(modalElement);
-    }
-    
-    // Aplicar estilos novamente após o modal ser totalmente mostrado
-    modalElement.addEventListener('shown.bs.modal', function() {
-        if (typeof applyModalStyles === 'function') {
-            applyModalStyles(this);
-        }
-    }, { once: true });
-    
     modal.show();
 }
 
@@ -451,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Inicializar campos quando o modal for aberto
+        // Inicializar campos e aplicar estilos quando o modal for aberto
         createUserModal.addEventListener('show.bs.modal', function() {
             // Limpar todos os campos antes de abrir o modal
             var form = document.getElementById('createUserForm');
@@ -468,6 +473,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (fullNameInput) fullNameInput.value = '';
             }
             toggleFields();
+            // Aplicar estilos
+            applyModalStyles(this);
+        });
+        createUserModal.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
         });
     }
     
@@ -487,16 +497,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Modais de usuário - aplicar estilos quando abertos
-    var createUserModal = document.getElementById('createUserModal');
-    if (createUserModal) {
-        createUserModal.addEventListener('show.bs.modal', function() {
-            applyModalStyles(this);
-        });
-        createUserModal.addEventListener('shown.bs.modal', function() {
-            applyModalStyles(this);
-        });
-    }
-    
     var editUserModal = document.getElementById('editUserModal');
     if (editUserModal) {
         editUserModal.addEventListener('show.bs.modal', function() {
@@ -622,19 +622,6 @@ function editUser(user) {
     
     var modalElement = document.getElementById('editUserModal');
     var modal = new bootstrap.Modal(modalElement);
-    
-    // Aplicar estilos antes de abrir o modal
-    if (modalElement && typeof applyModalStyles === 'function') {
-        applyModalStyles(modalElement);
-    }
-    
-    // Aplicar estilos novamente após o modal ser totalmente mostrado
-    modalElement.addEventListener('shown.bs.modal', function() {
-        if (typeof applyModalStyles === 'function') {
-            applyModalStyles(this);
-        }
-    }, { once: true }); // Usar { once: true } para executar apenas uma vez
-    
     modal.show();
 }
 

@@ -202,7 +202,7 @@
 
 <!-- Modal para Criar/Editar Aluno -->
 <div class="modal fade" id="modalAluno" tabindex="-1" aria-labelledby="modalAlunoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
+    <div class="modal-dialog modal-dialog-scrollable modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalAlunoLabel">
@@ -276,6 +276,75 @@
                     <div class="mb-3">
                         <label for="modal_endereco" class="form-label">Endereço</label>
                         <textarea class="form-control" id="modal_endereco" name="endereco" rows="3"></textarea>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="mb-3">Informações Adicionais</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_pessoa_referencia" class="form-label">Pessoa de Referência</label>
+                                <input type="text" class="form-control" id="modal_pessoa_referencia" name="pessoa_referencia">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="modal_telefone_pessoa_referencia" class="form-label">Telefone da Pessoa de Referência</label>
+                                <input type="text" class="form-control" id="modal_telefone_pessoa_referencia" name="telefone_pessoa_referencia" 
+                                       placeholder="(51) 99999-9999">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_rede_atendimento" class="form-label">Rede de Atendimento</label>
+                        <textarea class="form-control" id="modal_rede_atendimento" name="rede_atendimento" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="modal_auxilio_estudantil" class="form-label">Auxílio Estudantil</label>
+                                <select class="form-select" id="modal_auxilio_estudantil" name="auxilio_estudantil">
+                                    <option value="0">Não</option>
+                                    <option value="1">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="modal_indigena" class="form-label">Indígena</label>
+                                <select class="form-select" id="modal_indigena" name="indigena">
+                                    <option value="0">Não</option>
+                                    <option value="1">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="modal_pei" class="form-label">Plano Educacional Individual (PEI)</label>
+                                <select class="form-select" id="modal_pei" name="pei">
+                                    <option value="0">Não</option>
+                                    <option value="1">Sim</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_nee" class="form-label">Necessidades Educacionais Especiais (NEE)</label>
+                        <textarea class="form-control" id="modal_nee" name="nee" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_profissionais_referencia" class="form-label">Profissionais de Referência na Assistência Estudantil</label>
+                        <textarea class="form-control" id="modal_profissionais_referencia" name="profissionais_referencia" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="modal_outras_observacoes" class="form-label">Outras Observações</label>
+                        <textarea class="form-control" id="modal_outras_observacoes" name="outras_observacoes" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
