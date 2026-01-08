@@ -181,18 +181,35 @@ if ($aluno_id) {
                 </a>
             </div>
             <div class="card-body">
-                <p class="mb-2">
-                    <strong>Turma:</strong> 
-                    <?php echo htmlspecialchars($turma_corrente['curso_nome'] ?? ''); ?> - 
-                    <?php echo htmlspecialchars($turma_corrente['ano_curso'] ?? ''); ?>º Ano - 
-                    <?php echo htmlspecialchars($turma_corrente['ano_civil'] ?? ''); ?>
-                </p>
-                <?php if (!empty($aluno_data['email'])): ?>
-                <p class="mb-2"><strong>Email:</strong> <?php echo htmlspecialchars($aluno_data['email'] ?? ''); ?></p>
-                <?php endif; ?>
-                <?php if (!empty($aluno_data['telefone_celular'])): ?>
-                <p class="mb-0"><strong>Telefone:</strong> <?php echo htmlspecialchars($aluno_data['telefone_celular'] ?? ''); ?></p>
-                <?php endif; ?>
+                <div class="row">
+                    <div class="col-md-2 text-center mb-3">
+                        <?php if (!empty($aluno_data['foto'])): ?>
+                            <img src="<?php echo htmlspecialchars($aluno_data['foto']); ?>" 
+                                 alt="Foto de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?>" 
+                                 class="img-thumbnail" 
+                                 style="width: 120px; height: 120px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 120px; height: 120px;">
+                                <i class="bi bi-person" style="font-size: 3rem;"></i>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-10">
+                        <p class="mb-2">
+                            <strong>Turma:</strong> 
+                            <?php echo htmlspecialchars($turma_corrente['curso_nome'] ?? ''); ?> - 
+                            <?php echo htmlspecialchars($turma_corrente['ano_curso'] ?? ''); ?>º Ano - 
+                            <?php echo htmlspecialchars($turma_corrente['ano_civil'] ?? ''); ?>
+                        </p>
+                        <?php if (!empty($aluno_data['email'])): ?>
+                        <p class="mb-2"><strong>Email:</strong> <?php echo htmlspecialchars($aluno_data['email'] ?? ''); ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($aluno_data['telefone_celular'])): ?>
+                        <p class="mb-0"><strong>Telefone:</strong> <?php echo htmlspecialchars($aluno_data['telefone_celular'] ?? ''); ?></p>
+                        <?php endif; ?>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -224,15 +241,32 @@ if ($aluno_id) {
                 </div>
             </div>
             <div class="card-header printable-header" style="display: none;">
-                <h4 class="mb-2">Eventos de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?></h4>
-                <p class="mb-1"><strong>Turma:</strong> <?php echo htmlspecialchars($turma_corrente['curso_nome'] ?? ''); ?> - <?php echo htmlspecialchars($turma_corrente['ano_curso'] ?? ''); ?>º Ano - Ano <?php echo htmlspecialchars($turma_corrente['ano_civil'] ?? ''); ?></p>
-                <?php if (!empty($aluno_data['email'])): ?>
-                <p class="mb-1"><strong>E-mail:</strong> <?php echo htmlspecialchars($aluno_data['email']); ?></p>
-                <?php endif; ?>
-                <?php if (!empty($aluno_data['telefone_celular'])): ?>
-                <p class="mb-1"><strong>Telefone:</strong> <?php echo htmlspecialchars($aluno_data['telefone_celular']); ?></p>
-                <?php endif; ?>
-                <p class="mb-0"><strong>Data de impressão:</strong> <?php echo date('d/m/Y H:i'); ?></p>
+                <div class="row">
+                    <div class="col-md-2 text-center mb-2">
+                        <?php if (!empty($aluno_data['foto'])): ?>
+                            <img src="<?php echo htmlspecialchars($aluno_data['foto']); ?>" 
+                                 alt="Foto de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?>" 
+                                 class="img-thumbnail" 
+                                 style="width: 100px; height: 100px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 100px; height: 100px;">
+                                <i class="bi bi-person" style="font-size: 2.5rem;"></i>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-10">
+                        <h4 class="mb-2">Eventos de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?></h4>
+                        <p class="mb-1"><strong>Turma:</strong> <?php echo htmlspecialchars($turma_corrente['curso_nome'] ?? ''); ?> - <?php echo htmlspecialchars($turma_corrente['ano_curso'] ?? ''); ?>º Ano - Ano <?php echo htmlspecialchars($turma_corrente['ano_civil'] ?? ''); ?></p>
+                        <?php if (!empty($aluno_data['email'])): ?>
+                        <p class="mb-1"><strong>E-mail:</strong> <?php echo htmlspecialchars($aluno_data['email']); ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($aluno_data['telefone_celular'])): ?>
+                        <p class="mb-1"><strong>Telefone:</strong> <?php echo htmlspecialchars($aluno_data['telefone_celular']); ?></p>
+                        <?php endif; ?>
+                        <p class="mb-0"><strong>Data de impressão:</strong> <?php echo date('d/m/Y H:i'); ?></p>
+                    </div>
+                </div>
             </div>
             <div class="card-body">
                 <?php if (empty($eventos_aluno)): ?>
