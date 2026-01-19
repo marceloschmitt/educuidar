@@ -119,22 +119,20 @@ require_once 'includes/header.php';
                             </small>
                         </div>
                         <div class="card-body">
-                            <div class="mb-2">
-                                <strong>Descrição do Prontuário:</strong>
-                            </div>
-                            <div class="p-3 bg-light rounded">
-                                <?php if (!empty($ev['prontuario_cae'])): ?>
-                                    <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
-                                <?php else: ?>
-                                    <em class="text-muted">Sem descrição de prontuário.</em>
-                                <?php endif; ?>
-                            </div>
                             <?php if (!empty($ev['observacoes'])): ?>
-                            <div class="mt-3">
+                            <div class="mb-3">
                                 <strong>Observações Gerais:</strong>
                                 <div class="text-muted mt-1">
                                     <?php echo nl2br(htmlspecialchars($ev['observacoes'])); ?>
                                 </div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($ev['prontuario_cae'])): ?>
+                            <div class="mb-2">
+                                <strong>Descrição do Prontuário:</strong>
+                            </div>
+                            <div class="p-3 bg-light rounded">
+                                <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
                             </div>
                             <?php endif; ?>
                         </div>
