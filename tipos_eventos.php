@@ -201,19 +201,19 @@ $tipos = $tipo_evento->getAll();
                             <tr <?php echo (!$t['ativo']) ? 'class="table-secondary"' : ''; ?>>
                                 <td><?php echo htmlspecialchars($t['nome']); ?></td>
                                 <td>
-                                    <?php if (!empty($t['gera_prontuario_cae'])): ?>
-                                        <span class="badge bg-info">Sim</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Não</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
                                     <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?>">
                                         <?php echo htmlspecialchars($t['nome']); ?>
                                     </span>
                                 </td>
                                 <td>
                                     <span class="badge bg-info"><?php echo htmlspecialchars($t['total_eventos'] ?? 0); ?></span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($t['gera_prontuario_cae'])): ?>
+                                        <span class="badge bg-info">Sim</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Não</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php if ($t['ativo']): ?>
