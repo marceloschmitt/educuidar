@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($_POST['action'] == 'create') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
+            $tipo_evento->gera_prontuario_cae = isset($_POST['gera_prontuario_cae']) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -34,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->id = $_POST['id'];
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
+            $tipo_evento->gera_prontuario_cae = isset($_POST['gera_prontuario_cae']) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -149,6 +151,17 @@ $tipos = $tipo_evento->getAll();
                         </div>
                     </div>
                     
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="gera_prontuario_cae" name="gera_prontuario_cae" value="1" 
+                                   <?php echo (!empty($tipo_edit['gera_prontuario_cae'])) ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="gera_prontuario_cae">
+                                Gera campo de prontuário CAE
+                            </label>
+                            <small class="text-muted d-block">Marca se este tipo de evento deve exibir o campo de prontuário da CAE</small>
+                        </div>
+                    </div>
+                    
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="bi bi-save"></i> <?php echo $tipo_edit ? 'Atualizar' : 'Criar'; ?> Tipo
                     </button>
@@ -178,6 +191,7 @@ $tipos = $tipo_evento->getAll();
                                 <th>Nome</th>
                                 <th>Cor</th>
                                 <th>Total de Eventos</th>
+                                <th>Prontuário CAE</th>
                                 <th>Status</th>
                                 <th>Ações</th>
                             </tr>
@@ -186,6 +200,13 @@ $tipos = $tipo_evento->getAll();
                             <?php foreach ($tipos as $t): ?>
                             <tr <?php echo (!$t['ativo']) ? 'class="table-secondary"' : ''; ?>>
                                 <td><?php echo htmlspecialchars($t['nome']); ?></td>
+                                <td>
+                                    <?php if (!empty($t['gera_prontuario_cae'])): ?>
+                                        <span class="badge bg-info">Sim</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Não</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?>">
                                         <?php echo htmlspecialchars($t['nome']); ?>

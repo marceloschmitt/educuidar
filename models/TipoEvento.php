@@ -10,6 +10,7 @@ class TipoEvento {
     public $id;
     public $nome;
     public $cor;
+    public $gera_prontuario_cae;
     public $ativo;
     public $created_at;
 
@@ -19,13 +20,15 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, ativo) 
-                  VALUES (:nome, :cor, :ativo)";
+                  (nome, cor, gera_prontuario_cae, ativo) 
+                  VALUES (:nome, :cor, :gera_prontuario_cae, :ativo)";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nome', $this->nome);
         $stmt->bindParam(':cor', $this->cor);
+        $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
+        $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 
@@ -65,6 +68,7 @@ class TipoEvento {
         $query = "UPDATE " . $this->table . " 
                   SET nome = :nome, 
                       cor = :cor,
+                      gera_prontuario_cae = :gera_prontuario_cae,
                       ativo = :ativo
                   WHERE id = :id";
 
@@ -73,6 +77,8 @@ class TipoEvento {
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':nome', $this->nome);
         $stmt->bindParam(':cor', $this->cor);
+        $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
+        $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 

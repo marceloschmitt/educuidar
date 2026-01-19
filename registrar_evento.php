@@ -392,7 +392,7 @@ if ($aluno_id) {
                                     <select class="form-select" id="edit_tipo_evento_id" name="tipo_evento_id" required>
                                         <option value="">Selecione o tipo...</option>
                                         <?php foreach ($tipos_eventos as $te): ?>
-                                        <option value="<?php echo $te['id']; ?>">
+                                        <option value="<?php echo $te['id']; ?>" data-gera-prontuario="<?php echo !empty($te['gera_prontuario_cae']) ? '1' : '0'; ?>">
                                             <?php echo htmlspecialchars($te['nome']); ?>
                                         </option>
                                         <?php endforeach; ?>
@@ -456,7 +456,7 @@ if ($aluno_id) {
                                     <select class="form-select" id="modal_tipo_evento_id" name="tipo_evento_id" required>
                                         <option value="">Selecione o tipo...</option>
                                         <?php foreach ($tipos_eventos as $te): ?>
-                                        <option value="<?php echo $te['id']; ?>">
+                                        <option value="<?php echo $te['id']; ?>" data-gera-prontuario="<?php echo !empty($te['gera_prontuario_cae']) ? '1' : '0'; ?>">
                                             <?php echo htmlspecialchars($te['nome']); ?>
                                         </option>
                                         <?php endforeach; ?>

@@ -38,16 +38,13 @@ function editEvento(evento) {
         document.getElementById('edit_prontuario_cae').value = evento.prontuario_cae || '';
     }
     
-    // Verificar se é tipo "Atendimento na CAE" e mostrar campo de prontuário
+    // Mostrar campo de prontuário se o tipo marcar essa opção
     var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
     var prontuarioContainer = document.getElementById('edit_prontuario_cae_container');
     if (tipoEventoSelect && prontuarioContainer) {
-        var tipoEventoNome = tipoEventoSelect.options[tipoEventoSelect.selectedIndex]?.text || '';
-        if (tipoEventoNome.includes('CAE')) {
-            prontuarioContainer.style.display = 'block';
-        } else {
-            prontuarioContainer.style.display = 'none';
-        }
+        var selectedOption = tipoEventoSelect.options[tipoEventoSelect.selectedIndex];
+        var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
+        prontuarioContainer.style.display = (geraProntuario === '1') ? 'block' : 'none';
     }
     
     // Abrir modal
@@ -720,8 +717,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modalTipoEvento && prontuarioContainer) {
         modalTipoEvento.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
-            var tipoNome = selectedOption ? selectedOption.text : '';
-            if (tipoNome.includes('CAE')) {
+            var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
+            if (geraProntuario === '1') {
                 prontuarioContainer.style.display = 'block';
             } else {
                 prontuarioContainer.style.display = 'none';
@@ -736,8 +733,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editTipoEvento && editProntuarioContainer) {
         editTipoEvento.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
-            var tipoNome = selectedOption ? selectedOption.text : '';
-            if (tipoNome.includes('CAE')) {
+            var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
+            if (geraProntuario === '1') {
                 editProntuarioContainer.style.display = 'block';
             } else {
                 editProntuarioContainer.style.display = 'none';
