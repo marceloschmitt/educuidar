@@ -191,8 +191,8 @@ $tipos = $tipo_evento->getAll();
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Total de Eventos</th>
-                                <th>Prontuário CAE</th>
+                                <th>Eventos</th>
+                                <th>Prontuário</th>
                                 <th>Status</th>
                                 <th>Ações</th>
                             </tr>

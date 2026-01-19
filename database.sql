@@ -163,7 +163,7 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Ausência da aula', 'danger', 1),
 ('Atendimento (outro)', 'warning', 1),
 ('Ausência de atendimento no NAPNE', 'danger', 1),
-('Atendimento  na CAE', 'warning', 1),
+('Atendimento na CAE', 'warning', 1),
 ('Entrada atrasada autorizada', 'info', 1),
 ('Saída antecipada autorizada', 'info', 1),
 ('Saída antecipada', 'danger', 1),
