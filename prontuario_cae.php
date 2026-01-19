@@ -36,7 +36,7 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
           LEFT JOIN users u ON e.registrado_por = u.id
           WHERE e.aluno_id = :aluno_id AND te.nome LIKE '%CAE%'
-          ORDER BY e.data_evento DESC, e.hora_evento DESC";
+          ORDER BY e.data_evento ASC, e.hora_evento ASC";
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
