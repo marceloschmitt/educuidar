@@ -89,17 +89,8 @@ class TipoEvento {
     }
 
     public function delete() {
-        // Verificar se há eventos usando este tipo
-        $check_query = "SELECT COUNT(*) as total FROM eventos WHERE tipo_evento_id = :id";
-        $check_stmt = $this->conn->prepare($check_query);
-        $check_stmt->bindParam(':id', $this->id);
-        $check_stmt->execute();
-        $result = $check_stmt->fetch();
-
-        if ($result['total'] > 0) {
-            // Não pode excluir, apenas desativar
-            $this->ativo = 0;
-            return $this->update();
+        if ($this->getTotalEventos() > 0) {
+            return false;
         }
 
         $query = "DELETE FROM " . $this->table . " WHERE id = :id";
@@ -110,6 +101,21 @@ class TipoEvento {
             return true;
         }
         return false;
+    }
+
+    public function getTotalEventos($id = null) {
+        $target_id = $id ?? $this->id;
+        if (!$target_id) {
+            return 0;
+        }
+
+        $check_query = "SELECT COUNT(*) as total FROM eventos WHERE tipo_evento_id = :id";
+        $check_stmt = $this->conn->prepare($check_query);
+        $check_stmt->bindParam(':id', $target_id);
+        $check_stmt->execute();
+        $result = $check_stmt->fetch();
+
+        return isset($result['total']) ? (int) $result['total'] : 0;
     }
 }
 ?>

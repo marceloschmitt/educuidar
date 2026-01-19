@@ -50,7 +50,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
         } elseif ($_POST['action'] == 'delete' && isset($_POST['id'])) {
             $tipo_evento->id = $_POST['id'];
-            if ($tipo_evento->delete()) {
+            if ($tipo_evento->getTotalEventos() > 0) {
+                $_SESSION['error'] = 'Não é possível excluir um tipo que já possui eventos registrados.';
+            } elseif ($tipo_evento->delete()) {
                 header('Location: tipos_eventos.php?success=deleted');
                 exit;
             } else {
@@ -73,7 +75,7 @@ if (isset($_GET['success'])) {
     } elseif ($_GET['success'] == 'updated') {
         $success = 'Tipo de evento atualizado com sucesso!';
     } elseif ($_GET['success'] == 'deleted') {
-        $success = 'Tipo de evento excluído ou desativado com sucesso!';
+        $success = 'Tipo de evento excluído com sucesso!';
     }
 }
 
@@ -189,7 +191,6 @@ $tipos = $tipo_evento->getAll();
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Cor</th>
                                 <th>Total de Eventos</th>
                                 <th>Prontuário CAE</th>
                                 <th>Status</th>
@@ -199,7 +200,6 @@ $tipos = $tipo_evento->getAll();
                         <tbody>
                             <?php foreach ($tipos as $t): ?>
                             <tr <?php echo (!$t['ativo']) ? 'class="table-secondary"' : ''; ?>>
-                                <td><?php echo htmlspecialchars($t['nome']); ?></td>
                                 <td>
                                     <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?>">
                                         <?php echo htmlspecialchars($t['nome']); ?>
@@ -226,14 +226,21 @@ $tipos = $tipo_evento->getAll();
                                     <a href="tipos_eventos.php?edit=<?php echo $t['id']; ?>" class="btn btn-primary btn-sm">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form method="POST" action="" style="display: inline;" 
-                                          class="form-confirm" data-confirm="Tem certeza? Tipos com eventos serão apenas desativados.">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm">
+                                    <?php if (!empty($t['total_eventos'])): ?>
+                                        <button type="button" class="btn btn-danger btn-sm" disabled
+                                                title="Não é possível excluir um tipo com eventos registrados.">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                    </form>
+                                    <?php else: ?>
+                                        <form method="POST" action="" style="display: inline;" 
+                                              class="form-confirm" data-confirm="Tem certeza que deseja excluir este tipo de evento?">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
