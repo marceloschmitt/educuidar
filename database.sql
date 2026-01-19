@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     data_evento DATE NOT NULL,
     hora_evento TIME NULL,
     observacoes TEXT NULL,
+    prontuario_cae TEXT NULL,
     registrado_por INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

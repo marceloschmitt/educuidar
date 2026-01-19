@@ -178,6 +178,11 @@
     <a class="dropdown-item" href="#" id="contextMenuVerEventos">
         <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
     </a>
+    <?php if ($user->isAssistenciaEstudantil() || $user->isAdmin()): ?>
+    <a class="dropdown-item" href="#" id="contextMenuProntuarioCAE">
+        <i class="bi bi-file-text text-info"></i> Ver Prontuário CAE
+    </a>
+    <?php endif; ?>
     <div id="contextMenuAdminActions" style="display: none;">
         <a class="dropdown-item" href="#" id="contextMenuGerenciarTurmas">
             <i class="bi bi-collection text-info"></i> Gerenciar Turmas
@@ -471,6 +476,11 @@
                 <button type="button" class="btn btn-primary" id="btnEditarDaFicha">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </button>
+                <?php endif; ?>
+                <?php if ($user->isAssistenciaEstudantil() || $user->isAdmin()): ?>
+                <a href="prontuario_cae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
+                    <i class="bi bi-file-text"></i> Ver Prontuário CAE
+                </a>
                 <?php endif; ?>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>

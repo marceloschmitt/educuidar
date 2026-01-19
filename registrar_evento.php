@@ -33,6 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
+    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $user_id = $_SESSION['user_id'] ?? null;
     
     if (empty($evento->id) || empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -94,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
+    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $evento->registrado_por = $_SESSION['user_id'];
     
     if (empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -410,6 +412,17 @@ if ($aluno_id) {
                                 <label for="edit_observacoes" class="form-label">Observações</label>
                                 <textarea class="form-control" id="edit_observacoes" name="observacoes" rows="3"></textarea>
                             </div>
+                            
+                            <?php if ($user->isAssistenciaEstudantil()): ?>
+                            <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">
+                                <label for="edit_prontuario_cae" class="form-label">
+                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (CAE)
+                                </label>
+                                <textarea class="form-control" id="edit_prontuario_cae" name="prontuario_cae" rows="5" 
+                                          placeholder="Descrição do atendimento para o prontuário da CAE (visível apenas para a equipe da CAE)"></textarea>
+                                <small class="text-muted">Este campo é visível apenas para a equipe da CAE.</small>
+                            </div>
+                            <?php endif; ?>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -463,6 +476,17 @@ if ($aluno_id) {
                                 <label for="modal_observacoes" class="form-label">Observações</label>
                                 <textarea class="form-control" id="modal_observacoes" name="observacoes" rows="3"></textarea>
                             </div>
+                            
+                            <?php if ($user->isAssistenciaEstudantil()): ?>
+                            <div class="mb-3" id="prontuario_cae_container" style="display: none;">
+                                <label for="modal_prontuario_cae" class="form-label">
+                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (CAE)
+                                </label>
+                                <textarea class="form-control" id="modal_prontuario_cae" name="prontuario_cae" rows="5" 
+                                          placeholder="Descrição do atendimento para o prontuário da CAE (visível apenas para a equipe da CAE)"></textarea>
+                                <small class="text-muted">Este campo é visível apenas para a equipe da CAE.</small>
+                            </div>
+                            <?php endif; ?>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

@@ -14,6 +14,7 @@ class Evento {
     public $data_evento;
     public $hora_evento;
     public $observacoes;
+    public $prontuario_cae;
     public $registrado_por;
     public $created_at;
 
@@ -45,8 +46,8 @@ class Evento {
         }
 
         $query = "INSERT INTO " . $this->table . " 
-                  (aluno_id, turma_id, tipo_evento_id, data_evento, hora_evento, observacoes, registrado_por) 
-                  VALUES (:aluno_id, :turma_id, :tipo_evento_id, :data_evento, :hora_evento, :observacoes, :registrado_por)";
+                  (aluno_id, turma_id, tipo_evento_id, data_evento, hora_evento, observacoes, prontuario_cae, registrado_por) 
+                  VALUES (:aluno_id, :turma_id, :tipo_evento_id, :data_evento, :hora_evento, :observacoes, :prontuario_cae, :registrado_por)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -56,6 +57,7 @@ class Evento {
         $stmt->bindParam(':data_evento', $this->data_evento);
         $stmt->bindParam(':hora_evento', $this->hora_evento);
         $stmt->bindParam(':observacoes', $this->observacoes);
+        $stmt->bindParam(':prontuario_cae', $this->prontuario_cae);
         $stmt->bindParam(':registrado_por', $this->registrado_por);
 
         if ($stmt->execute()) {
@@ -66,7 +68,7 @@ class Evento {
 
     public function getAll($registrado_por = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
-                  e.data_evento, e.hora_evento, e.observacoes, e.registrado_por, e.created_at,
+                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.id as curso_id, c.nome as curso_nome,
@@ -116,7 +118,7 @@ class Evento {
 
     public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
-                  e.data_evento, e.hora_evento, e.observacoes, e.registrado_por, e.created_at,
+                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
@@ -223,7 +225,8 @@ class Evento {
                       tipo_evento_id = :tipo_evento_id, 
                       data_evento = :data_evento, 
                       hora_evento = :hora_evento, 
-                      observacoes = :observacoes
+                      observacoes = :observacoes,
+                      prontuario_cae = :prontuario_cae
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -235,6 +238,7 @@ class Evento {
         $stmt->bindParam(':data_evento', $this->data_evento);
         $stmt->bindParam(':hora_evento', $this->hora_evento);
         $stmt->bindParam(':observacoes', $this->observacoes);
+        $stmt->bindParam(':prontuario_cae', $this->prontuario_cae);
 
         if ($stmt->execute()) {
             return true;

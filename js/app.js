@@ -34,6 +34,21 @@ function editEvento(evento) {
     if (document.getElementById('edit_observacoes')) {
         document.getElementById('edit_observacoes').value = evento.observacoes || '';
     }
+    if (document.getElementById('edit_prontuario_cae')) {
+        document.getElementById('edit_prontuario_cae').value = evento.prontuario_cae || '';
+    }
+    
+    // Verificar se é tipo "Atendimento na CAE" e mostrar campo de prontuário
+    var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
+    var prontuarioContainer = document.getElementById('edit_prontuario_cae_container');
+    if (tipoEventoSelect && prontuarioContainer) {
+        var tipoEventoNome = tipoEventoSelect.options[tipoEventoSelect.selectedIndex]?.text || '';
+        if (tipoEventoNome.includes('CAE')) {
+            prontuarioContainer.style.display = 'block';
+        } else {
+            prontuarioContainer.style.display = 'none';
+        }
+    }
     
     // Abrir modal
     var modalElement = document.getElementById('editEventoModal');
@@ -204,6 +219,12 @@ function viewFichaAluno(aluno) {
     var modalFicha = document.getElementById('modalFichaAluno');
     if (modalFicha) {
         modalFicha.setAttribute('data-aluno-data', JSON.stringify(aluno));
+    }
+    
+    // Atualizar link do prontuário CAE se existir
+    var btnProntuarioCAE = document.getElementById('btnProntuarioCAE');
+    if (btnProntuarioCAE && aluno.id) {
+        btnProntuarioCAE.href = 'prontuario_cae.php?aluno_id=' + aluno.id;
     }
     
     // Abrir modal
@@ -567,6 +588,12 @@ document.addEventListener('DOMContentLoaded', function() {
             var linkVerEventos = document.getElementById('contextMenuVerEventos');
             linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id;
             
+            // Configurar link do prontuário CAE se existir
+            var linkProntuarioCAE = document.getElementById('contextMenuProntuarioCAE');
+            if (linkProntuarioCAE) {
+                linkProntuarioCAE.href = 'prontuario_cae.php?aluno_id=' + alunoData.id;
+            }
+            
             // Mostrar ações de admin se for admin
             var adminActions = document.getElementById('contextMenuAdminActions');
             if (isAdmin) {
@@ -686,6 +713,38 @@ document.addEventListener('DOMContentLoaded', function() {
             editUser(userData);
         });
     });
+    
+    // Mostrar/ocultar campo de prontuário CAE quando tipo de evento mudar
+    var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
+    var prontuarioContainer = document.getElementById('prontuario_cae_container');
+    if (modalTipoEvento && prontuarioContainer) {
+        modalTipoEvento.addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var tipoNome = selectedOption ? selectedOption.text : '';
+            if (tipoNome.includes('CAE')) {
+                prontuarioContainer.style.display = 'block';
+            } else {
+                prontuarioContainer.style.display = 'none';
+                document.getElementById('modal_prontuario_cae').value = '';
+            }
+        });
+    }
+    
+    // Mostrar/ocultar campo de prontuário CAE quando tipo de evento mudar no modal de edição
+    var editTipoEvento = document.getElementById('edit_tipo_evento_id');
+    var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
+    if (editTipoEvento && editProntuarioContainer) {
+        editTipoEvento.addEventListener('change', function() {
+            var selectedOption = this.options[this.selectedIndex];
+            var tipoNome = selectedOption ? selectedOption.text : '';
+            if (tipoNome.includes('CAE')) {
+                editProntuarioContainer.style.display = 'block';
+            } else {
+                editProntuarioContainer.style.display = 'none';
+                document.getElementById('edit_prontuario_cae').value = '';
+            }
+        });
+    }
     
     // Linhas clicáveis para mostrar observações (mantido para compatibilidade)
     var observacoesRows = document.querySelectorAll('.row-observacoes');
