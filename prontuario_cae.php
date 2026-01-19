@@ -27,7 +27,7 @@ if (!$aluno_data) {
     exit;
 }
 
-// Buscar todos os eventos do aluno que têm prontuário CAE
+// Buscar todos os eventos CAE do aluno, com ou sem descrição
 $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
           e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
           te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
@@ -35,7 +35,7 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           FROM eventos e
           LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
           LEFT JOIN users u ON e.registrado_por = u.id
-          WHERE e.aluno_id = :aluno_id AND e.prontuario_cae IS NOT NULL AND e.prontuario_cae != ''
+          WHERE e.aluno_id = :aluno_id AND te.nome LIKE '%CAE%'
           ORDER BY e.data_evento DESC, e.hora_evento DESC";
 
 $stmt = $db->prepare($query);
@@ -94,7 +94,7 @@ require_once 'includes/header.php';
                 
                 <?php if (empty($eventos_cae)): ?>
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Nenhum registro de prontuário encontrado para este aluno.
+                    <i class="bi bi-info-circle"></i> Nenhum atendimento CAE encontrado para este aluno.
                 </div>
                 <?php else: ?>
                 <div class="timeline">
@@ -123,7 +123,11 @@ require_once 'includes/header.php';
                                 <strong>Descrição do Prontuário:</strong>
                             </div>
                             <div class="p-3 bg-light rounded">
-                                <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
+                                <?php if (!empty($ev['prontuario_cae'])): ?>
+                                    <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
+                                <?php else: ?>
+                                    <em class="text-muted">Sem descrição de prontuário.</em>
+                                <?php endif; ?>
                             </div>
                             <?php if (!empty($ev['observacoes'])): ?>
                             <div class="mt-3">
