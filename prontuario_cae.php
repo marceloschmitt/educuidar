@@ -9,7 +9,7 @@ $evento = new Evento($db);
 $aluno = new Aluno($db);
 
 // Apenas usuários da CAE podem acessar
-if (!$user->isAssistenciaEstudantil() && !$user->isAdmin()) {
+if (!$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
     exit;
 }

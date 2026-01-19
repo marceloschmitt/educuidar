@@ -178,7 +178,7 @@
     <a class="dropdown-item" href="#" id="contextMenuVerEventos">
         <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
     </a>
-    <?php if ($user->isAssistenciaEstudantil() || $user->isAdmin()): ?>
+    <?php if ($user->isAssistenciaEstudantil()): ?>
     <a class="dropdown-item" href="#" id="contextMenuProntuarioCAE">
         <i class="bi bi-file-text text-info"></i> Ver Prontuário CAE
     </a>
@@ -477,7 +477,7 @@
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </button>
                 <?php endif; ?>
-                <?php if ($user->isAssistenciaEstudantil() || $user->isAdmin()): ?>
+                <?php if ($user->isAssistenciaEstudantil()): ?>
                 <a href="prontuario_cae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
                     <i class="bi bi-file-text"></i> Ver Prontuário CAE
                 </a>
