@@ -221,7 +221,7 @@ function viewFichaAluno(aluno) {
     // Atualizar link do prontuário CAE se existir
     var btnProntuarioCAE = document.getElementById('btnProntuarioCAE');
     if (btnProntuarioCAE && aluno.id) {
-        btnProntuarioCAE.href = 'prontuario_cae.php?aluno_id=' + aluno.id;
+        btnProntuarioCAE.href = 'prontuario_ae.php?aluno_id=' + aluno.id;
     }
     
     // Abrir modal
@@ -588,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Configurar link do prontuário CAE se existir
             var linkProntuarioCAE = document.getElementById('contextMenuProntuarioCAE');
             if (linkProntuarioCAE) {
-                linkProntuarioCAE.href = 'prontuario_cae.php?aluno_id=' + alunoData.id;
+                linkProntuarioCAE.href = 'prontuario_ae.php?aluno_id=' + alunoData.id;
             }
             
             // Mostrar ações de admin se for admin
