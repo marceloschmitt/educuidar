@@ -306,6 +306,11 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="modal-footer">
+                <?php if ($user->isAssistenciaEstudantil()): ?>
+                <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Editar Aluno
+                </a>
+                <?php endif; ?>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
             </div>
         </div>

@@ -455,9 +455,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Abrir ficha automaticamente quando vindo com ?ficha=ID
-    var fichaParam = new URLSearchParams(window.location.search).get('ficha');
-    if (fichaParam) {
+    // Abrir ficha ou edição automaticamente quando vindo com ?ficha=ID ou ?edit=ID
+    var urlParams = new URLSearchParams(window.location.search);
+    var fichaParam = urlParams.get('ficha');
+    var editParam = urlParams.get('edit');
+    if (fichaParam || editParam) {
+        var targetId = fichaParam || editParam;
         var alunoData = null;
         var alunoRows = document.querySelectorAll('.aluno-row[data-aluno]');
         alunoRows.forEach(function(row) {
@@ -470,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             try {
                 var parsed = JSON.parse(dataStr);
-                if (String(parsed.id) === String(fichaParam)) {
+                if (String(parsed.id) === String(targetId)) {
                     alunoData = parsed;
                 }
             } catch (e) {
@@ -478,7 +481,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         if (alunoData) {
-            viewFichaAluno(alunoData);
+            if (editParam) {
+                editAluno(alunoData);
+            } else {
+                viewFichaAluno(alunoData);
+            }
         }
     }
     
