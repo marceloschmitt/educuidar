@@ -55,9 +55,14 @@ require_once 'includes/header.php';
                     <i class="bi bi-file-text"></i> Prontuário CAE - 
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
-                <a href="alunos.php" class="btn btn-sm btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Voltar para Alunos
-                </a>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
+                        <i class="bi bi-printer"></i> Imprimir
+                    </button>
+                    <a href="alunos.php" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar para Alunos
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row mb-4">

@@ -235,7 +235,7 @@ if ($aluno_id) {
                 <h5 class="mb-0"><i class="bi bi-list-ul"></i> Eventos Registrados</h5>
                 <div>
                     <?php if ($user->isAssistenciaEstudantil()): ?>
-                    <a href="prontuario_cae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
+                    <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
                     <?php endif; ?>

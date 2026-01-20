@@ -478,7 +478,7 @@
                 </button>
                 <?php endif; ?>
                 <?php if ($user->isAssistenciaEstudantil()): ?>
-                <a href="prontuario_cae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
+                <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
                     <i class="bi bi-file-text"></i> Ver Prontuário CAE
                 </a>
                 <?php endif; ?>
