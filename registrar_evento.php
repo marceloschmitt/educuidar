@@ -234,6 +234,9 @@ if ($aluno_id) {
             <div class="card-header d-flex justify-content-between align-items-center no-print">
                 <h5 class="mb-0"><i class="bi bi-list-ul"></i> Eventos Registrados</h5>
                 <div>
+                    <a href="alunos.php?ficha=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-secondary btn-sm me-2">
+                        <i class="bi bi-file-text"></i> Ver Ficha
+                    </a>
                     <?php if ($user->isAssistenciaEstudantil()): ?>
                     <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário

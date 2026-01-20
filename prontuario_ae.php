@@ -56,6 +56,9 @@ require_once 'includes/header.php';
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
                 <div class="d-flex gap-2">
+                    <a href="alunos.php?ficha=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-file-text"></i> Ver Ficha
+                    </a>
                     <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                         <i class="bi bi-printer"></i> Imprimir
                     </button>

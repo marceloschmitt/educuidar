@@ -454,6 +454,33 @@ document.addEventListener('DOMContentLoaded', function() {
             window.print();
         });
     }
+
+    // Abrir ficha automaticamente quando vindo com ?ficha=ID
+    var fichaParam = new URLSearchParams(window.location.search).get('ficha');
+    if (fichaParam) {
+        var alunoData = null;
+        var alunoRows = document.querySelectorAll('.aluno-row[data-aluno]');
+        alunoRows.forEach(function(row) {
+            if (alunoData) {
+                return;
+            }
+            var dataStr = row.getAttribute('data-aluno');
+            if (!dataStr) {
+                return;
+            }
+            try {
+                var parsed = JSON.parse(dataStr);
+                if (String(parsed.id) === String(fichaParam)) {
+                    alunoData = parsed;
+                }
+            } catch (e) {
+                // Ignorar erro de parse
+            }
+        });
+        if (alunoData) {
+            viewFichaAluno(alunoData);
+        }
+    }
     
     // Preview de foto ao selecionar arquivo
     var fotoInput = document.getElementById('modal_foto');
