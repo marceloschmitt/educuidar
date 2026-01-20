@@ -164,6 +164,10 @@ if ($aluno_id) {
         exit;
     }
     
+    // Nivel2 só vê eventos que ele mesmo registrou
+    $user_id = $_SESSION['user_id'] ?? null;
+    $registrado_por = ($user->isNivel2()) ? $user_id : null;
+
     $aluno_ficha = $aluno_data;
     $aluno_ficha['todas_turmas'] = [];
     foreach ($turmas_aluno as $ta) {
@@ -190,9 +194,6 @@ if ($aluno_id) {
     $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por);
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
 
-    // Nivel2 só vê eventos que ele mesmo registrou
-    $user_id = $_SESSION['user_id'] ?? null;
-    $registrado_por = ($user->isNivel2()) ? $user_id : null;
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
     $tipos_eventos = $tipo_evento->getAll(true); // Apenas ativos
     ?>
