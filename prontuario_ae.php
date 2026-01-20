@@ -1,5 +1,5 @@
 <?php
-$page_title = 'Prontuário CAE';
+$page_title = 'Prontuário Assistência Estudantil';
 require_once 'config/init.php';
 
 $database = new Database();
@@ -8,7 +8,7 @@ $user = new User($db);
 $evento = new Evento($db);
 $aluno = new Aluno($db);
 
-// Apenas usuários da CAE podem acessar
+// Apenas usuários da Assistência Estudantil podem acessar
 if (!$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
     exit;
@@ -27,7 +27,7 @@ if (!$aluno_data) {
     exit;
 }
 
-// Buscar todos os eventos CAE do aluno, com ou sem descrição
+// Buscar todos os eventos da Assistência Estudantil do aluno, com ou sem descrição
 $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
           e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
           te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
@@ -52,7 +52,7 @@ require_once 'includes/header.php';
         <div class="card mb-3">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
-                    <i class="bi bi-file-text"></i> Prontuário CAE - 
+                    <i class="bi bi-file-text"></i> Prontuário Assistência Estudantil - 
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
                 <div class="d-flex gap-2">
@@ -95,11 +95,11 @@ require_once 'includes/header.php';
                 
                 <hr>
                 
-                <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos CAE</h5>
+                <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos da Assistência Estudantil</h5>
                 
                 <?php if (empty($eventos_cae)): ?>
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Nenhum atendimento CAE encontrado para este aluno.
+                    <i class="bi bi-info-circle"></i> Nenhum atendimento da Assistência Estudantil encontrado para este aluno.
                 </div>
                 <?php else: ?>
                 <div class="timeline">

@@ -158,9 +158,9 @@ $tipos = $tipo_evento->getAll();
                             <input class="form-check-input" type="checkbox" id="gera_prontuario_cae" name="gera_prontuario_cae" value="1" 
                                    <?php echo (!empty($tipo_edit['gera_prontuario_cae'])) ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="gera_prontuario_cae">
-                                Gera campo de prontuário CAE
+                                Gera campo de prontuário da Assistência Estudantil
                             </label>
-                            <small class="text-muted d-block">Marca se este tipo de evento deve exibir o campo de prontuário da CAE</small>
+                            <small class="text-muted d-block">Marca se este tipo de evento deve exibir o campo de prontuário da Assistência Estudantil</small>
                         </div>
                     </div>
                     

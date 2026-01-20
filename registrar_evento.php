@@ -421,11 +421,11 @@ if ($aluno_id) {
                             <?php if ($user->isAssistenciaEstudantil()): ?>
                             <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">
                                 <label for="edit_prontuario_cae" class="form-label">
-                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (CAE)
+                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (Assistência Estudantil)
                                 </label>
                                 <textarea class="form-control" id="edit_prontuario_cae" name="prontuario_cae" rows="5" 
-                                          placeholder="Descrição do atendimento para o prontuário da CAE (visível apenas para a equipe da CAE)"></textarea>
-                                <small class="text-muted">Este campo é visível apenas para a equipe da CAE.</small>
+                                          placeholder="Descrição do atendimento para o prontuário da Assistência Estudantil (visível apenas para a equipe da Assistência Estudantil)"></textarea>
+                                <small class="text-muted">Este campo é visível apenas para a equipe da Assistência Estudantil.</small>
                             </div>
                             <?php endif; ?>
                         </div>
@@ -485,11 +485,11 @@ if ($aluno_id) {
                             <?php if ($user->isAssistenciaEstudantil()): ?>
                             <div class="mb-3" id="prontuario_cae_container" style="display: none;">
                                 <label for="modal_prontuario_cae" class="form-label">
-                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (CAE)
+                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (Assistência Estudantil)
                                 </label>
                                 <textarea class="form-control" id="modal_prontuario_cae" name="prontuario_cae" rows="5" 
-                                          placeholder="Descrição do atendimento para o prontuário da CAE (visível apenas para a equipe da CAE)"></textarea>
-                                <small class="text-muted">Este campo é visível apenas para a equipe da CAE.</small>
+                                          placeholder="Descrição do atendimento para o prontuário da Assistência Estudantil (visível apenas para a equipe da Assistência Estudantil)"></textarea>
+                                <small class="text-muted">Este campo é visível apenas para a equipe da Assistência Estudantil.</small>
                             </div>
                             <?php endif; ?>
                         </div>

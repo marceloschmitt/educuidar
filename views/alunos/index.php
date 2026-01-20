@@ -180,7 +180,7 @@
     </a>
     <?php if ($user->isAssistenciaEstudantil()): ?>
     <a class="dropdown-item" href="#" id="contextMenuProntuarioCAE">
-        <i class="bi bi-file-text text-info"></i> Ver Prontuário CAE
+        <i class="bi bi-file-text text-info"></i> Ver Prontuário Assistência Estudantil
     </a>
     <?php endif; ?>
     <div id="contextMenuAdminActions" style="display: none;">
@@ -479,7 +479,7 @@
                 <?php endif; ?>
                 <?php if ($user->isAssistenciaEstudantil()): ?>
                 <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
-                    <i class="bi bi-file-text"></i> Ver Prontuário CAE
+                    <i class="bi bi-file-text"></i> Ver Prontuário Assistência Estudantil
                 </a>
                 <?php endif; ?>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
