@@ -212,6 +212,7 @@
                 <div class="modal-body">
                     <input type="hidden" name="action" id="formAction" value="create">
                     <input type="hidden" name="id" id="formId" value="">
+                    <input type="hidden" name="return_to" id="formReturnTo" value="<?php echo htmlspecialchars($return_to ?? ''); ?>">
                     
                     <div class="row">
                         <div class="col-md-8">

@@ -34,24 +34,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $error = 'Por favor, informe a Base DN!';
     } elseif (empty($ldap_user_attribute)) {
         $error = 'Por favor, informe o atributo de usuário!';
-    } else {
-        // Save all LDAP configurations
-        $success_count = 0;
-        if ($configuracao->setLdapHost($ldap_host)) $success_count++;
-        if ($configuracao->setLdapBaseDn($ldap_base_dn)) $success_count++;
-        if ($configuracao->setLdapBindDn($ldap_bind_dn)) $success_count++;
-        if ($configuracao->setLdapUserAttribute($ldap_user_attribute)) $success_count++;
-        
-        // Only update password if provided (leave empty to keep current password)
-        if ($ldap_bind_password !== '') {
-            if ($configuracao->setLdapBindPassword($ldap_bind_password)) $success_count++;
-        }
-        // If empty, don't update password - keep the current one
-        
-        if ($success_count > 0) {
-            $success = 'Configurações LDAP salvas com sucesso!';
         } else {
-            $error = 'Erro ao salvar configurações LDAP. Tente novamente.';
+            // Save all LDAP configurations
+            $success_count = 0;
+            if ($configuracao->setLdapHost($ldap_host)) $success_count++;
+            if ($configuracao->setLdapBaseDn($ldap_base_dn)) $success_count++;
+            if ($configuracao->setLdapBindDn($ldap_bind_dn)) $success_count++;
+            if ($configuracao->setLdapUserAttribute($ldap_user_attribute)) $success_count++;
+            
+        // Only update password if provided (leave empty to keep current password)
+            if ($ldap_bind_password !== '') {
+                if ($configuracao->setLdapBindPassword($ldap_bind_password)) $success_count++;
+            }
+        // If empty, don't update password - keep the current one
+            
+            if ($success_count > 0) {
+                $success = 'Configurações LDAP salvas com sucesso!';
+            } else {
+                $error = 'Erro ao salvar configurações LDAP. Tente novamente.';
         }
     }
 }

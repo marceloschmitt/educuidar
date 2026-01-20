@@ -92,6 +92,10 @@ function resetForm() {
     document.getElementById('remover_foto').checked = false;
     document.getElementById('modalTitle').textContent = 'Novo Aluno';
     document.getElementById('modalSubmitText').textContent = 'Criar';
+    var returnToInput = document.getElementById('formReturnTo');
+    if (returnToInput) {
+        returnToInput.value = '';
+    }
 }
 
 // Função para visualizar ficha do aluno

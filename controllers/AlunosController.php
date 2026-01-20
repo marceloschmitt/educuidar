@@ -151,6 +151,8 @@ class AlunosController extends Controller {
             });
         }
         
+        $return_to = $_GET['return_to'] ?? '';
+
         // Prepare view data
         $data = [
             'page_title' => 'Alunos',
@@ -164,6 +166,7 @@ class AlunosController extends Controller {
             'filtro_curso' => $filtro_curso,
             'filtro_turma' => $filtro_turma,
             'filtro_nome' => $filtro_nome,
+            'return_to' => $return_to,
             'aluno_edit' => $aluno_edit,
             'user' => $this->user
         ];
@@ -335,6 +338,14 @@ class AlunosController extends Controller {
      * Update aluno
      */
     private function update() {
+        $return_to = $_POST['return_to'] ?? '';
+        $return_to = trim($return_to);
+        if ($return_to !== '') {
+            if (preg_match('/[\r\n]/', $return_to) || strpos($return_to, '://') !== false || strpos($return_to, '//') === 0) {
+                $return_to = '';
+            }
+        }
+
         $this->aluno->id = $_POST['id'];
         $this->aluno->nome = $_POST['nome'] ?? '';
         $this->aluno->nome_social = $_POST['nome_social'] ?? '';
@@ -355,7 +366,7 @@ class AlunosController extends Controller {
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
-            $this->redirect('alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
             return;
         }
         
@@ -367,7 +378,7 @@ class AlunosController extends Controller {
         $foto_path = $this->uploadFoto($this->aluno->id);
         if ($foto_path === null && isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
             // Se houve erro no upload e não foi "arquivo não enviado", já foi setado o erro
-            $this->redirect('alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
             return;
         }
         
@@ -393,14 +404,14 @@ class AlunosController extends Controller {
         
         if ($this->aluno->update()) {
             $this->setSuccess('Aluno atualizado com sucesso!');
-            $this->redirect('alunos.php?success=updated');
+            $this->redirect($return_to !== '' ? $return_to : 'alunos.php?success=updated');
         } else {
             // Se falhou ao atualizar, deletar nova foto se foi enviada
             if ($foto_path && $foto_path !== $foto_antiga) {
                 $this->deleteFoto($foto_path);
             }
             $this->setError('Erro ao atualizar aluno.');
-            $this->redirect('alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
         }
     }
     

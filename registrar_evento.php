@@ -655,7 +655,7 @@ if ($aluno_id) {
                     </div>
                     <div class="modal-footer">
                         <?php if ($user->isAssistenciaEstudantil()): ?>
-                        <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-primary">
+                        <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('registrar_evento.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
                             <i class="bi bi-pencil"></i> Editar Aluno
                         </a>
                         <?php endif; ?>

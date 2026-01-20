@@ -51,16 +51,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: definir_senha_admin.php');
                 exit;
             } elseif ($login_result === true) {
-                header('Location: index.php');
-                exit;
+            header('Location: index.php');
+            exit;
             } else {
                 // Check if there's a specific LDAP error
                 if (isset($_SESSION['ldap_error'])) {
                     $ldap_error = $_SESSION['ldap_error'];
                     unset($_SESSION['ldap_error']);
                     $error = 'Erro na autenticação LDAP!';
-                } else {
-                    $error = 'Usuário ou senha incorretos!';
+        } else {
+            $error = 'Usuário ou senha incorretos!';
                 }
             }
         }

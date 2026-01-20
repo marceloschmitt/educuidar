@@ -107,7 +107,7 @@ class Aluno {
 
     public function update() {
         $query = "UPDATE " . $this->table . " 
-                  SET nome = :nome,
+                  SET nome = :nome, 
                       nome_social = :nome_social,
                       email = :email,
                       telefone_celular = :telefone_celular,
