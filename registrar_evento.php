@@ -164,6 +164,32 @@ if ($aluno_id) {
         exit;
     }
     
+    $aluno_ficha = $aluno_data;
+    $aluno_ficha['todas_turmas'] = [];
+    foreach ($turmas_aluno as $ta) {
+        $turma_completa = $turma->getById($ta['id']);
+        if ($turma_completa) {
+            $aluno_ficha['todas_turmas'][] = [
+                'id' => $ta['id'],
+                'curso_nome' => $turma_completa['curso_nome'] ?? '',
+                'curso_id' => $turma_completa['curso_id'] ?? '',
+                'ano_curso' => $ta['ano_curso'],
+                'ano_civil' => $ta['ano_civil'],
+                'is_ano_corrente' => ($ta['ano_civil'] == $ano_corrente)
+            ];
+        }
+    }
+    $turma_corrente_completa = $turma_corrente ? $turma->getById($turma_corrente['id']) : null;
+    if ($turma_corrente_completa) {
+        $aluno_ficha['curso_nome'] = $turma_corrente_completa['curso_nome'] ?? '';
+        $aluno_ficha['curso_id'] = $turma_corrente_completa['curso_id'] ?? '';
+        $aluno_ficha['ano_curso'] = $turma_corrente['ano_curso'];
+        $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
+        $aluno_ficha['is_ano_corrente'] = true;
+    }
+    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por);
+    $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
+
     // Nivel2 só vê eventos que ele mesmo registrou
     $user_id = $_SESSION['user_id'] ?? null;
     $registrado_por = ($user->isNivel2()) ? $user_id : null;
@@ -234,9 +260,9 @@ if ($aluno_id) {
             <div class="card-header d-flex justify-content-between align-items-center no-print">
                 <h5 class="mb-0"><i class="bi bi-list-ul"></i> Eventos Registrados</h5>
                 <div>
-                    <a href="alunos.php?ficha=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-secondary btn-sm me-2">
+                    <button type="button" class="btn btn-secondary btn-sm me-2 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
-                    </a>
+                    </button>
                     <?php if ($user->isAssistenciaEstudantil()): ?>
                     <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
@@ -503,6 +529,132 @@ if ($aluno_id) {
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal para Ver Ficha do Aluno -->
+        <div class="modal fade" id="modalFichaAluno" tabindex="-1" aria-labelledby="modalFichaAlunoLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-scrollable modal-xl">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalFichaAlunoLabel">
+                            <i class="bi bi-file-text"></i> Ficha do Aluno
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-3 text-center mb-3">
+                                <div id="ficha_foto" class="mb-3"></div>
+                            </div>
+                            <div class="col-md-9">
+                                <h4 id="ficha_nome" class="mb-3"></h4>
+                                <p id="ficha_nome_social" class="text-muted mb-3"></p>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3"><i class="bi bi-person-badge"></i> Dados de Identificação</h6>
+                                        <table class="table table-sm table-borderless">
+                                            <tr>
+                                                <th width="40%">E-mail:</th>
+                                                <td id="ficha_email">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Telefone Celular:</th>
+                                                <td id="ficha_telefone_celular">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Data de Nascimento:</th>
+                                                <td id="ficha_data_nascimento">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Número de Matrícula:</th>
+                                                <td id="ficha_numero_matricula">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Endereço:</th>
+                                                <td id="ficha_endereco">-</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6 class="mb-3"><i class="bi bi-book"></i> Informações Acadêmicas</h6>
+                                        <table class="table table-sm table-borderless">
+                                            <tr>
+                                                <th width="40%">Curso:</th>
+                                                <td id="ficha_curso">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Turmas:</th>
+                                                <td id="ficha_turmas">-</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Total de Eventos:</th>
+                                                <td id="ficha_total_eventos">-</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="bi bi-people"></i> Pessoa de Referência</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <th width="40%">Nome:</th>
+                                        <td id="ficha_pessoa_referencia">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Telefone:</th>
+                                        <td id="ficha_telefone_pessoa_referencia">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="bi bi-diagram-3"></i> Rede de Atendimento</h6>
+                                <div id="ficha_rede_atendimento" class="text-muted">-</div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6 class="mb-3"><i class="bi bi-info-circle"></i> Informações Adicionais</h6>
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <strong>Auxílio Estudantil:</strong> <span id="ficha_auxilio_estudantil">-</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>Indígena:</strong> <span id="ficha_indigena">-</span>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <strong>PEI:</strong> <span id="ficha_pei">-</span>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Necessidades Educacionais Especiais (NEE):</strong>
+                                    <div id="ficha_nee" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Profissionais de Referência na Assistência Estudantil:</strong>
+                                    <div id="ficha_profissionais_referencia" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Outras Observações:</strong>
+                                    <div id="ficha_outras_observacoes" class="text-muted mt-1">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    </div>
                 </div>
             </div>
         </div>
