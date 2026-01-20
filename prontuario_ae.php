@@ -92,9 +92,11 @@ require_once 'includes/header.php';
                     <button type="button" class="btn btn-sm btn-secondary btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
+                    <?php if (!$user->isNivel2()): ?>
                     <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                         <i class="bi bi-printer"></i> Imprimir
                     </button>
+                    <?php endif; ?>
                     <a href="registrar_evento.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-sm btn-secondary">
                         <i class="bi bi-arrow-left"></i> Voltar para Aluno
                     </a>

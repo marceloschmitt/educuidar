@@ -269,9 +269,11 @@ if ($aluno_id) {
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
                     <?php endif; ?>
+                    <?php if (!$user->isNivel2()): ?>
                     <button type="button" class="btn btn-secondary btn-sm me-2" id="btnImprimir">
                         <i class="bi bi-printer"></i> Imprimir
                     </button>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalRegistrarEvento">
                         <i class="bi bi-plus-circle"></i> Registrar Novo Evento
                     </button>
