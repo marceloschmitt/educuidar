@@ -59,8 +59,8 @@ require_once 'includes/header.php';
                     <button type="button" class="btn btn-sm btn-primary" onclick="window.print()">
                         <i class="bi bi-printer"></i> Imprimir
                     </button>
-                    <a href="alunos.php" class="btn btn-sm btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Voltar para Alunos
+                    <a href="registrar_evento.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-sm btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar para Aluno
                     </a>
                 </div>
             </div>
