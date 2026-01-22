@@ -100,6 +100,54 @@ function deleteEventAttachments($db, $evento_id) {
     }
 }
 
+function canModifyEvent($db, $evento_id, $user) {
+    if ($user->isAdmin()) {
+        return true;
+    }
+    $user_id = $_SESSION['user_id'] ?? null;
+    if (!$user_id) {
+        return false;
+    }
+    if (!$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
+        return false;
+    }
+
+    $stmt = $db->prepare("SELECT registrado_por, created_at FROM eventos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $evento_id);
+    $stmt->execute();
+    $event = $stmt->fetch();
+    if (!$event || $event['registrado_por'] != $user_id) {
+        return false;
+    }
+
+    $created_at = strtotime($event['created_at'] ?? '');
+    if (!$created_at) {
+        return false;
+    }
+    return (time() - $created_at) <= 3600;
+}
+
+function deleteAttachmentById($db, $anexo_id) {
+    $stmt = $db->prepare("SELECT id, evento_id, caminho FROM eventos_anexos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $anexo_id);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+
+    $path = __DIR__ . '/' . ltrim($row['caminho'], '/');
+    if (is_file($path)) {
+        @unlink($path);
+    }
+
+    $delete = $db->prepare("DELETE FROM eventos_anexos WHERE id = :id");
+    $delete->bindParam(':id', $anexo_id);
+    $delete->execute();
+
+    return $row['evento_id'];
+}
+
 // Only admin, nivel1, nivel2 and assistencia_estudantil can register events
 if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
@@ -159,6 +207,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     }
     
     header('Location: registrar_evento.php?aluno_id=' . urlencode($evento->aluno_id));
+    exit;
+}
+
+// Handle delete attachment
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'delete_anexo') {
+    $anexo_id = $_POST['anexo_id'] ?? '';
+    $aluno_id = $_POST['aluno_id'] ?? $aluno_id;
+    if (!empty($anexo_id)) {
+        $stmt = $db->prepare("SELECT evento_id FROM eventos_anexos WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $anexo_id);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        if ($row && canModifyEvent($db, $row['evento_id'], $user)) {
+            deleteAttachmentById($db, $anexo_id);
+            $_SESSION['success'] = 'Anexo removido com sucesso!';
+        } else {
+            $_SESSION['error'] = 'Não é possível remover este anexo.';
+        }
+    }
+    header('Location: registrar_evento.php?aluno_id=' . urlencode($aluno_id));
     exit;
 }
 
@@ -487,7 +556,8 @@ if ($aluno_id) {
                                 'registrado_por_id' => $ev['registrado_por'] ?? '',
                                 'created_at' => $ev['created_at'] ?? '',
                                 'can_edit' => $can_edit,
-                                'can_delete' => $can_delete
+                                'can_delete' => $can_delete,
+                                'anexos' => $anexos_por_evento[$ev['id']] ?? []
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
@@ -596,6 +666,8 @@ if ($aluno_id) {
                                 <input type="file" class="form-control" id="edit_anexos" name="anexos[]" multiple>
                                 <small class="text-muted">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
                             </div>
+
+                            <div class="mb-3" id="edit_anexos_existentes"></div>
                             
                             <?php if ($user->isAssistenciaEstudantil()): ?>
                             <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">

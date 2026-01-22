@@ -44,6 +44,20 @@ $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
 $stmt->execute();
 $eventos_cae = $stmt->fetchAll();
+$anexos_por_evento = [];
+if (!empty($eventos_cae)) {
+    $evento_ids = array_column($eventos_cae, 'id');
+    $placeholders = implode(',', array_fill(0, count($evento_ids), '?'));
+    $stmt = $db->prepare("SELECT id, evento_id, nome_original, caminho 
+                          FROM eventos_anexos 
+                          WHERE evento_id IN ($placeholders)
+                          ORDER BY id ASC");
+    $stmt->execute($evento_ids);
+    $rows = $stmt->fetchAll();
+    foreach ($rows as $row) {
+        $anexos_por_evento[$row['evento_id']][] = $row;
+    }
+}
 
 $ano_corrente = $configuracao->getAnoCorrente();
 $turmas_aluno = $aluno->getTurmasAluno($aluno_id);
@@ -206,6 +220,20 @@ require_once 'includes/header.php';
                             </div>
                             <div class="p-3 bg-light rounded">
                                 <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
+                            </div>
+                            <?php endif; ?>
+                            <?php if (!empty($anexos_por_evento[$ev['id']])): ?>
+                            <div class="mt-3">
+                                <strong>Anexos:</strong>
+                                <ul class="list-unstyled mb-0">
+                                    <?php foreach ($anexos_por_evento[$ev['id']] as $anexo): ?>
+                                    <li>
+                                        <a href="<?php echo htmlspecialchars($anexo['caminho']); ?>" target="_blank" rel="noopener">
+                                            <?php echo htmlspecialchars($anexo['nome_original']); ?>
+                                        </a>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
                             </div>
                             <?php endif; ?>
                         </div>

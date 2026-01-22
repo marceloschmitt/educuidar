@@ -37,6 +37,70 @@ function editEvento(evento) {
     if (document.getElementById('edit_prontuario_cae')) {
         document.getElementById('edit_prontuario_cae').value = evento.prontuario_cae || '';
     }
+
+    var anexosContainer = document.getElementById('edit_anexos_existentes');
+    if (anexosContainer) {
+        anexosContainer.innerHTML = '';
+        if (evento.anexos && evento.anexos.length > 0) {
+            var title = document.createElement('label');
+            title.className = 'form-label';
+            title.textContent = 'Anexos existentes';
+            anexosContainer.appendChild(title);
+
+            var list = document.createElement('ul');
+            list.className = 'list-unstyled mb-0';
+            evento.anexos.forEach(function(anexo) {
+                var item = document.createElement('li');
+                var link = document.createElement('a');
+                link.href = anexo.caminho;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = anexo.nome_original;
+                item.appendChild(link);
+
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '';
+                form.className = 'd-inline ms-2';
+                form.onsubmit = function() {
+                    return confirm('Remover este anexo?');
+                };
+
+                var actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = 'delete_anexo';
+                form.appendChild(actionInput);
+
+                var anexoInput = document.createElement('input');
+                anexoInput.type = 'hidden';
+                anexoInput.name = 'anexo_id';
+                anexoInput.value = anexo.id;
+                form.appendChild(anexoInput);
+
+                var alunoInput = document.createElement('input');
+                alunoInput.type = 'hidden';
+                alunoInput.name = 'aluno_id';
+                alunoInput.value = evento.aluno_id || '';
+                form.appendChild(alunoInput);
+
+                var button = document.createElement('button');
+                button.type = 'submit';
+                button.className = 'btn btn-sm btn-outline-danger';
+                button.textContent = 'Remover';
+                form.appendChild(button);
+
+                item.appendChild(form);
+                list.appendChild(item);
+            });
+            anexosContainer.appendChild(list);
+        } else {
+            var empty = document.createElement('small');
+            empty.className = 'text-muted';
+            empty.textContent = 'Sem anexos.';
+            anexosContainer.appendChild(empty);
+        }
+    }
     
     // Mostrar campo de prontuário se o tipo marcar essa opção
     var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
@@ -1161,6 +1225,26 @@ document.addEventListener('DOMContentLoaded', function() {
             applyModalStyles(this);
         });
         modalAluno.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
+        });
+    }
+
+    var editEventoModal = document.getElementById('editEventoModal');
+    if (editEventoModal) {
+        editEventoModal.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
+        editEventoModal.addEventListener('shown.bs.modal', function() {
+            applyModalStyles(this);
+        });
+    }
+
+    var modalRegistrarEvento = document.getElementById('modalRegistrarEvento');
+    if (modalRegistrarEvento) {
+        modalRegistrarEvento.addEventListener('show.bs.modal', function() {
+            applyModalStyles(this);
+        });
+        modalRegistrarEvento.addEventListener('shown.bs.modal', function() {
             applyModalStyles(this);
         });
     }
