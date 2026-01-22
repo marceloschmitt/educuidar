@@ -121,6 +121,20 @@ if (isset($_GET['delete'])) {
 $user_id = $_SESSION['user_id'] ?? null;
 $registrado_por = ($user->isNivel2()) ? $user_id : null;
 $eventos = $evento->getAll($registrado_por);
+$anexos_por_evento = [];
+if (!empty($eventos)) {
+    $evento_ids = array_column($eventos, 'id');
+    $placeholders = implode(',', array_fill(0, count($evento_ids), '?'));
+    $stmt = $db->prepare("SELECT id, evento_id, nome_original, caminho 
+                          FROM eventos_anexos 
+                          WHERE evento_id IN ($placeholders)
+                          ORDER BY id ASC");
+    $stmt->execute($evento_ids);
+    $rows = $stmt->fetchAll();
+    foreach ($rows as $row) {
+        $anexos_por_evento[$row['evento_id']][] = $row;
+    }
+}
 $cursos = $curso->getAll();
 $ano_corrente = $configuracao->getAnoCorrente();
 $turmas_ano_corrente_lista = $turma->getTurmasPorAnoCorrente($ano_corrente);
@@ -314,6 +328,7 @@ require_once 'includes/header.php';
                                 'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
                                 'observacoes' => $evt['observacoes'] ?? '',
+                                'prontuario_cae' => $user->isAssistenciaEstudantil() ? ($evt['prontuario_cae'] ?? '') : '',
                                 'aluno_id' => $evt['aluno_id'] ?? '',
                                 'turma_id' => $evt['turma_id'] ?? '',
                                 'tipo_evento_id' => $evt['tipo_evento_id'] ?? '',
@@ -322,7 +337,8 @@ require_once 'includes/header.php';
                                 'registrado_por_id' => $evt['registrado_por'] ?? '',
                                 'created_at' => $evt['created_at'] ?? '',
                                 'can_edit' => $can_edit,
-                                'can_delete' => $can_delete
+                                'can_delete' => $can_delete,
+                                'anexos' => $anexos_por_evento[$evt['id']] ?? []
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
@@ -350,8 +366,8 @@ require_once 'includes/header.php';
 
 <!-- Menu contextual para ações do evento (dinâmico) -->
 <div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
-    <button class="dropdown-item" type="button" id="contextMenuVerObservacoes">
-        <i class="bi bi-info-circle text-info"></i> Ver Observações
+    <button class="dropdown-item" type="button" id="contextMenuVerEvento">
+        <i class="bi bi-info-circle text-info"></i> Ver Evento
     </button>
     <div id="contextMenuEventoActions" style="display: none;">
         <hr class="dropdown-divider">
@@ -365,12 +381,12 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<!-- Modal para Ver Observações -->
-<div class="modal fade" id="observacoesModal" tabindex="-1" aria-labelledby="observacoesModalLabel" aria-hidden="true">
+<!-- Modal para Ver Evento -->
+<div class="modal fade" id="eventoModal" tabindex="-1" aria-labelledby="eventoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="observacoesModalLabel"><i class="bi bi-info-circle"></i> Observações do Evento</h5>
+                <h5 class="modal-title" id="eventoModalLabel"><i class="bi bi-info-circle"></i> Detalhes do Evento</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -385,6 +401,20 @@ require_once 'includes/header.php';
                 <div>
                     <strong>Observações:</strong>
                     <p id="obs_texto" class="mt-2"></p>
+                </div>
+                <div id="obs_prontuario_section" style="display: none;">
+                    <hr>
+                    <div>
+                        <strong>Descrição do Prontuário:</strong>
+                        <p id="obs_prontuario_texto" class="mt-2"></p>
+                    </div>
+                </div>
+                <div id="obs_anexos_section" style="display: none;">
+                    <hr>
+                    <div>
+                        <strong>Anexos:</strong>
+                        <ul id="obs_anexos_list" class="mt-2 list-unstyled mb-0"></ul>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

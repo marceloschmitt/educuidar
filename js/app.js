@@ -1081,10 +1081,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Preencher dados do evento no menu
-            var btnVerObservacoes = document.getElementById('contextMenuVerObservacoes');
-            if (btnVerObservacoes) {
-                btnVerObservacoes.onclick = function() {
-                    showObservacoes(eventoData);
+            var btnVerEvento = document.getElementById('contextMenuVerEvento');
+            if (btnVerEvento) {
+                btnVerEvento.onclick = function() {
+                    showEvento(eventoData);
                     hideEventoContextMenu();
                 };
             }
@@ -1420,8 +1420,8 @@ function editUser(user) {
     modal.show();
 }
 
-// Função para mostrar observações
-function showObservacoes(evento) {
+// Função para mostrar evento
+function showEvento(evento) {
     document.getElementById('obs_data').textContent = evento.data || '-';
     document.getElementById('obs_hora').textContent = evento.hora || '-';
     document.getElementById('obs_aluno').textContent = evento.aluno || '-';
@@ -1435,8 +1435,42 @@ function showObservacoes(evento) {
     } else {
         obsTexto.textContent = observacoes;
     }
+
+    var prontuarioSection = document.getElementById('obs_prontuario_section');
+    var prontuarioTexto = document.getElementById('obs_prontuario_texto');
+    var prontuario = evento.prontuario_cae || '';
+    if (prontuarioSection && prontuarioTexto) {
+        if (prontuario.trim() !== '') {
+            prontuarioTexto.textContent = prontuario;
+            prontuarioSection.style.display = 'block';
+        } else {
+            prontuarioTexto.textContent = '';
+            prontuarioSection.style.display = 'none';
+        }
+    }
+
+    var anexosSection = document.getElementById('obs_anexos_section');
+    var anexosList = document.getElementById('obs_anexos_list');
+    if (anexosSection && anexosList) {
+        anexosList.innerHTML = '';
+        if (evento.anexos && evento.anexos.length > 0) {
+            evento.anexos.forEach(function(anexo) {
+                var li = document.createElement('li');
+                var link = document.createElement('a');
+                link.href = anexo.caminho;
+                link.target = '_blank';
+                link.rel = 'noopener';
+                link.textContent = anexo.nome_original;
+                li.appendChild(link);
+                anexosList.appendChild(li);
+            });
+            anexosSection.style.display = 'block';
+        } else {
+            anexosSection.style.display = 'none';
+        }
+    }
     
-    var modal = new bootstrap.Modal(document.getElementById('observacoesModal'));
+    var modal = new bootstrap.Modal(document.getElementById('eventoModal'));
     modal.show();
 }
 
