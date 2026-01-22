@@ -500,6 +500,16 @@ body {
     .card-body {
         padding: 0 !important;
     }
+
+    /* Ajustes do prontuário na impressão */
+    .timeline .card-header {
+        padding-left: 0 !important;
+    }
+
+    .timeline .card-body .text-muted,
+    .timeline .card-body .bg-light {
+        margin-left: 16px !important;
+    }
     
     /* Remover todos os ícones */
     .bi::before,
