@@ -358,7 +358,6 @@ body {
     .modal,
     .dropdown,
     .alert,
-    .card-header:not(.printable-header),
     .bi,
     .bi::before,
     [data-bs-toggle],
