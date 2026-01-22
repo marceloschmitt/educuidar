@@ -665,6 +665,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 autoResizeTextarea(e.target);
             }
         });
+
+        modalAluno.addEventListener('hidden.bs.modal', function() {
+            var params = new URLSearchParams(window.location.search);
+            var returnTo = params.get('return_to');
+            var editParam = params.get('edit');
+            if (returnTo && editParam) {
+                window.location.href = returnTo;
+            }
+        });
     }
     
     // Botão novo aluno - resetar formulário
