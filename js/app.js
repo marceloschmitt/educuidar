@@ -1037,7 +1037,7 @@ document.addEventListener('DOMContentLoaded', function() {
     observacoesRows.forEach(function(row) {
         row.addEventListener('click', function() {
             var eventoData = JSON.parse(this.getAttribute('data-evento'));
-            showObservacoes(eventoData);
+            showEvento(eventoData);
         });
     });
     
