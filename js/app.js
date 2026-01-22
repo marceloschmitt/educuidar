@@ -343,6 +343,13 @@ function editAluno(aluno) {
     }
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';
+    var modalAluno = document.getElementById('modalAluno');
+    if (modalAluno) {
+        var textareas = modalAluno.querySelectorAll('textarea');
+        textareas.forEach(function(textarea) {
+            autoResizeTextarea(textarea);
+        });
+    }
     
     // Handle photo preview
     var fotoPreview = document.getElementById('foto_preview');
