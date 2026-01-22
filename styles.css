@@ -394,8 +394,8 @@ body {
         position: relative !important;
     }
     
-    /* Esconder o card-header normal quando imprimir */
-    .card-header:not(.printable-header):not(.printable-event-header) {
+    /* Esconder apenas o cabeçalho principal não imprimível */
+    .card-header.no-print {
         display: none !important;
     }
     
