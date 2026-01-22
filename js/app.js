@@ -1069,12 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var currentPage = window.location.pathname.split('/').pop();
             var isRegistrarEvento = (currentPage === 'registrar_evento.php');
             
-            // Se não tiver permissão para editar ou deletar e estiver em registrar_evento.php, mostrar mensagem
-            if (isRegistrarEvento && !eventoData.can_edit && !eventoData.can_delete) {
-                alert('Não pode ser alterado');
-                hideEventoContextMenu();
-                return;
-            }
+            // Se não tiver permissão para editar ou deletar, apenas limitar as ações
             
             // Preencher dados do evento no menu
             var btnVerEvento = document.getElementById('contextMenuVerEvento');

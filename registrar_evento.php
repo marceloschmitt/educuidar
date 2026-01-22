@@ -561,6 +561,7 @@ if ($aluno_id) {
                                 'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $ev['registrado_por_nome'] ?? '-',
                                 'observacoes' => $ev['observacoes'] ?? '',
+                                'prontuario_cae' => $user->isAssistenciaEstudantil() ? ($ev['prontuario_cae'] ?? '') : '',
                                 'aluno_id' => $ev['aluno_id'] ?? '',
                                 'turma_id' => $ev['turma_id'] ?? '',
                                 'tipo_evento_id' => $ev['tipo_evento_id'] ?? '',
