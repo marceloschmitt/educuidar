@@ -395,7 +395,7 @@ body {
     }
     
     /* Esconder o card-header normal quando imprimir */
-    .card-header:not(.printable-header) {
+    .card-header:not(.printable-header):not(.printable-event-header) {
         display: none !important;
     }
     

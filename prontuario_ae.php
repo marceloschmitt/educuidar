@@ -118,7 +118,7 @@ require_once 'includes/header.php';
                         <?php endif; ?>
                     </div>
                     <div class="col-md-10">
-                        <h4 class="mb-2">Prontuário Assistência Estudantil - <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?></h4>
+                        <h4 class="mb-2"><?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?></h4>
                         <?php if (!empty($aluno_data['email'])): ?>
                         <p class="mb-1"><strong>E-mail:</strong> <?php echo htmlspecialchars($aluno_data['email']); ?></p>
                         <?php endif; ?>
@@ -173,7 +173,7 @@ require_once 'includes/header.php';
                 <div class="timeline">
                     <?php foreach ($eventos_cae as $ev): ?>
                     <div class="card mb-3">
-                        <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="card-header d-flex justify-content-between align-items-center printable-event-header">
                             <div>
                                 <strong>
                                     <?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?>
