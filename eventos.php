@@ -10,6 +10,142 @@ $curso = new Curso($db);
 $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
+function saveEventAttachments($db, $evento_id, $files, &$errors) {
+    if (empty($evento_id) || empty($files) || !isset($files['name']) || !is_array($files['name'])) {
+        return;
+    }
+
+    $upload_dir = __DIR__ . '/uploads/eventos/' . $evento_id;
+    if (!is_dir($upload_dir)) {
+        if (!mkdir($upload_dir, 0755, true) && !is_dir($upload_dir)) {
+            $errors[] = 'Não foi possível criar o diretório de anexos.';
+            return;
+        }
+    }
+
+    $allowed_types = [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain'
+    ];
+
+    $max_size = 10 * 1024 * 1024;
+
+    foreach ($files['name'] as $i => $name) {
+        if ($files['error'][$i] === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if ($files['error'][$i] !== UPLOAD_ERR_OK) {
+            $errors[] = "Erro ao enviar o arquivo: {$name}.";
+            continue;
+        }
+        if ($files['size'][$i] > $max_size) {
+            $errors[] = "Arquivo muito grande: {$name}.";
+            continue;
+        }
+
+        $tmp_name = $files['tmp_name'][$i];
+        $mime_type = mime_content_type($tmp_name) ?: ($files['type'][$i] ?? '');
+        if (!in_array($mime_type, $allowed_types, true)) {
+            $errors[] = "Tipo de arquivo não permitido: {$name}.";
+            continue;
+        }
+
+        $ext = pathinfo($name, PATHINFO_EXTENSION);
+        $safe_ext = $ext ? preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '';
+        $stored_name = uniqid('anexo_', true) . ($safe_ext ? '.' . strtolower($safe_ext) : '');
+        $dest_path = $upload_dir . '/' . $stored_name;
+
+        if (!move_uploaded_file($tmp_name, $dest_path)) {
+            $errors[] = "Falha ao salvar o arquivo: {$name}.";
+            continue;
+        }
+
+        $relative_path = 'uploads/eventos/' . $evento_id . '/' . $stored_name;
+        $stmt = $db->prepare("INSERT INTO eventos_anexos (evento_id, nome_original, caminho, mime_type, tamanho) 
+                              VALUES (:evento_id, :nome_original, :caminho, :mime_type, :tamanho)");
+        $stmt->bindParam(':evento_id', $evento_id);
+        $stmt->bindParam(':nome_original', $name);
+        $stmt->bindParam(':caminho', $relative_path);
+        $stmt->bindParam(':mime_type', $mime_type);
+        $stmt->bindParam(':tamanho', $files['size'][$i], PDO::PARAM_INT);
+        $stmt->execute();
+    }
+}
+
+function deleteEventAttachments($db, $evento_id) {
+    $stmt = $db->prepare("SELECT caminho FROM eventos_anexos WHERE evento_id = :evento_id");
+    $stmt->bindParam(':evento_id', $evento_id);
+    $stmt->execute();
+    $rows = $stmt->fetchAll();
+
+    foreach ($rows as $row) {
+        $path = __DIR__ . '/' . ltrim($row['caminho'], '/');
+        if (is_file($path)) {
+            @unlink($path);
+        }
+    }
+
+    $dir = __DIR__ . '/uploads/eventos/' . $evento_id;
+    if (is_dir($dir)) {
+        @rmdir($dir);
+    }
+}
+
+function deleteAttachmentById($db, $anexo_id) {
+    $stmt = $db->prepare("SELECT id, evento_id, caminho FROM eventos_anexos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $anexo_id);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    if (!$row) {
+        return null;
+    }
+
+    $path = __DIR__ . '/' . ltrim($row['caminho'], '/');
+    if (is_file($path)) {
+        @unlink($path);
+    }
+
+    $delete = $db->prepare("DELETE FROM eventos_anexos WHERE id = :id");
+    $delete->bindParam(':id', $anexo_id);
+    $delete->execute();
+
+    return $row['evento_id'];
+}
+
+function canModifyEvent($db, $evento_id, $user) {
+    if ($user->isAdmin()) {
+        return true;
+    }
+    $user_id = $_SESSION['user_id'] ?? null;
+    if (!$user_id) {
+        return false;
+    }
+    if (!$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
+        return false;
+    }
+
+    $stmt = $db->prepare("SELECT registrado_por, created_at FROM eventos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $evento_id);
+    $stmt->execute();
+    $event = $stmt->fetch();
+    if (!$event || $event['registrado_por'] != $user_id) {
+        return false;
+    }
+
+    $created_at = strtotime($event['created_at'] ?? '');
+    if (!$created_at) {
+        return false;
+    }
+    return (time() - $created_at) <= 3600;
+}
+
 // Only admin, nivel1, nivel2 and assistencia_estudantil can view all events
 if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
@@ -49,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
+    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $user_id = $_SESSION['user_id'] ?? null;
     
     if (empty($evento->id) || empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -57,6 +194,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         if ($user->isAdmin()) {
             // Admin pode editar qualquer evento
             if ($evento->update()) {
+                $upload_errors = [];
+                if (!empty($_FILES['anexos'])) {
+                    saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
+                }
+                if (!empty($_POST['delete_anexos']) && is_array($_POST['delete_anexos'])) {
+                    foreach ($_POST['delete_anexos'] as $anexo_id) {
+                        if (canModifyEvent($db, $evento->id, $user)) {
+                            deleteAttachmentById($db, $anexo_id);
+                        }
+                    }
+                }
+                if (!empty($upload_errors)) {
+                    $_SESSION['error'] = implode(' ', $upload_errors);
+                }
                 $_SESSION['success'] = 'Evento atualizado com sucesso!';
             } else {
                 $_SESSION['error'] = 'Erro ao atualizar evento.';
@@ -64,6 +215,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
+                $upload_errors = [];
+                if (!empty($_FILES['anexos'])) {
+                    saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
+                }
+                if (!empty($_POST['delete_anexos']) && is_array($_POST['delete_anexos'])) {
+                    foreach ($_POST['delete_anexos'] as $anexo_id) {
+                        if (canModifyEvent($db, $evento->id, $user)) {
+                            deleteAttachmentById($db, $anexo_id);
+                        }
+                    }
+                }
+                if (!empty($upload_errors)) {
+                    $_SESSION['error'] = implode(' ', $upload_errors);
+                }
                 $_SESSION['success'] = 'Evento atualizado com sucesso!';
             } else {
                 $_SESSION['error'] = 'Não é possível editar este evento. Você só pode editar eventos criados por você há menos de 1 hora.';
@@ -89,6 +254,7 @@ if (isset($_GET['delete'])) {
     if ($user->isAdmin()) {
         // Admin pode deletar qualquer evento
         if ($evento->delete()) {
+            deleteEventAttachments($db, $evento->id);
             // Preserve filters in redirect
             $params = [];
             if ($filtro_curso) $params['filtro_curso'] = $filtro_curso;
@@ -102,6 +268,7 @@ if (isset($_GET['delete'])) {
     } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
         // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
+            deleteEventAttachments($db, $evento->id);
             // Preserve filters in redirect
             $params = [];
             if ($filtro_curso) $params['filtro_curso'] = $filtro_curso;
@@ -425,58 +592,7 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<!-- Modal para Editar Evento -->
-<div class="modal fade" id="editEventoModal" tabindex="-1" aria-labelledby="editEventoModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="editEventoModalLabel"><i class="bi bi-pencil"></i> Editar Evento</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form method="POST" action="">
-                <div class="modal-body">
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="id" id="edit_evento_id">
-                    <input type="hidden" name="aluno_id" id="edit_aluno_id">
-                    <input type="hidden" name="turma_id" id="edit_turma_id">
-                    
-                    <div class="row">
-                        <div class="col-12 col-md-6 mb-3">
-                            <label for="edit_tipo_evento_id" class="form-label">Tipo de Evento <span class="text-danger">*</span></label>
-                            <select class="form-select" id="edit_tipo_evento_id" name="tipo_evento_id" required>
-                                <option value="">Selecione o tipo...</option>
-                                <?php foreach ($tipos_eventos as $te): ?>
-                                <option value="<?php echo $te['id']; ?>">
-                                    <?php echo htmlspecialchars($te['nome']); ?>
-                                </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        <div class="col-12 col-md-3 mb-3">
-                            <label for="edit_data_evento" class="form-label">Data <span class="text-danger">*</span></label>
-                            <input type="date" class="form-control" id="edit_data_evento" name="data_evento" required>
-                        </div>
-                        <div class="col-12 col-md-3 mb-3">
-                            <label for="edit_hora_evento" class="form-label">Hora</label>
-                            <input type="time" class="form-control" id="edit_hora_evento" name="hora_evento">
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="edit_observacoes" class="form-label">Observações</label>
-                        <textarea class="form-control" id="edit_observacoes" name="observacoes" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="bi bi-save"></i> Salvar Alterações
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<?php require_once __DIR__ . '/views/eventos/edit_modal.php'; ?>
 
 <?php require_once 'includes/footer.php'; ?>
 
