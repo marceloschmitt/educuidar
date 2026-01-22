@@ -133,7 +133,7 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="card-body">
-                <div class="row mb-4">
+                <div class="row mb-4 no-print">
                     <div class="col-md-3 text-center mb-3">
                         <?php if (!empty($aluno_data['foto'])): ?>
                             <img src="<?php echo htmlspecialchars($aluno_data['foto']); ?>" 
