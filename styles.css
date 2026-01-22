@@ -506,6 +506,8 @@ body {
         padding-left: 0 !important;
     }
 
+    .timeline .card-body .mb-3,
+    .timeline .card-body .mb-2,
     .timeline .card-body .text-muted,
     .timeline .card-body .bg-light {
         margin-left: 16px !important;
