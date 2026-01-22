@@ -82,8 +82,8 @@ require_once 'includes/header.php';
 
 <div class="row">
     <div class="col-md-12">
-        <div class="card mb-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card mb-3 printable-area">
+            <div class="card-header d-flex justify-content-between align-items-center no-print">
                 <h5 class="mb-0">
                     <i class="bi bi-file-text"></i> Prontuário Assistência Estudantil - 
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
@@ -100,6 +100,36 @@ require_once 'includes/header.php';
                     <a href="registrar_evento.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-sm btn-secondary">
                         <i class="bi bi-arrow-left"></i> Voltar para Aluno
                     </a>
+                </div>
+            </div>
+            <div class="card-header printable-header" style="display: none;">
+                <div class="row">
+                    <div class="col-md-2 text-center mb-2">
+                        <?php if (!empty($aluno_data['foto'])): ?>
+                            <img src="<?php echo htmlspecialchars($aluno_data['foto']); ?>" 
+                                 alt="Foto de <?php echo htmlspecialchars($aluno_data['nome'] ?? ''); ?>" 
+                                 class="img-thumbnail" 
+                                 style="width: 100px; height: 100px; object-fit: cover;">
+                        <?php else: ?>
+                            <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center mx-auto" 
+                                 style="width: 100px; height: 100px;">
+                                <i class="bi bi-person" style="font-size: 2.5rem;"></i>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="col-md-10">
+                        <h4 class="mb-2">Prontuário Assistência Estudantil - <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?></h4>
+                        <?php if (!empty($aluno_data['email'])): ?>
+                        <p class="mb-1"><strong>E-mail:</strong> <?php echo htmlspecialchars($aluno_data['email']); ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($aluno_data['telefone_celular'])): ?>
+                        <p class="mb-1"><strong>Telefone:</strong> <?php echo htmlspecialchars($aluno_data['telefone_celular']); ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($aluno_data['numero_matricula'])): ?>
+                        <p class="mb-1"><strong>Matrícula:</strong> <?php echo htmlspecialchars($aluno_data['numero_matricula']); ?></p>
+                        <?php endif; ?>
+                        <p class="mb-0"><strong>Data de impressão:</strong> <?php echo date('d/m/Y H:i'); ?></p>
+                    </div>
                 </div>
             </div>
             <div class="card-body">
