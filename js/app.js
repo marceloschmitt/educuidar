@@ -492,6 +492,14 @@ function applyModalStyles(modal) {
     });
 }
 
+function autoResizeTextarea(textarea) {
+    if (!textarea) {
+        return;
+    }
+    textarea.style.height = 'auto';
+    textarea.style.height = textarea.scrollHeight + 'px';
+}
+
 // Event listeners quando o DOM estiver pronto
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize password toggles
@@ -621,6 +629,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 reader.readAsDataURL(file);
             } else {
                 fotoPreview.innerHTML = '';
+            }
+        });
+    }
+
+    // Auto-ajustar altura de textareas no modal de aluno
+    var modalAluno = document.getElementById('modalAluno');
+    if (modalAluno) {
+        modalAluno.addEventListener('shown.bs.modal', function() {
+            var textareas = modalAluno.querySelectorAll('textarea');
+            textareas.forEach(function(textarea) {
+                autoResizeTextarea(textarea);
+            });
+        });
+
+        modalAluno.addEventListener('input', function(e) {
+            if (e.target && e.target.tagName === 'TEXTAREA') {
+                autoResizeTextarea(e.target);
             }
         });
     }
