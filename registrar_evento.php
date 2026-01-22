@@ -527,7 +527,6 @@ if ($aluno_id) {
                                 <th>Hora</th>
                                 <th>Tipo</th>
                                 <th>Observações</th>
-                                <th>Anexos</th>
                                 <th>Registrado por</th>
                             </tr>
                         </thead>
@@ -589,28 +588,14 @@ if ($aluno_id) {
                                         ?>
                                             <?php echo htmlspecialchars($ev['tipo_evento_nome']); ?>
                                         </span>
+                                        <?php if (!empty($anexos_por_evento[$ev['id']])): ?>
+                                            <i class="bi bi-paperclip ms-2 text-muted" title="Possui anexos"></i>
+                                        <?php endif; ?>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">N/A</span>
                                     <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($ev['observacoes'] ?? '-'); ?></td>
-                                <td>
-                                    <?php if (!$user->isAssistenciaEstudantil() && !empty($ev['tipo_evento_gera_prontuario'])): ?>
-                                        <span class="text-muted">Restrito</span>
-                                    <?php elseif (!empty($anexos_por_evento[$ev['id']])): ?>
-                                        <ul class="list-unstyled mb-0">
-                    <?php foreach ($anexos_por_evento[$ev['id']] as $anexo): ?>
-                                                <li>
-                                                    <a href="<?php echo htmlspecialchars($anexo['caminho']); ?>" target="_blank" rel="noopener">
-                                                        <?php echo htmlspecialchars($anexo['nome_original']); ?>
-                                                    </a>
-                                                </li>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    <?php else: ?>
-                                        <span class="text-muted">-</span>
-                                    <?php endif; ?>
-                                </td>
                                 <td><?php echo htmlspecialchars($ev['registrado_por_nome'] ?? '-'); ?></td>
                             </tr>
                             <?php endforeach; ?>
