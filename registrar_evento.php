@@ -610,6 +610,9 @@ if ($aluno_id) {
 
         <!-- Menu contextual para ações do evento (dinâmico) -->
         <div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
+            <button class="dropdown-item" type="button" id="contextMenuVerEvento">
+                <i class="bi bi-info-circle text-info"></i> Ver Evento
+            </button>
             <div id="contextMenuEventoActions" style="display: none;">
                 <button class="dropdown-item" type="button" id="contextMenuEditarEvento">
                     <i class="bi bi-pencil text-primary"></i> Editar
@@ -622,6 +625,7 @@ if ($aluno_id) {
         </div>
 
         <?php require_once __DIR__ . '/views/eventos/edit_modal.php'; ?>
+        <?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
 
         <!-- Modal para Registrar Novo Evento -->
         <div class="modal fade" id="modalRegistrarEvento" tabindex="-1" aria-labelledby="modalRegistrarEventoLabel" aria-hidden="true">
