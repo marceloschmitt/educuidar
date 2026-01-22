@@ -248,6 +248,11 @@ body {
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
 }
 
+.ficha-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* Password field with eye icon */
 .password-wrapper {
     position: relative;
