@@ -167,6 +167,19 @@ CREATE TABLE IF NOT EXISTS eventos (
     INDEX idx_data_tipo (data_evento, tipo_evento_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Anexos de Eventos
+CREATE TABLE IF NOT EXISTS eventos_anexos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento_id INT NOT NULL,
+    nome_original VARCHAR(255) NOT NULL,
+    caminho VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(100) NULL,
+    tamanho INT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE,
+    INDEX idx_evento (evento_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Insert default event types
 INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Entrada atrasada (1º período)', 'danger', 1),

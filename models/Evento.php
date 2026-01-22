@@ -61,6 +61,7 @@ class Evento {
         $stmt->bindParam(':registrado_por', $this->registrado_por);
 
         if ($stmt->execute()) {
+            $this->id = $this->conn->lastInsertId();
             return true;
         }
         return false;
