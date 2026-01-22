@@ -182,6 +182,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 if (!empty($_FILES['anexos'])) {
                     saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
                 }
+                if (!empty($_POST['delete_anexos']) && is_array($_POST['delete_anexos'])) {
+                    foreach ($_POST['delete_anexos'] as $anexo_id) {
+                        if (canModifyEvent($db, $evento->id, $user)) {
+                            deleteAttachmentById($db, $anexo_id);
+                        }
+                    }
+                }
                 if (!empty($upload_errors)) {
                     $_SESSION['error'] = implode(' ', $upload_errors);
                 }
@@ -195,6 +202,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
                 $upload_errors = [];
                 if (!empty($_FILES['anexos'])) {
                     saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
+                }
+                if (!empty($_POST['delete_anexos']) && is_array($_POST['delete_anexos'])) {
+                    foreach ($_POST['delete_anexos'] as $anexo_id) {
+                        if (canModifyEvent($db, $evento->id, $user)) {
+                            deleteAttachmentById($db, $anexo_id);
+                        }
+                    }
                 }
                 if (!empty($upload_errors)) {
                     $_SESSION['error'] = implode(' ', $upload_errors);
@@ -585,7 +599,7 @@ if ($aluno_id) {
                                         <span class="text-muted">Restrito</span>
                                     <?php elseif (!empty($anexos_por_evento[$ev['id']])): ?>
                                         <ul class="list-unstyled mb-0">
-                                            <?php foreach ($anexos_por_evento[$ev['id']] as $anexo): ?>
+                    <?php foreach ($anexos_por_evento[$ev['id']] as $anexo): ?>
                                                 <li>
                                                     <a href="<?php echo htmlspecialchars($anexo['caminho']); ?>" target="_blank" rel="noopener">
                                                         <?php echo htmlspecialchars($anexo['nome_original']); ?>
