@@ -477,7 +477,12 @@ function applyModalStyles(modal) {
         input.style.setProperty('font-size', '0.75rem', 'important');
         input.style.setProperty('padding', '0.3rem 0.6rem', 'important');
         input.style.setProperty('line-height', '1.3', 'important');
-        input.style.setProperty('height', 'calc(1.3em + 0.6rem + 2px)', 'important');
+        if (input.tagName === 'TEXTAREA') {
+            input.style.setProperty('height', 'auto', 'important');
+            input.style.setProperty('min-height', 'calc(1.3em + 0.6rem + 2px)', 'important');
+        } else {
+            input.style.setProperty('height', 'calc(1.3em + 0.6rem + 2px)', 'important');
+        }
     });
     
     var smalls = modal.querySelectorAll('small');
