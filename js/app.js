@@ -739,6 +739,59 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    function createAnexoInput() {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'input-group mb-2';
+
+        var input = document.createElement('input');
+        input.type = 'file';
+        input.name = 'anexos[]';
+        input.className = 'form-control';
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline-danger btn-remove-anexo-input';
+        btn.title = 'Remover arquivo';
+        btn.innerHTML = '<i class="bi bi-x-lg"></i>';
+        btn.addEventListener('click', function() {
+            wrapper.remove();
+        });
+
+        wrapper.appendChild(input);
+        wrapper.appendChild(btn);
+        return wrapper;
+    }
+
+    function wireRemoveButtons(container) {
+        var buttons = container.querySelectorAll('.btn-remove-anexo-input');
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var group = btn.closest('.input-group');
+                if (group) {
+                    group.remove();
+                }
+            });
+        });
+    }
+
+    var modalAnexosContainer = document.getElementById('modal_anexos_container');
+    var btnAddModalAnexo = document.getElementById('btnAddModalAnexo');
+    if (modalAnexosContainer && btnAddModalAnexo) {
+        wireRemoveButtons(modalAnexosContainer);
+        btnAddModalAnexo.addEventListener('click', function() {
+            modalAnexosContainer.appendChild(createAnexoInput());
+        });
+    }
+
+    var editAnexosContainer = document.getElementById('edit_anexos_container');
+    var btnAddEditAnexo = document.getElementById('btnAddEditAnexo');
+    if (editAnexosContainer && btnAddEditAnexo) {
+        wireRemoveButtons(editAnexosContainer);
+        btnAddEditAnexo.addEventListener('click', function() {
+            editAnexosContainer.appendChild(createAnexoInput());
+        });
+    }
     
     // Botão novo aluno - resetar formulário
     var btnNovoAluno = document.getElementById('btnNovoAluno');

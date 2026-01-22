@@ -662,9 +662,19 @@ if ($aluno_id) {
                             </div>
 
                             <div class="mb-3">
-                                <label for="edit_anexos" class="form-label">Anexos</label>
-                                <input type="file" class="form-control" id="edit_anexos" name="anexos[]" multiple>
-                                <small class="text-muted">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
+                                <label class="form-label">Anexos</label>
+                                <div id="edit_anexos_container">
+                                    <div class="input-group mb-2">
+                                        <input type="file" class="form-control" name="anexos[]">
+                                        <button type="button" class="btn btn-outline-danger btn-remove-anexo-input" title="Remover arquivo">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAddEditAnexo">
+                                    <i class="bi bi-plus-circle"></i> Adicionar outro arquivo
+                                </button>
+                                <small class="text-muted d-block mt-1">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
                             </div>
 
                             <div class="mb-3" id="edit_anexos_existentes"></div>
@@ -734,9 +744,19 @@ if ($aluno_id) {
                             </div>
 
                             <div class="mb-3">
-                                <label for="modal_anexos" class="form-label">Anexos</label>
-                                <input type="file" class="form-control" id="modal_anexos" name="anexos[]" multiple>
-                                <small class="text-muted">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
+                                <label class="form-label">Anexos</label>
+                                <div id="modal_anexos_container">
+                                    <div class="input-group mb-2">
+                                        <input type="file" class="form-control" name="anexos[]">
+                                        <button type="button" class="btn btn-outline-danger btn-remove-anexo-input" title="Remover arquivo">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btnAddModalAnexo">
+                                    <i class="bi bi-plus-circle"></i> Adicionar outro arquivo
+                                </button>
+                                <small class="text-muted d-block mt-1">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
                             </div>
                             
                             <?php if ($user->isAssistenciaEstudantil()): ?>
