@@ -86,8 +86,8 @@ function editEvento(evento) {
 
                 var button = document.createElement('button');
                 button.type = 'submit';
-                button.className = 'btn btn-sm btn-outline-danger';
-                button.textContent = 'Remover';
+                button.className = 'btn btn-sm btn-remove-anexo-input';
+                button.innerHTML = '<i class="bi bi-x-lg"></i>';
                 form.appendChild(button);
 
                 item.appendChild(form);
