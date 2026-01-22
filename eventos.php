@@ -338,7 +338,8 @@ require_once 'includes/header.php';
                                 'created_at' => $evt['created_at'] ?? '',
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
-                                'anexos' => $anexos_por_evento[$evt['id']] ?? []
+                                'anexos' => $anexos_por_evento[$evt['id']] ?? [],
+                                'can_view_anexos' => ($user->isAssistenciaEstudantil() || empty($evt['tipo_evento_gera_prontuario']))
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>

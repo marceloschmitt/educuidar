@@ -73,7 +73,7 @@ class Evento {
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.id as curso_id, c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
@@ -101,7 +101,7 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
@@ -123,7 +123,7 @@ class Evento {
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
@@ -154,7 +154,7 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id

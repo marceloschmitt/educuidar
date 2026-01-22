@@ -39,8 +39,12 @@ function editEvento(evento) {
     }
 
     var anexosContainer = document.getElementById('edit_anexos_existentes');
+    var anexosRemovidos = document.getElementById('edit_anexos_removidos');
     if (anexosContainer) {
         anexosContainer.innerHTML = '';
+        if (anexosRemovidos) {
+            anexosRemovidos.innerHTML = '';
+        }
         if (evento.anexos && evento.anexos.length > 0) {
             var title = document.createElement('label');
             title.className = 'form-label';
@@ -58,39 +62,31 @@ function editEvento(evento) {
                 link.textContent = anexo.nome_original;
                 item.appendChild(link);
 
-                var form = document.createElement('form');
-                form.method = 'POST';
-                form.action = '';
-                form.className = 'd-inline ms-2';
-                form.onsubmit = function() {
-                    return confirm('Remover este anexo?');
-                };
-
-                var actionInput = document.createElement('input');
-                actionInput.type = 'hidden';
-                actionInput.name = 'action';
-                actionInput.value = 'delete_anexo';
-                form.appendChild(actionInput);
-
-                var anexoInput = document.createElement('input');
-                anexoInput.type = 'hidden';
-                anexoInput.name = 'anexo_id';
-                anexoInput.value = anexo.id;
-                form.appendChild(anexoInput);
-
-                var alunoInput = document.createElement('input');
-                alunoInput.type = 'hidden';
-                alunoInput.name = 'aluno_id';
-                alunoInput.value = evento.aluno_id || '';
-                form.appendChild(alunoInput);
-
                 var button = document.createElement('button');
-                button.type = 'submit';
+                button.type = 'button';
                 button.className = 'btn btn-sm btn-remove-anexo-input';
                 button.innerHTML = '<i class="bi bi-x-lg"></i>';
-                form.appendChild(button);
+                button.addEventListener('click', function() {
+                    if (!anexosRemovidos) {
+                        return;
+                    }
+                    var existing = anexosRemovidos.querySelector('input[value="' + anexo.id + '"]');
+                    if (existing) {
+                        existing.remove();
+                        item.classList.remove('text-decoration-line-through');
+                        link.classList.remove('text-muted');
+                    } else {
+                        var hidden = document.createElement('input');
+                        hidden.type = 'hidden';
+                        hidden.name = 'delete_anexos[]';
+                        hidden.value = anexo.id;
+                        anexosRemovidos.appendChild(hidden);
+                        item.classList.add('text-decoration-line-through');
+                        link.classList.add('text-muted');
+                    }
+                });
 
-                item.appendChild(form);
+                item.appendChild(button);
                 list.appendChild(item);
             });
             anexosContainer.appendChild(list);
@@ -1453,7 +1449,9 @@ function showEvento(evento) {
     var anexosList = document.getElementById('obs_anexos_list');
     if (anexosSection && anexosList) {
         anexosList.innerHTML = '';
-        if (evento.anexos && evento.anexos.length > 0) {
+        if (evento.can_view_anexos === false) {
+            anexosSection.style.display = 'none';
+        } else if (evento.anexos && evento.anexos.length > 0) {
             evento.anexos.forEach(function(anexo) {
                 var li = document.createElement('li');
                 var link = document.createElement('a');

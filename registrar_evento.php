@@ -557,7 +557,8 @@ if ($aluno_id) {
                                 'created_at' => $ev['created_at'] ?? '',
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
-                                'anexos' => $anexos_por_evento[$ev['id']] ?? []
+                                'anexos' => $anexos_por_evento[$ev['id']] ?? [],
+                                'can_view_anexos' => ($user->isAssistenciaEstudantil() || empty($ev['tipo_evento_gera_prontuario']))
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
@@ -580,7 +581,9 @@ if ($aluno_id) {
                                 </td>
                                 <td><?php echo htmlspecialchars($ev['observacoes'] ?? '-'); ?></td>
                                 <td>
-                                    <?php if (!empty($anexos_por_evento[$ev['id']])): ?>
+                                    <?php if (!$user->isAssistenciaEstudantil() && !empty($ev['tipo_evento_gera_prontuario'])): ?>
+                                        <span class="text-muted">Restrito</span>
+                                    <?php elseif (!empty($anexos_por_evento[$ev['id']])): ?>
                                         <ul class="list-unstyled mb-0">
                                             <?php foreach ($anexos_por_evento[$ev['id']] as $anexo): ?>
                                                 <li>
@@ -678,6 +681,7 @@ if ($aluno_id) {
                             </div>
 
                             <div class="mb-3" id="edit_anexos_existentes"></div>
+                            <div id="edit_anexos_removidos"></div>
                             
                             <?php if ($user->isAssistenciaEstudantil()): ?>
                             <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">
