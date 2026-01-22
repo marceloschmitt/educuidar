@@ -280,6 +280,19 @@ body {
     word-break: break-word;
 }
 
+/* Botão remover anexo nos modais de evento */
+.btn-remove-anexo-input {
+    border: none;
+    background: transparent;
+    color: #dc3545;
+    padding: 0 0.5rem;
+}
+
+.btn-remove-anexo-input:hover {
+    color: #b02a37;
+    background: transparent;
+}
+
 /* Password field with eye icon */
 .password-wrapper {
     position: relative;
