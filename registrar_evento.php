@@ -654,6 +654,55 @@ if ($aluno_id) {
                                 </div>
                             </div>
                         </div>
+
+                        <?php if ($user->isAssistenciaEstudantil()): ?>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                                <div class="mb-3">
+                                    <strong>Identidade de gênero:</strong>
+                                    <div id="ficha_identidade_genero" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Grupo familiar:</strong>
+                                    <div id="ficha_grupo_familiar" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Guarda legal do estudante:</strong>
+                                    <div id="ficha_guarda_legal" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Escolaridade dos pais ou responsáveis:</strong>
+                                    <div id="ficha_escolaridade_pais_responsaveis" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Necessidade de mudança:</strong>
+                                    <div id="ficha_necessidade_mudanca" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Meio de transporte:</strong>
+                                    <div id="ficha_meio_transporte" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Razão para escolha do IFRS, Campus e Curso:</strong>
+                                    <div id="ficha_razao_escolha_ifrs" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Expectativa do estudante e da família:</strong>
+                                    <div id="ficha_expectativa_estudante_familia" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Conhecimento sobre curso técnico:</strong>
+                                    <div id="ficha_conhecimento_curso_tecnico" class="text-muted mt-1">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Rede de atendimento da família:</strong>
+                                    <div id="ficha_rede_atendimento_familia" class="text-muted mt-1">-</div>
+                                </div>
+                            </div>
+                        </div>
+                        <?php endif; ?>
                     </div>
                     <div class="modal-footer">
                         <?php if ($user->isAssistenciaEstudantil()): ?>

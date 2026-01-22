@@ -25,6 +25,16 @@ class Aluno {
     public $pei;
     public $profissionais_referencia;
     public $outras_observacoes;
+    public $identidade_genero;
+    public $grupo_familiar;
+    public $guarda_legal;
+    public $escolaridade_pais_responsaveis;
+    public $necessidade_mudanca;
+    public $meio_transporte;
+    public $razao_escolha_ifrs;
+    public $expectativa_estudante_familia;
+    public $conhecimento_curso_tecnico;
+    public $rede_atendimento_familia;
     public $created_at;
 
     public function __construct($db) {
@@ -35,10 +45,14 @@ class Aluno {
         $query = "INSERT INTO " . $this->table . " 
                   (nome, nome_social, email, telefone_celular, data_nascimento, numero_matricula, endereco, foto, 
                    pessoa_referencia, telefone_pessoa_referencia, rede_atendimento, auxilio_estudantil, nee, 
-                   indigena, pei, profissionais_referencia, outras_observacoes) 
+                   indigena, pei, profissionais_referencia, outras_observacoes,
+                   identidade_genero, grupo_familiar, guarda_legal, escolaridade_pais_responsaveis, necessidade_mudanca,
+                   meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia) 
                   VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
                           :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
-                          :indigena, :pei, :profissionais_referencia, :outras_observacoes)";
+                          :indigena, :pei, :profissionais_referencia, :outras_observacoes,
+                          :identidade_genero, :grupo_familiar, :guarda_legal, :escolaridade_pais_responsaveis, :necessidade_mudanca,
+                          :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -76,6 +90,26 @@ class Aluno {
         $stmt->bindParam(':profissionais_referencia', $profissionais_referencia);
         $outras_observacoes = !empty($this->outras_observacoes) ? $this->outras_observacoes : null;
         $stmt->bindParam(':outras_observacoes', $outras_observacoes);
+        $identidade_genero = !empty($this->identidade_genero) ? $this->identidade_genero : null;
+        $stmt->bindParam(':identidade_genero', $identidade_genero);
+        $grupo_familiar = !empty($this->grupo_familiar) ? $this->grupo_familiar : null;
+        $stmt->bindParam(':grupo_familiar', $grupo_familiar);
+        $guarda_legal = !empty($this->guarda_legal) ? $this->guarda_legal : null;
+        $stmt->bindParam(':guarda_legal', $guarda_legal);
+        $escolaridade_pais_responsaveis = !empty($this->escolaridade_pais_responsaveis) ? $this->escolaridade_pais_responsaveis : null;
+        $stmt->bindParam(':escolaridade_pais_responsaveis', $escolaridade_pais_responsaveis);
+        $necessidade_mudanca = !empty($this->necessidade_mudanca) ? $this->necessidade_mudanca : null;
+        $stmt->bindParam(':necessidade_mudanca', $necessidade_mudanca);
+        $meio_transporte = !empty($this->meio_transporte) ? $this->meio_transporte : null;
+        $stmt->bindParam(':meio_transporte', $meio_transporte);
+        $razao_escolha_ifrs = !empty($this->razao_escolha_ifrs) ? $this->razao_escolha_ifrs : null;
+        $stmt->bindParam(':razao_escolha_ifrs', $razao_escolha_ifrs);
+        $expectativa_estudante_familia = !empty($this->expectativa_estudante_familia) ? $this->expectativa_estudante_familia : null;
+        $stmt->bindParam(':expectativa_estudante_familia', $expectativa_estudante_familia);
+        $conhecimento_curso_tecnico = !empty($this->conhecimento_curso_tecnico) ? $this->conhecimento_curso_tecnico : null;
+        $stmt->bindParam(':conhecimento_curso_tecnico', $conhecimento_curso_tecnico);
+        $rede_atendimento_familia = !empty($this->rede_atendimento_familia) ? $this->rede_atendimento_familia : null;
+        $stmt->bindParam(':rede_atendimento_familia', $rede_atendimento_familia);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -123,7 +157,17 @@ class Aluno {
                       indigena = :indigena,
                       pei = :pei,
                       profissionais_referencia = :profissionais_referencia,
-                      outras_observacoes = :outras_observacoes
+                      outras_observacoes = :outras_observacoes,
+                      identidade_genero = :identidade_genero,
+                      grupo_familiar = :grupo_familiar,
+                      guarda_legal = :guarda_legal,
+                      escolaridade_pais_responsaveis = :escolaridade_pais_responsaveis,
+                      necessidade_mudanca = :necessidade_mudanca,
+                      meio_transporte = :meio_transporte,
+                      razao_escolha_ifrs = :razao_escolha_ifrs,
+                      expectativa_estudante_familia = :expectativa_estudante_familia,
+                      conhecimento_curso_tecnico = :conhecimento_curso_tecnico,
+                      rede_atendimento_familia = :rede_atendimento_familia
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -163,6 +207,26 @@ class Aluno {
         $stmt->bindParam(':profissionais_referencia', $profissionais_referencia);
         $outras_observacoes = !empty($this->outras_observacoes) ? $this->outras_observacoes : null;
         $stmt->bindParam(':outras_observacoes', $outras_observacoes);
+        $identidade_genero = !empty($this->identidade_genero) ? $this->identidade_genero : null;
+        $stmt->bindParam(':identidade_genero', $identidade_genero);
+        $grupo_familiar = !empty($this->grupo_familiar) ? $this->grupo_familiar : null;
+        $stmt->bindParam(':grupo_familiar', $grupo_familiar);
+        $guarda_legal = !empty($this->guarda_legal) ? $this->guarda_legal : null;
+        $stmt->bindParam(':guarda_legal', $guarda_legal);
+        $escolaridade_pais_responsaveis = !empty($this->escolaridade_pais_responsaveis) ? $this->escolaridade_pais_responsaveis : null;
+        $stmt->bindParam(':escolaridade_pais_responsaveis', $escolaridade_pais_responsaveis);
+        $necessidade_mudanca = !empty($this->necessidade_mudanca) ? $this->necessidade_mudanca : null;
+        $stmt->bindParam(':necessidade_mudanca', $necessidade_mudanca);
+        $meio_transporte = !empty($this->meio_transporte) ? $this->meio_transporte : null;
+        $stmt->bindParam(':meio_transporte', $meio_transporte);
+        $razao_escolha_ifrs = !empty($this->razao_escolha_ifrs) ? $this->razao_escolha_ifrs : null;
+        $stmt->bindParam(':razao_escolha_ifrs', $razao_escolha_ifrs);
+        $expectativa_estudante_familia = !empty($this->expectativa_estudante_familia) ? $this->expectativa_estudante_familia : null;
+        $stmt->bindParam(':expectativa_estudante_familia', $expectativa_estudante_familia);
+        $conhecimento_curso_tecnico = !empty($this->conhecimento_curso_tecnico) ? $this->conhecimento_curso_tecnico : null;
+        $stmt->bindParam(':conhecimento_curso_tecnico', $conhecimento_curso_tecnico);
+        $rede_atendimento_familia = !empty($this->rede_atendimento_familia) ? $this->rede_atendimento_familia : null;
+        $stmt->bindParam(':rede_atendimento_familia', $rede_atendimento_familia);
 
         if ($stmt->execute()) {
             return true;

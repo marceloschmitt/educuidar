@@ -282,6 +282,29 @@ class AlunosController extends Controller {
         $this->aluno->pei = isset($_POST['pei']) ? ($_POST['pei'] == '1') : false;
         $this->aluno->profissionais_referencia = $_POST['profissionais_referencia'] ?? '';
         $this->aluno->outras_observacoes = $_POST['outras_observacoes'] ?? '';
+        if ($this->user->isAssistenciaEstudantil()) {
+            $this->aluno->identidade_genero = $_POST['identidade_genero'] ?? '';
+            $this->aluno->grupo_familiar = $_POST['grupo_familiar'] ?? '';
+            $this->aluno->guarda_legal = $_POST['guarda_legal'] ?? '';
+            $this->aluno->escolaridade_pais_responsaveis = $_POST['escolaridade_pais_responsaveis'] ?? '';
+            $this->aluno->necessidade_mudanca = $_POST['necessidade_mudanca'] ?? '';
+            $this->aluno->meio_transporte = $_POST['meio_transporte'] ?? '';
+            $this->aluno->razao_escolha_ifrs = $_POST['razao_escolha_ifrs'] ?? '';
+            $this->aluno->expectativa_estudante_familia = $_POST['expectativa_estudante_familia'] ?? '';
+            $this->aluno->conhecimento_curso_tecnico = $_POST['conhecimento_curso_tecnico'] ?? '';
+            $this->aluno->rede_atendimento_familia = $_POST['rede_atendimento_familia'] ?? '';
+        } else {
+            $this->aluno->identidade_genero = null;
+            $this->aluno->grupo_familiar = null;
+            $this->aluno->guarda_legal = null;
+            $this->aluno->escolaridade_pais_responsaveis = null;
+            $this->aluno->necessidade_mudanca = null;
+            $this->aluno->meio_transporte = null;
+            $this->aluno->razao_escolha_ifrs = null;
+            $this->aluno->expectativa_estudante_familia = null;
+            $this->aluno->conhecimento_curso_tecnico = null;
+            $this->aluno->rede_atendimento_familia = null;
+        }
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
@@ -370,9 +393,35 @@ class AlunosController extends Controller {
             return;
         }
         
+        $is_assistencia = $this->user->isAssistenciaEstudantil();
+
         // Get current aluno data to check for existing photo
         $aluno_atual = $this->aluno->getById($this->aluno->id);
         $foto_antiga = $aluno_atual['foto'] ?? null;
+
+        if ($is_assistencia) {
+            $this->aluno->identidade_genero = $_POST['identidade_genero'] ?? '';
+            $this->aluno->grupo_familiar = $_POST['grupo_familiar'] ?? '';
+            $this->aluno->guarda_legal = $_POST['guarda_legal'] ?? '';
+            $this->aluno->escolaridade_pais_responsaveis = $_POST['escolaridade_pais_responsaveis'] ?? '';
+            $this->aluno->necessidade_mudanca = $_POST['necessidade_mudanca'] ?? '';
+            $this->aluno->meio_transporte = $_POST['meio_transporte'] ?? '';
+            $this->aluno->razao_escolha_ifrs = $_POST['razao_escolha_ifrs'] ?? '';
+            $this->aluno->expectativa_estudante_familia = $_POST['expectativa_estudante_familia'] ?? '';
+            $this->aluno->conhecimento_curso_tecnico = $_POST['conhecimento_curso_tecnico'] ?? '';
+            $this->aluno->rede_atendimento_familia = $_POST['rede_atendimento_familia'] ?? '';
+        } else {
+            $this->aluno->identidade_genero = $aluno_atual['identidade_genero'] ?? null;
+            $this->aluno->grupo_familiar = $aluno_atual['grupo_familiar'] ?? null;
+            $this->aluno->guarda_legal = $aluno_atual['guarda_legal'] ?? null;
+            $this->aluno->escolaridade_pais_responsaveis = $aluno_atual['escolaridade_pais_responsaveis'] ?? null;
+            $this->aluno->necessidade_mudanca = $aluno_atual['necessidade_mudanca'] ?? null;
+            $this->aluno->meio_transporte = $aluno_atual['meio_transporte'] ?? null;
+            $this->aluno->razao_escolha_ifrs = $aluno_atual['razao_escolha_ifrs'] ?? null;
+            $this->aluno->expectativa_estudante_familia = $aluno_atual['expectativa_estudante_familia'] ?? null;
+            $this->aluno->conhecimento_curso_tecnico = $aluno_atual['conhecimento_curso_tecnico'] ?? null;
+            $this->aluno->rede_atendimento_familia = $aluno_atual['rede_atendimento_familia'] ?? null;
+        }
         
         // Handle photo upload
         $foto_path = $this->uploadFoto($this->aluno->id);

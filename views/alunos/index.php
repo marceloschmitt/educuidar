@@ -341,6 +341,51 @@
                         <label for="modal_outras_observacoes" class="form-label">Outras Observações</label>
                         <textarea class="form-control" id="modal_outras_observacoes" name="outras_observacoes" rows="3"></textarea>
                     </div>
+
+                    <?php if ($user->isAssistenciaEstudantil()): ?>
+                    <hr>
+                    <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                    <div class="mb-3">
+                        <label for="modal_identidade_genero" class="form-label">Identidade de gênero</label>
+                        <textarea class="form-control" id="modal_identidade_genero" name="identidade_genero" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_grupo_familiar" class="form-label">Grupo familiar</label>
+                        <textarea class="form-control" id="modal_grupo_familiar" name="grupo_familiar" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_guarda_legal" class="form-label">Guarda legal do estudante</label>
+                        <textarea class="form-control" id="modal_guarda_legal" name="guarda_legal" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_escolaridade_pais_responsaveis" class="form-label">Escolaridade dos pais ou responsáveis</label>
+                        <textarea class="form-control" id="modal_escolaridade_pais_responsaveis" name="escolaridade_pais_responsaveis" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_necessidade_mudanca" class="form-label">Necessidade de mudança</label>
+                        <textarea class="form-control" id="modal_necessidade_mudanca" name="necessidade_mudanca" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_meio_transporte" class="form-label">Meio de transporte</label>
+                        <textarea class="form-control" id="modal_meio_transporte" name="meio_transporte" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_razao_escolha_ifrs" class="form-label">Razão para escolha do IFRS, Campus e Curso</label>
+                        <textarea class="form-control" id="modal_razao_escolha_ifrs" name="razao_escolha_ifrs" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_expectativa_estudante_familia" class="form-label">Expectativa do estudante e da família</label>
+                        <textarea class="form-control" id="modal_expectativa_estudante_familia" name="expectativa_estudante_familia" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_conhecimento_curso_tecnico" class="form-label">Conhecimento sobre curso técnico</label>
+                        <textarea class="form-control" id="modal_conhecimento_curso_tecnico" name="conhecimento_curso_tecnico" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_rede_atendimento_familia" class="form-label">Rede de atendimento da família</label>
+                        <textarea class="form-control" id="modal_rede_atendimento_familia" name="rede_atendimento_familia" rows="2"></textarea>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -471,6 +516,55 @@
                         </div>
                     </div>
                 </div>
+
+                <?php if ($user->isAssistenciaEstudantil()): ?>
+                <hr>
+                <div class="row">
+                    <div class="col-md-12">
+                        <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                        <div class="mb-3">
+                            <strong>Identidade de gênero:</strong>
+                            <div id="ficha_identidade_genero" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Grupo familiar:</strong>
+                            <div id="ficha_grupo_familiar" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Guarda legal do estudante:</strong>
+                            <div id="ficha_guarda_legal" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Escolaridade dos pais ou responsáveis:</strong>
+                            <div id="ficha_escolaridade_pais_responsaveis" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Necessidade de mudança:</strong>
+                            <div id="ficha_necessidade_mudanca" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Meio de transporte:</strong>
+                            <div id="ficha_meio_transporte" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Razão para escolha do IFRS, Campus e Curso:</strong>
+                            <div id="ficha_razao_escolha_ifrs" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Expectativa do estudante e da família:</strong>
+                            <div id="ficha_expectativa_estudante_familia" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Conhecimento sobre curso técnico:</strong>
+                            <div id="ficha_conhecimento_curso_tecnico" class="text-muted mt-1">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Rede de atendimento da família:</strong>
+                            <div id="ficha_rede_atendimento_familia" class="text-muted mt-1">-</div>
+                        </div>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
             <div class="modal-footer">
                 <?php if ($user->isAdmin() || $user->isAssistenciaEstudantil()): ?>

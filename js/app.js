@@ -77,6 +77,36 @@ function resetForm() {
     document.getElementById('modal_pei').value = '0';
     document.getElementById('modal_profissionais_referencia').value = '';
     document.getElementById('modal_outras_observacoes').value = '';
+    if (document.getElementById('modal_identidade_genero')) {
+        document.getElementById('modal_identidade_genero').value = '';
+    }
+    if (document.getElementById('modal_grupo_familiar')) {
+        document.getElementById('modal_grupo_familiar').value = '';
+    }
+    if (document.getElementById('modal_guarda_legal')) {
+        document.getElementById('modal_guarda_legal').value = '';
+    }
+    if (document.getElementById('modal_escolaridade_pais_responsaveis')) {
+        document.getElementById('modal_escolaridade_pais_responsaveis').value = '';
+    }
+    if (document.getElementById('modal_necessidade_mudanca')) {
+        document.getElementById('modal_necessidade_mudanca').value = '';
+    }
+    if (document.getElementById('modal_meio_transporte')) {
+        document.getElementById('modal_meio_transporte').value = '';
+    }
+    if (document.getElementById('modal_razao_escolha_ifrs')) {
+        document.getElementById('modal_razao_escolha_ifrs').value = '';
+    }
+    if (document.getElementById('modal_expectativa_estudante_familia')) {
+        document.getElementById('modal_expectativa_estudante_familia').value = '';
+    }
+    if (document.getElementById('modal_conhecimento_curso_tecnico')) {
+        document.getElementById('modal_conhecimento_curso_tecnico').value = '';
+    }
+    if (document.getElementById('modal_rede_atendimento_familia')) {
+        document.getElementById('modal_rede_atendimento_familia').value = '';
+    }
     document.getElementById('modal_foto').value = '';
     document.getElementById('foto_preview').innerHTML = '';
     var fotoAtual = document.getElementById('foto_atual');
@@ -215,6 +245,29 @@ function viewFichaAluno(aluno) {
     } else {
         observacoesEl.textContent = '-';
     }
+
+    var setFichaTexto = function(id, value) {
+        var el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+        if (value && value.trim() !== '') {
+            el.textContent = value;
+        } else {
+            el.textContent = '-';
+        }
+    };
+
+    setFichaTexto('ficha_identidade_genero', aluno.identidade_genero || '');
+    setFichaTexto('ficha_grupo_familiar', aluno.grupo_familiar || '');
+    setFichaTexto('ficha_guarda_legal', aluno.guarda_legal || '');
+    setFichaTexto('ficha_escolaridade_pais_responsaveis', aluno.escolaridade_pais_responsaveis || '');
+    setFichaTexto('ficha_necessidade_mudanca', aluno.necessidade_mudanca || '');
+    setFichaTexto('ficha_meio_transporte', aluno.meio_transporte || '');
+    setFichaTexto('ficha_razao_escolha_ifrs', aluno.razao_escolha_ifrs || '');
+    setFichaTexto('ficha_expectativa_estudante_familia', aluno.expectativa_estudante_familia || '');
+    setFichaTexto('ficha_conhecimento_curso_tecnico', aluno.conhecimento_curso_tecnico || '');
+    setFichaTexto('ficha_rede_atendimento_familia', aluno.rede_atendimento_familia || '');
     
     // Armazenar dados do aluno para o botão de editar
     var modalFicha = document.getElementById('modalFichaAluno');
@@ -258,6 +311,36 @@ function editAluno(aluno) {
     document.getElementById('modal_pei').value = (aluno.pei == 1 || aluno.pei === '1') ? '1' : '0';
     document.getElementById('modal_profissionais_referencia').value = aluno.profissionais_referencia || '';
     document.getElementById('modal_outras_observacoes').value = aluno.outras_observacoes || '';
+    if (document.getElementById('modal_identidade_genero')) {
+        document.getElementById('modal_identidade_genero').value = aluno.identidade_genero || '';
+    }
+    if (document.getElementById('modal_grupo_familiar')) {
+        document.getElementById('modal_grupo_familiar').value = aluno.grupo_familiar || '';
+    }
+    if (document.getElementById('modal_guarda_legal')) {
+        document.getElementById('modal_guarda_legal').value = aluno.guarda_legal || '';
+    }
+    if (document.getElementById('modal_escolaridade_pais_responsaveis')) {
+        document.getElementById('modal_escolaridade_pais_responsaveis').value = aluno.escolaridade_pais_responsaveis || '';
+    }
+    if (document.getElementById('modal_necessidade_mudanca')) {
+        document.getElementById('modal_necessidade_mudanca').value = aluno.necessidade_mudanca || '';
+    }
+    if (document.getElementById('modal_meio_transporte')) {
+        document.getElementById('modal_meio_transporte').value = aluno.meio_transporte || '';
+    }
+    if (document.getElementById('modal_razao_escolha_ifrs')) {
+        document.getElementById('modal_razao_escolha_ifrs').value = aluno.razao_escolha_ifrs || '';
+    }
+    if (document.getElementById('modal_expectativa_estudante_familia')) {
+        document.getElementById('modal_expectativa_estudante_familia').value = aluno.expectativa_estudante_familia || '';
+    }
+    if (document.getElementById('modal_conhecimento_curso_tecnico')) {
+        document.getElementById('modal_conhecimento_curso_tecnico').value = aluno.conhecimento_curso_tecnico || '';
+    }
+    if (document.getElementById('modal_rede_atendimento_familia')) {
+        document.getElementById('modal_rede_atendimento_familia').value = aluno.rede_atendimento_familia || '';
+    }
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';
     
