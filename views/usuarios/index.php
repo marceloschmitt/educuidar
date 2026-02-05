@@ -43,7 +43,7 @@
                                 <td><?php echo htmlspecialchars($usr['email']); ?></td>
                                 <td>
                                     <?php
-                                    $user_type_nome = $usr['user_type_nome'] ?? ($usr['user_type'] ?? '');
+                                    $user_type_nome = $usr['user_type_nome'] ?? '';
                                     ?>
                                     <span class="badge bg-<?php 
                                         $nivel = $usr['user_level'] ?? '';
@@ -116,7 +116,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
+                        <label for="user_type_id" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
                         <select class="form-select" id="user_type_id" name="user_type_id" required>
                             <option value="">Selecione...</option>
                             <?php foreach ($user_types as $ut): ?>
@@ -181,7 +181,7 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="edit_user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
+                        <label for="edit_user_type_id" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
                         <select class="form-select" id="edit_user_type_id" name="user_type_id" required>
                             <option value="">Selecione...</option>
                             <?php foreach ($user_types as $ut): ?>

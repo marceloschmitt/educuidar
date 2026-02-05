@@ -15,14 +15,13 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
-$user_type = $user->getUserType();
 $user_type_id = $user->getUserTypeId();
 if (empty($user_type_id)) {
-    $stmt = $db->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
-    $stmt->bindParam(':nome', $user_type);
+    $stmt = $db->prepare("SELECT user_type_id FROM user_user_types WHERE user_id = :user_id LIMIT 1");
+    $stmt->bindParam(':user_id', $_SESSION['user_id']);
     $stmt->execute();
     $row = $stmt->fetch();
-    $user_type_id = $row['id'] ?? null;
+    $user_type_id = $row['user_type_id'] ?? null;
 }
 $prontuario_titulo = $_SESSION['user_type_nome'] ?? 'Usuário';
 $page_title = 'Prontuário - ' . $prontuario_titulo;

@@ -23,7 +23,7 @@ class User {
     }
 
     public function login($username, $password) {
-        $query = "SELECT u.id, u.username, u.email, u.password, u.full_name, u.user_type, u.auth_type,
+        $query = "SELECT u.id, u.username, u.email, u.password, u.full_name, u.auth_type,
                   ut.id as user_type_id, ut.nome as user_type_nome, ut.nivel as user_level
                   FROM " . $this->table . " u
                   LEFT JOIN user_user_types uut ON uut.user_id = u.id
@@ -49,7 +49,7 @@ class User {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
                     $resolved = $this->resolveUserTypeFromRow($row);
-                    $_SESSION['user_type'] = $resolved['slug'];
+                    $_SESSION['user_type'] = $resolved['nome'];
                     $_SESSION['user_type_id'] = $resolved['id'];
                     $_SESSION['user_level'] = $resolved['level'];
                     $_SESSION['user_type_nome'] = $resolved['nome'];
@@ -65,7 +65,7 @@ class User {
                 return false;
             } else {
                 // Check if admin user has no password set (first login)
-                if (empty($row['password']) && $row['user_type'] === 'administrador') {
+                if (empty($row['password']) && $row['user_level'] === 'administrador') {
                     // Return special code to indicate password needs to be set
                     return 'SET_PASSWORD';
                 }
@@ -75,7 +75,7 @@ class User {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
                     $resolved = $this->resolveUserTypeFromRow($row);
-                    $_SESSION['user_type'] = $resolved['slug'];
+                    $_SESSION['user_type'] = $resolved['nome'];
                     $_SESSION['user_type_id'] = $resolved['id'];
                     $_SESSION['user_level'] = $resolved['level'];
                     $_SESSION['user_type_nome'] = $resolved['nome'];
@@ -97,23 +97,33 @@ class User {
     }
 
     public function ensureUserTypeSession() {
-        $slug = $_SESSION['user_type'] ?? null;
-        if (!$slug) {
-            return;
-        }
         if (!empty($_SESSION['user_type_id']) && !empty($_SESSION['user_level']) && !empty($_SESSION['user_type_nome'])) {
             return;
         }
-        $meta = $this->getUserTypeMetaByName($slug);
-        if ($meta) {
-            $_SESSION['user_type_id'] = $meta['id'] ?? null;
-            $_SESSION['user_level'] = $meta['nivel'] ?? null;
-            $_SESSION['user_type_nome'] = $meta['nome'] ?? null;
+        $user_id = $_SESSION['user_id'] ?? null;
+        if (!$user_id) {
+            return;
+        }
+        $stmt = $this->conn->prepare("SELECT ut.id, ut.nome, ut.nivel
+                                      FROM user_user_types uut
+                                      INNER JOIN user_types ut ON ut.id = uut.user_type_id
+                                      WHERE uut.user_id = :user_id
+                                      LIMIT 1");
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        if ($row) {
+            $_SESSION['user_type_id'] = $row['id'];
+            $_SESSION['user_level'] = $row['nivel'];
+            $_SESSION['user_type_nome'] = $row['nome'];
+            if (empty($_SESSION['user_type'])) {
+                $_SESSION['user_type'] = $row['nome'];
+            }
         }
     }
 
     public function getUserType() {
-        return $_SESSION['user_type'] ?? null;
+        return $_SESSION['user_type_nome'] ?? null;
     }
 
     public function getUserTypeId() {
@@ -157,8 +167,8 @@ class User {
         }
         
         $query = "INSERT INTO " . $this->table . " 
-                  (username, email, password, full_name, user_type, auth_type) 
-                  VALUES (:username, :email, :password, :full_name, :user_type, :auth_type)";
+                  (username, email, password, full_name, auth_type) 
+                  VALUES (:username, :email, :password, :full_name, :auth_type)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -172,9 +182,6 @@ class User {
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':password', $hashed_password);
         $stmt->bindParam(':full_name', $this->full_name);
-        $user_type_name = $this->getUserTypeNameById($this->user_type_id);
-        $this->user_type = $user_type_name ?: $this->user_type;
-        $stmt->bindParam(':user_type', $this->user_type);
         $stmt->bindParam(':auth_type', $this->auth_type);
 
         if ($stmt->execute()) {
@@ -188,7 +195,7 @@ class User {
     }
 
     public function getById($id) {
-        $query = "SELECT id, username, email, full_name, user_type, auth_type, created_at
+        $query = "SELECT id, username, email, full_name, auth_type, created_at
                   FROM " . $this->table . " 
                   WHERE id = :id LIMIT 1";
 
@@ -200,9 +207,9 @@ class User {
     }
 
     public function getAll() {
-        $query = "SELECT u.id, u.username, u.email, u.full_name, u.user_type, u.auth_type, u.created_at,
+        $query = "SELECT u.id, u.username, u.email, u.full_name, u.auth_type, u.created_at,
                   ut.id as user_type_id,
-                  COALESCE(ut.nome, u.user_type) as user_type_nome,
+                  ut.nome as user_type_nome,
                   ut.nivel as user_level
                   FROM " . $this->table . " u
                   LEFT JOIN user_user_types uut ON uut.user_id = u.id
@@ -232,7 +239,6 @@ class User {
                   SET username = :username,
                       email = :email,
                       full_name = :full_name,
-                      user_type = :user_type,
                       auth_type = :auth_type
                   WHERE id = :id";
 
@@ -242,9 +248,6 @@ class User {
         $stmt->bindParam(':username', $this->username);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':full_name', $this->full_name);
-        $user_type_name = $this->getUserTypeNameById($this->user_type_id);
-        $this->user_type = $user_type_name ?: $this->user_type;
-        $stmt->bindParam(':user_type', $this->user_type);
         $stmt->bindParam(':auth_type', $this->auth_type);
 
         if ($stmt->execute()) {
@@ -260,44 +263,13 @@ class User {
         if (!empty($row['user_type_id'])) {
             return [
                 'id' => $row['user_type_id'],
-                'slug' => $row['user_type'] ?? '',
-                'nome' => $row['user_type_nome'] ?? ($row['user_type'] ?? ''),
+                'slug' => $row['user_type_nome'] ?? '',
+                'nome' => $row['user_type_nome'] ?? '',
                 'level' => $row['user_level'] ?? null
             ];
         }
 
-        $legacy_name = $row['user_type'] ?? '';
-        if (empty($legacy_name)) {
-            return ['id' => null, 'slug' => '', 'nome' => '', 'level' => null];
-        }
-        $meta = $this->getUserTypeMetaByName($legacy_name);
-        return [
-            'id' => $meta['id'] ?? null,
-            'slug' => $legacy_name,
-            'nome' => $meta['nome'] ?? $legacy_name,
-            'level' => $meta['nivel'] ?? null
-        ];
-    }
-
-    private function getUserTypeMetaByName($name) {
-        if (empty($name)) {
-            return null;
-        }
-        $stmt = $this->conn->prepare("SELECT id, nome, nivel FROM user_types WHERE nome = :nome LIMIT 1");
-        $stmt->bindParam(':nome', $name);
-        $stmt->execute();
-        return $stmt->fetch();
-    }
-
-    private function getUserTypeIdByName($name) {
-        if (empty($name)) {
-            return null;
-        }
-        $stmt = $this->conn->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
-        $stmt->bindParam(':nome', $name);
-        $stmt->execute();
-        $row = $stmt->fetch();
-        return $row['id'] ?? null;
+        return ['id' => null, 'slug' => '', 'nome' => '', 'level' => null];
     }
 
     private function getUserTypeLevelById($id) {

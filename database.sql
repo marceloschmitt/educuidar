@@ -95,12 +95,10 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NULL,
     full_name VARCHAR(200) NOT NULL,
-    user_type VARCHAR(100) NOT NULL,
     auth_type ENUM('local', 'ldap') NOT NULL DEFAULT 'local',
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_user_type (user_type),
     INDEX idx_username (username),
     INDEX idx_email (email),
     INDEX idx_auth_type (auth_type),
@@ -141,8 +139,8 @@ INSERT INTO user_types (nome, nivel) VALUES
 ON DUPLICATE KEY UPDATE nivel = VALUES(nivel);
 
 -- Create initial admin user (password will be set on first login)
-INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
-('admin', 'admin@educuidar.local', NULL, 'Administrador', 'administrador', 'local');
+INSERT INTO users (username, email, password, full_name, auth_type) VALUES
+('admin', 'admin@educuidar.local', NULL, 'Administrador', 'local');
 
 INSERT INTO user_user_types (user_id, user_type_id)
 SELECT u.id, ut.id

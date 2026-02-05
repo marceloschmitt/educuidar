@@ -10,7 +10,6 @@ $curso = new Curso($db);
 $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
-$user_type = $_SESSION['user_type'];
 $user_id = $_SESSION['user_id'];
 
 // Get filters

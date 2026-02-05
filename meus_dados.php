@@ -88,14 +88,7 @@ require_once 'includes/header.php';
                     <div class="mb-3">
                         <label for="user_type" class="form-label">Tipo de Usuário</label>
                         <input type="text" class="form-control" id="user_type" value="<?php 
-                            $tipo_nome = [
-                                'administrador' => 'Administrador',
-                                'nivel1' => 'Professor',
-                                'nivel2' => 'Nível 2',
-                                'assistencia_estudantil' => 'Assistência Estudantil',
-                                'napne' => 'NAPNE'
-                            ];
-                            echo htmlspecialchars($tipo_nome[$user_data['user_type']] ?? ucfirst($user_data['user_type'] ?? '')); 
+                            echo htmlspecialchars($_SESSION['user_type_nome'] ?? '');
                         ?>" disabled>
                         <small class="text-muted">O tipo de usuário não pode ser alterado</small>
                     </div>

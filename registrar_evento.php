@@ -127,15 +127,15 @@ function canModifyEvent($db, $evento_id, $user) {
     return (time() - $created_at) <= 3600;
 }
 
-function getUserTypeIdByName($db, $name) {
-    if (empty($name)) {
+function getUserTypeIdByUserId($db, $user_id) {
+    if (empty($user_id)) {
         return null;
     }
-    $stmt = $db->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
-    $stmt->bindParam(':nome', $name);
+    $stmt = $db->prepare("SELECT user_type_id FROM user_user_types WHERE user_id = :user_id LIMIT 1");
+    $stmt->bindParam(':user_id', $user_id);
     $stmt->execute();
     $row = $stmt->fetch();
-    return $row['id'] ?? null;
+    return $row['user_type_id'] ?? null;
 }
 
 function canUseProntuario($db, $tipo_evento_id, $user_type) {
@@ -200,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
         $evento->prontuario_cae = '';
@@ -320,7 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
         $evento->prontuario_cae = '';
@@ -460,7 +460,7 @@ if ($aluno_id) {
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     $anexos_por_evento = [];
     if (!empty($eventos_aluno)) {
