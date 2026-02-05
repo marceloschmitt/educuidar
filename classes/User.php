@@ -193,6 +193,17 @@ class User {
         return false;
     }
 
+    public function delete($id) {
+        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+
+        if ($stmt->execute()) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Update user profile (only name and email)
      * Used by users to update their own data

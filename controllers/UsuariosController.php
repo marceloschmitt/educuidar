@@ -53,6 +53,8 @@ class UsuariosController extends Controller {
             $this->create();
         } elseif ($action == 'update') {
             $this->update();
+        } elseif ($action == 'delete') {
+            $this->delete();
         }
     }
     
@@ -126,6 +128,34 @@ class UsuariosController extends Controller {
             $this->setError('Erro ao atualizar usuário. Tente novamente.');
         }
         
+        $this->redirect('usuarios.php');
+    }
+
+    /**
+     * Delete a user
+     */
+    private function delete() {
+        $user_id = $_POST['id'] ?? null;
+        $current_user_id = $_SESSION['user_id'] ?? null;
+
+        if (empty($user_id)) {
+            $this->setError('ID do usuário não fornecido.');
+            $this->redirect('usuarios.php');
+            return;
+        }
+
+        if ($current_user_id && (int)$user_id === (int)$current_user_id) {
+            $this->setError('Não é possível excluir o usuário corrente.');
+            $this->redirect('usuarios.php');
+            return;
+        }
+
+        if ($this->user->delete($user_id)) {
+            $this->setSuccess('Usuário excluído com sucesso!');
+        } else {
+            $this->setError('Erro ao excluir usuário. Tente novamente.');
+        }
+
         $this->redirect('usuarios.php');
     }
 }

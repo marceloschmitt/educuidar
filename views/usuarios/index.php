@@ -69,11 +69,24 @@
                                     </span>
                                 </td>
                                 <td><?php echo date('d/m/Y H:i', strtotime($usr['created_at'])); ?></td>
-                                <td>
+                                <td class="d-flex gap-2">
                                     <button type="button" class="btn btn-primary btn-sm btn-edit-user" 
                                             data-user='<?php echo htmlspecialchars(json_encode($usr)); ?>'>
                                         <i class="bi bi-pencil"></i>
                                     </button>
+                                    <?php if (!empty($_SESSION['user_id']) && (int)$_SESSION['user_id'] === (int)$usr['id']): ?>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Usuário corrente">
+                                            <i class="bi bi-lock"></i>
+                                        </button>
+                                    <?php else: ?>
+                                        <form method="POST" action="" onsubmit="return confirm('Tem certeza que deseja excluir este usuário?');">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="id" value="<?php echo (int)$usr['id']; ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
