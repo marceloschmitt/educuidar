@@ -18,9 +18,8 @@ if (!$user->isLoggedIn()) {
 $user_type = $user->getUserType();
 $user_type_id = $user->getUserTypeId();
 if (empty($user_type_id)) {
-    $stmt = $db->prepare("SELECT id FROM user_types WHERE slug = :slug LIMIT 1");
-    $slug = $user->getUserType();
-    $stmt->bindParam(':slug', $slug);
+    $stmt = $db->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
+    $stmt->bindParam(':nome', $user_type);
     $stmt->execute();
     $row = $stmt->fetch();
     $user_type_id = $row['id'] ?? null;
@@ -76,17 +75,13 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           LEFT JOIN turmas t ON e.turma_id = t.id
           LEFT JOIN users u ON e.registrado_por = u.id
           WHERE e.aluno_id = :aluno_id
-            AND (
-                te.prontuario_user_type_id = :user_type_id
-                OR (te.prontuario_user_type_id IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
-            )
+            AND te.prontuario_user_type_id = :user_type_id
             AND t.ano_civil = :filtro_ano
           ORDER BY e.data_evento ASC, e.hora_evento ASC";
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
 $stmt->bindParam(':user_type_id', $user_type_id);
-$stmt->bindParam(':user_type_assistencia', $user_type);
 $stmt->bindParam(':filtro_ano', $filtro_ano);
 $stmt->execute();
 $eventos_cae = $stmt->fetchAll();

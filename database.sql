@@ -88,14 +88,14 @@ CREATE TABLE IF NOT EXISTS alunos (
     INDEX idx_numero_matricula (numero_matricula)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Users table (only for system users: admin, nivel1, nivel2, assistencia_estudantil, napne)
+-- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NULL,
     full_name VARCHAR(200) NOT NULL,
-    user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil', 'napne') NOT NULL,
+    user_type VARCHAR(100) NOT NULL,
     auth_type ENUM('local', 'ldap') NOT NULL DEFAULT 'local',
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -110,12 +110,11 @@ CREATE TABLE IF NOT EXISTS users (
 -- User Types table
 CREATE TABLE IF NOT EXISTS user_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    slug VARCHAR(50) UNIQUE NOT NULL,
     nome VARCHAR(100) NOT NULL,
     nivel ENUM('administrador', 'nivel1', 'nivel2') NOT NULL DEFAULT 'nivel1',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_slug (slug),
+    UNIQUE KEY unique_nome (nome),
     INDEX idx_nivel (nivel)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -133,13 +132,13 @@ CREATE TABLE IF NOT EXISTS user_user_types (
     FOREIGN KEY (user_type_id) REFERENCES user_types(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO user_types (slug, nome, nivel) VALUES
-('administrador', 'Administrador', 'administrador'),
-('nivel1', 'Professor', 'nivel1'),
-('nivel2', 'Nível 2', 'nivel2'),
-('assistencia_estudantil', 'Assistência Estudantil', 'nivel1'),
-('napne', 'NAPNE', 'nivel1')
-ON DUPLICATE KEY UPDATE nome = VALUES(nome), nivel = VALUES(nivel);
+INSERT INTO user_types (nome, nivel) VALUES
+('Administrador', 'administrador'),
+('Professor', 'nivel1'),
+('Nível 2', 'nivel2'),
+('Assistência Estudantil', 'nivel1'),
+('NAPNE', 'nivel1')
+ON DUPLICATE KEY UPDATE nivel = VALUES(nivel);
 
 -- Create initial admin user (password will be set on first login)
 INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
@@ -148,7 +147,7 @@ INSERT INTO users (username, email, password, full_name, user_type, auth_type) V
 INSERT INTO user_user_types (user_id, user_type_id)
 SELECT u.id, ut.id
 FROM users u
-INNER JOIN user_types ut ON ut.slug = 'administrador'
+INNER JOIN user_types ut ON ut.nome = 'Administrador'
 WHERE u.username = 'admin'
 ON DUPLICATE KEY UPDATE user_type_id = VALUES(user_type_id);
 

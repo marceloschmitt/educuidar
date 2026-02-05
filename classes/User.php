@@ -13,6 +13,7 @@ class User {
     public $password;
     public $full_name;
     public $user_type;
+    public $user_type_id;
     public $auth_type;
     public $turma_corrente_id;
     public $created_at;
@@ -23,7 +24,7 @@ class User {
 
     public function login($username, $password) {
         $query = "SELECT u.id, u.username, u.email, u.password, u.full_name, u.user_type, u.auth_type,
-                  ut.id as user_type_id, ut.slug as user_type_slug, ut.nome as user_type_nome, ut.nivel as user_level
+                  ut.id as user_type_id, ut.nome as user_type_nome, ut.nivel as user_level
                   FROM " . $this->table . " u
                   LEFT JOIN user_user_types uut ON uut.user_id = u.id
                   LEFT JOIN user_types ut ON ut.id = uut.user_type_id
@@ -103,7 +104,7 @@ class User {
         if (!empty($_SESSION['user_type_id']) && !empty($_SESSION['user_level']) && !empty($_SESSION['user_type_nome'])) {
             return;
         }
-        $meta = $this->getUserTypeMetaBySlug($slug);
+        $meta = $this->getUserTypeMetaByName($slug);
         if ($meta) {
             $_SESSION['user_type_id'] = $meta['id'] ?? null;
             $_SESSION['user_level'] = $meta['nivel'] ?? null;
@@ -146,7 +147,8 @@ class User {
     public function create() {
         // Set default auth_type if not provided
         if (empty($this->auth_type)) {
-            $this->auth_type = ($this->user_type === 'administrador') ? 'local' : 'ldap';
+            $level = $this->getUserTypeLevelById($this->user_type_id);
+            $this->auth_type = ($level === 'administrador') ? 'local' : 'ldap';
         }
         
         // If using local auth, password is required
@@ -170,12 +172,16 @@ class User {
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':password', $hashed_password);
         $stmt->bindParam(':full_name', $this->full_name);
+        $user_type_name = $this->getUserTypeNameById($this->user_type_id);
+        $this->user_type = $user_type_name ?: $this->user_type;
         $stmt->bindParam(':user_type', $this->user_type);
         $stmt->bindParam(':auth_type', $this->auth_type);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
-            $this->setUserTypeForUser($this->id, $this->user_type);
+            if (!empty($this->user_type_id)) {
+                $this->setUserTypeForUser($this->id, $this->user_type_id);
+            }
             return true;
         }
         return false;
@@ -195,8 +201,9 @@ class User {
 
     public function getAll() {
         $query = "SELECT u.id, u.username, u.email, u.full_name, u.user_type, u.auth_type, u.created_at,
-                  COALESCE(ut.slug, u.user_type) as user_type_slug,
-                  COALESCE(ut.nome, u.user_type) as user_type_nome
+                  ut.id as user_type_id,
+                  COALESCE(ut.nome, u.user_type) as user_type_nome,
+                  ut.nivel as user_level
                   FROM " . $this->table . " u
                   LEFT JOIN user_user_types uut ON uut.user_id = u.id
                   LEFT JOIN user_types ut ON ut.id = uut.user_type_id
@@ -209,7 +216,7 @@ class User {
     }
 
     public function getUserTypes() {
-        $stmt = $this->conn->prepare("SELECT id, slug, nome, nivel FROM user_types ORDER BY nome ASC");
+        $stmt = $this->conn->prepare("SELECT id, nome, nivel FROM user_types ORDER BY nome ASC");
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -217,7 +224,8 @@ class User {
     public function update() {
         // Set default auth_type if not provided
         if (empty($this->auth_type)) {
-            $this->auth_type = ($this->user_type === 'administrador') ? 'local' : 'ldap';
+            $level = $this->getUserTypeLevelById($this->user_type_id);
+            $this->auth_type = ($level === 'administrador') ? 'local' : 'ldap';
         }
         
         $query = "UPDATE " . $this->table . " 
@@ -234,11 +242,15 @@ class User {
         $stmt->bindParam(':username', $this->username);
         $stmt->bindParam(':email', $this->email);
         $stmt->bindParam(':full_name', $this->full_name);
+        $user_type_name = $this->getUserTypeNameById($this->user_type_id);
+        $this->user_type = $user_type_name ?: $this->user_type;
         $stmt->bindParam(':user_type', $this->user_type);
         $stmt->bindParam(':auth_type', $this->auth_type);
 
         if ($stmt->execute()) {
-            $this->setUserTypeForUser($this->id, $this->user_type);
+            if (!empty($this->user_type_id)) {
+                $this->setUserTypeForUser($this->id, $this->user_type_id);
+            }
             return true;
         }
         return false;
@@ -248,48 +260,69 @@ class User {
         if (!empty($row['user_type_id'])) {
             return [
                 'id' => $row['user_type_id'],
-                'slug' => $row['user_type_slug'] ?? ($row['user_type'] ?? ''),
+                'slug' => $row['user_type'] ?? '',
                 'nome' => $row['user_type_nome'] ?? ($row['user_type'] ?? ''),
                 'level' => $row['user_level'] ?? null
             ];
         }
 
-        $legacy_slug = $row['user_type'] ?? '';
-        if (empty($legacy_slug)) {
+        $legacy_name = $row['user_type'] ?? '';
+        if (empty($legacy_name)) {
             return ['id' => null, 'slug' => '', 'nome' => '', 'level' => null];
         }
-        $meta = $this->getUserTypeMetaBySlug($legacy_slug);
+        $meta = $this->getUserTypeMetaByName($legacy_name);
         return [
             'id' => $meta['id'] ?? null,
-            'slug' => $meta['slug'] ?? $legacy_slug,
-            'nome' => $meta['nome'] ?? $legacy_slug,
+            'slug' => $legacy_name,
+            'nome' => $meta['nome'] ?? $legacy_name,
             'level' => $meta['nivel'] ?? null
         ];
     }
 
-    private function getUserTypeMetaBySlug($slug) {
-        if (empty($slug)) {
+    private function getUserTypeMetaByName($name) {
+        if (empty($name)) {
             return null;
         }
-        $stmt = $this->conn->prepare("SELECT id, slug, nome, nivel FROM user_types WHERE slug = :slug LIMIT 1");
-        $stmt->bindParam(':slug', $slug);
+        $stmt = $this->conn->prepare("SELECT id, nome, nivel FROM user_types WHERE nome = :nome LIMIT 1");
+        $stmt->bindParam(':nome', $name);
         $stmt->execute();
         return $stmt->fetch();
     }
 
-    private function getUserTypeIdBySlug($slug) {
-        if (empty($slug)) {
+    private function getUserTypeIdByName($name) {
+        if (empty($name)) {
             return null;
         }
-        $stmt = $this->conn->prepare("SELECT id FROM user_types WHERE slug = :slug LIMIT 1");
-        $stmt->bindParam(':slug', $slug);
+        $stmt = $this->conn->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
+        $stmt->bindParam(':nome', $name);
         $stmt->execute();
         $row = $stmt->fetch();
         return $row['id'] ?? null;
     }
 
-    public function setUserTypeForUser($user_id, $slug) {
-        $user_type_id = $this->getUserTypeIdBySlug($slug);
+    private function getUserTypeLevelById($id) {
+        if (empty($id)) {
+            return null;
+        }
+        $stmt = $this->conn->prepare("SELECT nivel FROM user_types WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['nivel'] ?? null;
+    }
+
+    private function getUserTypeNameById($id) {
+        if (empty($id)) {
+            return null;
+        }
+        $stmt = $this->conn->prepare("SELECT nome FROM user_types WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['nome'] ?? null;
+    }
+
+    public function setUserTypeForUser($user_id, $user_type_id) {
         if (!$user_type_id || !$user_id) {
             return false;
         }

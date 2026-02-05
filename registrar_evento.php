@@ -127,29 +127,23 @@ function canModifyEvent($db, $evento_id, $user) {
     return (time() - $created_at) <= 3600;
 }
 
-function getUserTypeIdBySlug($db, $slug) {
-    if (empty($slug)) {
+function getUserTypeIdByName($db, $name) {
+    if (empty($name)) {
         return null;
     }
-    $stmt = $db->prepare("SELECT id FROM user_types WHERE slug = :slug LIMIT 1");
-    $stmt->bindParam(':slug', $slug);
+    $stmt = $db->prepare("SELECT id FROM user_types WHERE nome = :nome LIMIT 1");
+    $stmt->bindParam(':nome', $name);
     $stmt->execute();
     $row = $stmt->fetch();
     return $row['id'] ?? null;
-}
-
-function getAssistenciaTypeId($db) {
-    return getUserTypeIdBySlug($db, 'assistencia_estudantil');
 }
 
 function canUseProntuario($db, $tipo_evento_id, $user_type) {
     if (empty($tipo_evento_id) || empty($user_type)) {
         return false;
     }
-    $stmt = $db->prepare("SELECT te.prontuario_user_type_id, te.gera_prontuario_cae,
-                          ut_assist.id as assist_id
+    $stmt = $db->prepare("SELECT te.prontuario_user_type_id
                           FROM tipos_eventos te
-                          LEFT JOIN user_types ut_assist ON ut_assist.slug = 'assistencia_estudantil'
                           WHERE te.id = :id LIMIT 1");
     $stmt->bindParam(':id', $tipo_evento_id);
     $stmt->execute();
@@ -158,9 +152,6 @@ function canUseProntuario($db, $tipo_evento_id, $user_type) {
         return false;
     }
     $prontuario_tipo_id = $tipo['prontuario_user_type_id'] ?? null;
-    if (empty($prontuario_tipo_id) && !empty($tipo['gera_prontuario_cae'])) {
-        $prontuario_tipo_id = $tipo['assist_id'] ?? null;
-    }
     return !empty($prontuario_tipo_id) && (string)$prontuario_tipo_id === (string)$user_type;
 }
 
@@ -209,7 +200,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdBySlug($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
         $evento->prontuario_cae = '';
@@ -329,7 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdBySlug($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
         $evento->prontuario_cae = '';
@@ -469,9 +460,8 @@ if ($aluno_id) {
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
-        $current_user_type_id = getUserTypeIdBySlug($db, $_SESSION['user_type'] ?? '');
+        $current_user_type_id = getUserTypeIdByName($db, $_SESSION['user_type'] ?? '');
     }
-    $assistencia_type_id = getAssistenciaTypeId($db);
     $anexos_por_evento = [];
     if (!empty($eventos_aluno)) {
         $evento_ids = array_column($eventos_aluno, 'id');
@@ -487,11 +477,8 @@ if ($aluno_id) {
         }
     }
     $tipos_eventos = $tipo_evento->getAll(true); // Apenas ativos
-    $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($current_user_type_id, $assistencia_type_id) {
+    $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($current_user_type_id) {
         $prontuario_tipo_id = $te['prontuario_user_type_id'] ?? '';
-        if (empty($prontuario_tipo_id) && !empty($te['gera_prontuario_cae'])) {
-            $prontuario_tipo_id = $assistencia_type_id;
-        }
         return empty($prontuario_tipo_id) || (string)$prontuario_tipo_id === (string)$current_user_type_id;
     });
     ?>
@@ -662,20 +649,11 @@ if ($aluno_id) {
                                 'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $ev['registrado_por_nome'] ?? '-',
                                 'observacoes' => $ev['observacoes'] ?? '',
-                                'prontuario_cae' => (function() use ($ev, $current_user_type_id, $assistencia_type_id) {
+                                'prontuario_cae' => (function() use ($ev, $current_user_type_id) {
                                     $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    if (empty($prontuario_tipo_id) && !empty($ev['tipo_evento_gera_prontuario'])) {
-                                        $prontuario_tipo_id = $assistencia_type_id;
-                                    }
                                     return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($ev['prontuario_cae'] ?? '') : '';
                                 })(),
-                                'prontuario_user_type_id' => (function() use ($ev, $assistencia_type_id) {
-                                    $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    if (empty($prontuario_tipo_id) && !empty($ev['tipo_evento_gera_prontuario'])) {
-                                        $prontuario_tipo_id = $assistencia_type_id;
-                                    }
-                                    return $prontuario_tipo_id;
-                                })(),
+                                'prontuario_user_type_id' => ($ev['tipo_evento_prontuario_user_type_id'] ?? ''),
                                 'aluno_id' => $ev['aluno_id'] ?? '',
                                 'turma_id' => $ev['turma_id'] ?? '',
                                 'tipo_evento_id' => $ev['tipo_evento_id'] ?? '',
@@ -686,18 +664,12 @@ if ($aluno_id) {
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
                                 'anexos' => $anexos_por_evento[$ev['id']] ?? [],
-                                'can_view_anexos' => (function() use ($ev, $current_user_type_id, $assistencia_type_id) {
+                                'can_view_anexos' => (function() use ($ev, $current_user_type_id) {
                                     $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    if (empty($prontuario_tipo_id) && !empty($ev['tipo_evento_gera_prontuario'])) {
-                                        $prontuario_tipo_id = $assistencia_type_id;
-                                    }
                                     return empty($prontuario_tipo_id) || ((string)$current_user_type_id === (string)$prontuario_tipo_id);
                                 })(),
-                                'can_view_prontuario' => (function() use ($ev, $current_user_type_id, $assistencia_type_id) {
+                                'can_view_prontuario' => (function() use ($ev, $current_user_type_id) {
                                     $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    if (empty($prontuario_tipo_id) && !empty($ev['tipo_evento_gera_prontuario'])) {
-                                        $prontuario_tipo_id = $assistencia_type_id;
-                                    }
                                     return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id);
                                 })()
                             ])); ?>'>

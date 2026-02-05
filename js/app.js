@@ -1218,7 +1218,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Toggle campos de senha para usuários (formulário de criação)
-    var userTypeSelect = document.getElementById('user_type');
+    var userTypeSelect = document.getElementById('user_type_id');
     var authTypeSelect = document.getElementById('auth_type');
     if (userTypeSelect && authTypeSelect) {
         userTypeSelect.addEventListener('change', toggleFields);
@@ -1273,7 +1273,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    var editUserTypeSelect = document.getElementById('edit_user_type');
+    var editUserTypeSelect = document.getElementById('edit_user_type_id');
     var editAuthTypeSelect = document.getElementById('edit_auth_type');
     if (editUserTypeSelect && editAuthTypeSelect) {
         editUserTypeSelect.addEventListener('change', toggleEditPasswordField);
@@ -1438,7 +1438,9 @@ function editUser(user) {
     document.getElementById('edit_username').value = user.username || '';
     document.getElementById('edit_email').value = user.email || '';
     document.getElementById('edit_full_name').value = user.full_name || '';
-    document.getElementById('edit_user_type').value = user.user_type_slug || user.user_type || '';
+    if (document.getElementById('edit_user_type_id')) {
+        document.getElementById('edit_user_type_id').value = user.user_type_id || '';
+    }
     document.getElementById('edit_auth_type').value = user.auth_type || 'local';
     document.getElementById('edit_new_password').value = '';
     toggleEditPasswordField();

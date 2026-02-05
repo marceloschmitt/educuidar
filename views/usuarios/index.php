@@ -43,29 +43,15 @@
                                 <td><?php echo htmlspecialchars($usr['email']); ?></td>
                                 <td>
                                     <?php
-                                    $user_type_slug = $usr['user_type_slug'] ?? ($usr['user_type'] ?? '');
+                                    $user_type_nome = $usr['user_type_nome'] ?? ($usr['user_type'] ?? '');
                                     ?>
                                     <span class="badge bg-<?php 
-                                        echo $user_type_slug === 'administrador' ? 'danger' : 
-                                            ($user_type_slug === 'nivel1' ? 'primary' : 
-                                            ($user_type_slug === 'nivel2' ? 'info' : 
-                                            ($user_type_slug === 'assistencia_estudantil' ? 'success' : 
-                                            ($user_type_slug === 'napne' ? 'warning' : 'secondary')))); 
+                                        $nivel = $usr['user_level'] ?? '';
+                                        echo $nivel === 'administrador' ? 'danger' :
+                                            ($nivel === 'nivel1' ? 'primary' :
+                                            ($nivel === 'nivel2' ? 'info' : 'secondary'));
                                     ?>">
-                                        <?php 
-                                        if (!empty($usr['user_type_nome'])) {
-                                            echo htmlspecialchars($usr['user_type_nome']);
-                                        } else {
-                                            $tipo_nome = [
-                                                'administrador' => 'Administrador',
-                                                'nivel1' => 'Professor',
-                                                'nivel2' => 'Nível 2',
-                                                'assistencia_estudantil' => 'Assistência Estudantil',
-                                                'napne' => 'NAPNE'
-                                            ];
-                                            echo $tipo_nome[$user_type_slug] ?? ucfirst($user_type_slug);
-                                        }
-                                        ?>
+                                        <?php echo htmlspecialchars($user_type_nome); ?>
                                     </span>
                                 </td>
                                 <td>
@@ -131,10 +117,10 @@
                     
                     <div class="mb-3">
                         <label for="user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
-                        <select class="form-select" id="user_type" name="user_type" required>
+                        <select class="form-select" id="user_type_id" name="user_type_id" required>
                             <option value="">Selecione...</option>
                             <?php foreach ($user_types as $ut): ?>
-                            <option value="<?php echo htmlspecialchars($ut['slug']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
+                            <option value="<?php echo htmlspecialchars($ut['id']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -196,10 +182,10 @@
                     
                     <div class="mb-3">
                         <label for="edit_user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
-                        <select class="form-select" id="edit_user_type" name="user_type" required>
+                        <select class="form-select" id="edit_user_type_id" name="user_type_id" required>
                             <option value="">Selecione...</option>
                             <?php foreach ($user_types as $ut): ?>
-                            <option value="<?php echo htmlspecialchars($ut['slug']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
+                            <option value="<?php echo htmlspecialchars($ut['id']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

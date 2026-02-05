@@ -68,11 +68,11 @@ class UsuariosController extends Controller {
         $this->user->email = $_POST['email'] ?? '';
         $this->user->password = $_POST['password'] ?? '';
         $this->user->full_name = $_POST['full_name'] ?? '';
-        $this->user->user_type = $_POST['user_type'] ?? '';
+        $this->user->user_type_id = $_POST['user_type_id'] ?? '';
         $this->user->auth_type = $_POST['auth_type'] ?? '';
         
         // Validar campos obrigatórios
-        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type) || empty($this->user->auth_type)) {
+        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type_id) || empty($this->user->auth_type)) {
             $this->setError('Por favor, preencha todos os campos obrigatórios!');
             $this->redirect('usuarios.php');
             return;
@@ -99,7 +99,7 @@ class UsuariosController extends Controller {
         $this->user->username = $_POST['username'] ?? '';
         $this->user->email = $_POST['email'] ?? '';
         $this->user->full_name = $_POST['full_name'] ?? '';
-        $this->user->user_type = $_POST['user_type'] ?? '';
+        $this->user->user_type_id = $_POST['user_type_id'] ?? '';
         $this->user->auth_type = $_POST['auth_type'] ?? '';
         $new_password = $_POST['new_password'] ?? '';
         
@@ -109,7 +109,7 @@ class UsuariosController extends Controller {
             return;
         }
         
-        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type) || empty($this->user->auth_type)) {
+        if (empty($this->user->username) || empty($this->user->email) || empty($this->user->full_name) || empty($this->user->user_type_id) || empty($this->user->auth_type)) {
             $this->setError('Por favor, preencha todos os campos obrigatórios!');
             $this->redirect('usuarios.php');
             return;

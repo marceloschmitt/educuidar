@@ -29,7 +29,7 @@ function getUserTypeUsage($db, $id) {
 }
 
 function fetchUserTypes($db) {
-    $stmt = $db->prepare("SELECT id, slug, nome, nivel, created_at, updated_at FROM user_types ORDER BY nome ASC");
+    $stmt = $db->prepare("SELECT id, nome, nivel, created_at, updated_at FROM user_types ORDER BY nome ASC");
     $stmt->execute();
     return $stmt->fetchAll();
 }
@@ -37,21 +37,17 @@ function fetchUserTypes($db) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $id = $_POST['id'] ?? null;
-    $slug = strtolower(trim($_POST['slug'] ?? ''));
     $nome = trim($_POST['nome'] ?? '');
     $nivel = $_POST['nivel'] ?? 'nivel1';
 
     if ($action === 'create' || $action === 'update') {
-        if (empty($slug) || empty($nome) || empty($nivel)) {
+        if (empty($nome) || empty($nivel)) {
             $error = 'Por favor, preencha todos os campos obrigatórios.';
-        } elseif (!preg_match('/^[a-z0-9_]+$/', $slug)) {
-            $error = 'Slug inválido. Use apenas letras minúsculas, números e underscore.';
         } elseif (!in_array($nivel, ['administrador', 'nivel1', 'nivel2'], true)) {
             $error = 'Nível inválido.';
         } else {
             if ($action === 'create') {
-                $stmt = $db->prepare("INSERT INTO user_types (slug, nome, nivel) VALUES (:slug, :nome, :nivel)");
-                $stmt->bindParam(':slug', $slug);
+                $stmt = $db->prepare("INSERT INTO user_types (nome, nivel) VALUES (:nome, :nivel)");
                 $stmt->bindParam(':nome', $nome);
                 $stmt->bindParam(':nivel', $nivel);
                 if ($stmt->execute()) {
@@ -63,9 +59,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (empty($id)) {
                     $error = 'ID do tipo não informado.';
                 } else {
-                    $stmt = $db->prepare("UPDATE user_types SET slug = :slug, nome = :nome, nivel = :nivel WHERE id = :id");
+                    $stmt = $db->prepare("UPDATE user_types SET nome = :nome, nivel = :nivel WHERE id = :id");
                     $stmt->bindParam(':id', $id);
-                    $stmt->bindParam(':slug', $slug);
                     $stmt->bindParam(':nome', $nome);
                     $stmt->bindParam(':nivel', $nivel);
                     if ($stmt->execute()) {
@@ -94,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $tipo_edit = null;
 if (isset($_GET['edit'])) {
-    $stmt = $db->prepare("SELECT id, slug, nome, nivel FROM user_types WHERE id = :id LIMIT 1");
+    $stmt = $db->prepare("SELECT id, nome, nivel FROM user_types WHERE id = :id LIMIT 1");
     $stmt->bindParam(':id', $_GET['edit']);
     $stmt->execute();
     $tipo_edit = $stmt->fetch();
@@ -134,13 +129,6 @@ require_once 'includes/header.php';
                     <?php if ($tipo_edit): ?>
                     <input type="hidden" name="id" value="<?php echo $tipo_edit['id']; ?>">
                     <?php endif; ?>
-
-                    <div class="mb-3">
-                        <label for="slug" class="form-label">Slug <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="slug" name="slug" 
-                               value="<?php echo htmlspecialchars($tipo_edit['slug'] ?? ''); ?>" required>
-                        <small class="text-muted">Use letras minúsculas, números e underscore.</small>
-                    </div>
 
                     <div class="mb-3">
                         <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
@@ -185,7 +173,6 @@ require_once 'includes/header.php';
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Slug</th>
                                 <th>Nível</th>
                                 <th>Ações</th>
                             </tr>
@@ -194,7 +181,6 @@ require_once 'includes/header.php';
                             <?php foreach ($tipos as $t): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($t['nome']); ?></td>
-                                <td><?php echo htmlspecialchars($t['slug']); ?></td>
                                 <td>
                                     <?php
                                     $nivel_label = [

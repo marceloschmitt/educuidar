@@ -45,7 +45,6 @@ class TipoEvento {
         $where = $apenas_ativos ? "WHERE ativo = 1" : "";
         $query = "SELECT t.*, 
                   COUNT(DISTINCT e.id) as total_eventos,
-                  ut.slug as prontuario_user_type_slug,
                   ut.nome as prontuario_user_type_nome
                   FROM " . $this->table . " t
                   LEFT JOIN eventos e ON t.id = e.tipo_evento_id
@@ -61,7 +60,7 @@ class TipoEvento {
     }
 
     public function getById($id) {
-        $query = "SELECT t.*, ut.slug as prontuario_user_type_slug, ut.nome as prontuario_user_type_nome
+        $query = "SELECT t.*, ut.nome as prontuario_user_type_nome
                   FROM " . $this->table . " t
                   LEFT JOIN user_types ut ON t.prontuario_user_type_id = ut.id
                   WHERE t.id = :id LIMIT 1";

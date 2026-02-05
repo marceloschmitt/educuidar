@@ -5,14 +5,12 @@ $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);
 $tipo_evento = new TipoEvento($db);
-$stmt_user_types = $db->prepare("SELECT id, slug, nome FROM user_types ORDER BY nome ASC");
+$stmt_user_types = $db->prepare("SELECT id, nome FROM user_types ORDER BY nome ASC");
 $stmt_user_types->execute();
 $user_types = $stmt_user_types->fetchAll();
 $user_types_by_id = [];
-$user_types_by_slug = [];
 foreach ($user_types as $ut) {
     $user_types_by_id[$ut['id']] = $ut;
-    $user_types_by_slug[$ut['slug']] = $ut;
 }
 
 // Only admin can manage tipos de eventos
@@ -28,11 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
             $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
-            $selected_slug = '';
-            if (!empty($tipo_evento->prontuario_user_type_id) && isset($user_types_by_id[$tipo_evento->prontuario_user_type_id])) {
-                $selected_slug = $user_types_by_id[$tipo_evento->prontuario_user_type_id]['slug'];
-            }
-            $tipo_evento->gera_prontuario_cae = ($selected_slug === 'assistencia_estudantil') ? 1 : 0;
+            $tipo_evento->gera_prontuario_cae = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -50,11 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
             $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
-            $selected_slug = '';
-            if (!empty($tipo_evento->prontuario_user_type_id) && isset($user_types_by_id[$tipo_evento->prontuario_user_type_id])) {
-                $selected_slug = $user_types_by_id[$tipo_evento->prontuario_user_type_id]['slug'];
-            }
-            $tipo_evento->gera_prontuario_cae = ($selected_slug === 'assistencia_estudantil') ? 1 : 0;
+            $tipo_evento->gera_prontuario_cae = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -176,8 +166,7 @@ $tipos = $tipo_evento->getAll();
                         <?php
                         $prontuario_user_type_id = $tipo_edit['prontuario_user_type_id'] ?? '';
                         if (empty($prontuario_user_type_id) && !empty($tipo_edit['gera_prontuario_cae'])) {
-                            $assistencia = $user_types_by_slug['assistencia_estudantil']['id'] ?? '';
-                            $prontuario_user_type_id = $assistencia;
+                            $prontuario_user_type_id = '';
                         }
                         ?>
                         <label for="prontuario_user_type_id" class="form-label">Prontuário exclusivo de</label>
@@ -235,9 +224,6 @@ $tipos = $tipo_evento->getAll();
                                 <td>
                                     <?php
                                     $prontuario_tipo_nome = $t['prontuario_user_type_nome'] ?? '';
-                                    if (empty($prontuario_tipo_nome) && !empty($t['gera_prontuario_cae'])) {
-                                        $prontuario_tipo_nome = $user_types_by_slug['assistencia_estudantil']['nome'] ?? 'Assistência Estudantil';
-                                    }
                                     ?>
                                     <?php if (!empty($prontuario_tipo_nome)): ?>
                                         <span class="badge bg-info"><?php echo htmlspecialchars($prontuario_tipo_nome); ?></span>
