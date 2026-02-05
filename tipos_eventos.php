@@ -200,7 +200,6 @@ $tipos = $tipo_evento->getAll();
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Eventos</th>
                                 <th>Prontuário</th>
                                 <th>Status</th>
                                 <th>Ações</th>
@@ -213,9 +212,6 @@ $tipos = $tipo_evento->getAll();
                                     <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?>">
                                         <?php echo htmlspecialchars($t['nome']); ?>
                                     </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-info"><?php echo htmlspecialchars($t['total_eventos'] ?? 0); ?></span>
                                 </td>
                                 <td>
                                     <?php
