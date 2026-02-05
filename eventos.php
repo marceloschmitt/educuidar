@@ -175,6 +175,13 @@ if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isA
 $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
 $filtro_nome = $_GET['filtro_nome'] ?? '';
+$ano_corrente = $configuracao->getAnoCorrente();
+$filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
+if (!is_numeric($filtro_ano)) {
+    $filtro_ano = $ano_corrente;
+} else {
+    $filtro_ano = (int)$filtro_ano;
+}
 
 // Handle update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update') {
@@ -241,6 +248,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     if ($filtro_curso) $params['filtro_curso'] = $filtro_curso;
     if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
     if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
+    if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
     $redirect_url = 'eventos.php?' . http_build_query($params);
     header('Location: ' . $redirect_url);
     exit;
@@ -260,6 +268,7 @@ if (isset($_GET['delete'])) {
             if ($filtro_curso) $params['filtro_curso'] = $filtro_curso;
             if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
             if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
+            if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
             $params['success'] = 'deleted';
             $redirect_url = 'eventos.php?' . http_build_query($params);
             header('Location: ' . $redirect_url);
@@ -274,6 +283,7 @@ if (isset($_GET['delete'])) {
             if ($filtro_curso) $params['filtro_curso'] = $filtro_curso;
             if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
             if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
+            if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
             $params['success'] = 'deleted';
             $redirect_url = 'eventos.php?' . http_build_query($params);
             header('Location: ' . $redirect_url);
@@ -287,7 +297,7 @@ if (isset($_GET['delete'])) {
 // Nivel2 só vê eventos que ele mesmo registrou
 $user_id = $_SESSION['user_id'] ?? null;
 $registrado_por = ($user->isNivel2()) ? $user_id : null;
-$eventos = $evento->getAll($registrado_por);
+$eventos = $evento->getAll($registrado_por, $filtro_ano);
 $anexos_por_evento = [];
 if (!empty($eventos)) {
     $evento_ids = array_column($eventos, 'id');
@@ -303,8 +313,15 @@ if (!empty($eventos)) {
     }
 }
 $cursos = $curso->getAll();
-$ano_corrente = $configuracao->getAnoCorrente();
-$turmas_ano_corrente_lista = $turma->getTurmasPorAnoCorrente($ano_corrente);
+$turmas_ano_corrente_lista = $turma->getTurmasPorAnoCorrente($filtro_ano);
+$stmt_anos = $db->prepare("SELECT DISTINCT ano_civil FROM turmas ORDER BY ano_civil DESC");
+$stmt_anos->execute();
+$anos_disponiveis = $stmt_anos->fetchAll(PDO::FETCH_COLUMN);
+if (empty($anos_disponiveis)) {
+    $anos_disponiveis = [$filtro_ano];
+} elseif (!in_array($filtro_ano, $anos_disponiveis, true)) {
+    array_unshift($anos_disponiveis, $filtro_ano);
+}
 $tipo_evento_model = new TipoEvento($db);
 $tipos_eventos = $tipo_evento_model->getAll(true); // Apenas ativos
 
@@ -394,7 +411,7 @@ require_once 'includes/header.php';
                 </select>
             </div>
             <div class="col-md-3">
-                <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $ano_corrente; ?>)</label>
+                <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $filtro_ano; ?>)</label>
                 <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma">
                     <option value="">Todas as turmas</option>
                     <?php 
@@ -414,6 +431,16 @@ require_once 'includes/header.php';
                 </select>
             </div>
             <div class="col-md-3">
+                <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
+                <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
+                    <?php foreach ($anos_disponiveis as $ano): ?>
+                    <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($ano); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-3">
                 <label for="filtro_nome" class="form-label">Filtrar por Nome do Aluno</label>
                 <div class="input-group input-group-sm">
                     <input type="text" class="form-control" id="filtro_nome" name="filtro_nome" 
@@ -426,7 +453,7 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="col-md-3 d-flex align-items-end">
-                <?php if ($filtro_curso || $filtro_turma || $filtro_nome): ?>
+                <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente)): ?>
                 <a href="eventos.php" class="btn btn-secondary btn-sm w-100">
                     <i class="bi bi-x-circle"></i> Limpar Filtros
                 </a>

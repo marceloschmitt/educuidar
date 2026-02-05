@@ -67,7 +67,7 @@ class Evento {
         return false;
     }
 
-    public function getAll($registrado_por = null) {
+    public function getAll($registrado_por = null, $ano_civil = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -81,16 +81,26 @@ class Evento {
                   LEFT JOIN cursos c ON t.curso_id = c.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
                   LEFT JOIN users u ON e.registrado_por = u.id";
-        
+
+        $where = [];
         if ($registrado_por !== null) {
-            $query .= " WHERE e.registrado_por = :registrado_por";
+            $where[] = "e.registrado_por = :registrado_por";
         }
-        
+        if ($ano_civil !== null) {
+            $where[] = "t.ano_civil = :ano_civil";
+        }
+        if (!empty($where)) {
+            $query .= " WHERE " . implode(" AND ", $where);
+        }
+
         $query .= " ORDER BY e.data_evento DESC, e.hora_evento DESC";
 
         $stmt = $this->conn->prepare($query);
         if ($registrado_por !== null) {
             $stmt->bindParam(':registrado_por', $registrado_por);
+        }
+        if ($ano_civil !== null) {
+            $stmt->bindParam(':ano_civil', $ano_civil);
         }
         $stmt->execute();
 
