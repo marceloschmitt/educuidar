@@ -90,7 +90,7 @@ require_once 'includes/header.php';
                         <input type="text" class="form-control" id="user_type" value="<?php 
                             $tipo_nome = [
                                 'administrador' => 'Administrador',
-                                'nivel1' => 'Nível 1',
+                                'nivel1' => 'Professor',
                                 'nivel2' => 'Nível 2',
                                 'assistencia_estudantil' => 'Assistência Estudantil'
                             ];

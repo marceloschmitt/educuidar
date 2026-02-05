@@ -51,7 +51,7 @@
                                         <?php 
                                         $tipo_nome = [
                                             'administrador' => 'Administrador',
-                                            'nivel1' => 'Nível 1',
+                                            'nivel1' => 'Professor',
                                             'nivel2' => 'Nível 2',
                                             'assistencia_estudantil' => 'Assistência Estudantil'
                                         ];
@@ -125,7 +125,7 @@
                         <select class="form-select" id="user_type" name="user_type" required>
                             <option value="">Selecione...</option>
                             <option value="administrador">Administrador</option>
-                            <option value="nivel1">Usuário Nível 1</option>
+                            <option value="nivel1">Professor</option>
                             <option value="nivel2">Usuário Nível 2</option>
                             <option value="assistencia_estudantil">Assistência Estudantil</option>
                         </select>
@@ -191,7 +191,7 @@
                         <select class="form-select" id="edit_user_type" name="user_type" required>
                             <option value="">Selecione...</option>
                             <option value="administrador">Administrador</option>
-                            <option value="nivel1">Usuário Nível 1</option>
+                            <option value="nivel1">Professor</option>
                             <option value="nivel2">Usuário Nível 2</option>
                             <option value="assistencia_estudantil">Assistência Estudantil</option>
                         </select>

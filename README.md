@@ -6,7 +6,7 @@ Sistema desenvolvido em PHP 8 com interface Bootstrap para controle de aspectos 
 
 ### Tipos de Usuários
 - **Administrador**: Acesso total ao sistema, pode gerenciar usuários, cursos, turmas, alunos, tipos de eventos e todos os eventos (autenticação por senha local)
-- **Usuário Nível 1**: Pode registrar e visualizar eventos dos alunos, visualizar lista de alunos (autenticação por senha local, futuramente LDAP)
+- **Professor**: Pode registrar e visualizar eventos dos alunos, visualizar lista de alunos (autenticação por senha local, futuramente LDAP)
 - **Usuário Nível 2**: Pode registrar e visualizar apenas eventos que ele mesmo registrou, visualizar lista de alunos (autenticação por senha local, futuramente LDAP)
 
 **Nota**: Alunos não são usuários do sistema. Eles são gerenciados como uma entidade separada na tabela `alunos`.
@@ -216,7 +216,7 @@ educuidar/
 - Pode criar, editar e excluir qualquer registro
 - Pode gerenciar configurações do sistema
 
-### Usuário Nível 1
+### Professor
 - Pode visualizar lista de alunos
 - Pode registrar eventos para qualquer aluno
 - Pode visualizar todos os eventos
