@@ -38,6 +38,30 @@ if (!$aluno_data) {
     exit;
 }
 
+// Get ano corrente e filtro de ano
+$ano_corrente = $configuracao->getAnoCorrente();
+$filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
+if (!is_numeric($filtro_ano)) {
+    $filtro_ano = $ano_corrente;
+} else {
+    $filtro_ano = (int)$filtro_ano;
+}
+
+// Anos disponíveis para o aluno
+$turmas_aluno = $aluno->getTurmasAluno($aluno_id);
+$anos_disponiveis = [];
+foreach ($turmas_aluno as $ta) {
+    if (!in_array($ta['ano_civil'], $anos_disponiveis, true)) {
+        $anos_disponiveis[] = $ta['ano_civil'];
+    }
+}
+rsort($anos_disponiveis);
+if (empty($anos_disponiveis)) {
+    $anos_disponiveis = [$filtro_ano];
+} elseif (!in_array($filtro_ano, $anos_disponiveis, true)) {
+    array_unshift($anos_disponiveis, $filtro_ano);
+}
+
 // Buscar todos os eventos do prontuário do tipo de usuário corrente
 $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
           e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
@@ -45,18 +69,21 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           u.full_name as registrado_por_nome
           FROM eventos e
           LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+          LEFT JOIN turmas t ON e.turma_id = t.id
           LEFT JOIN users u ON e.registrado_por = u.id
           WHERE e.aluno_id = :aluno_id
             AND (
                 te.prontuario_user_type = :user_type
                 OR (te.prontuario_user_type IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
             )
+            AND t.ano_civil = :filtro_ano
           ORDER BY e.data_evento ASC, e.hora_evento ASC";
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
 $stmt->bindParam(':user_type', $user_type);
 $stmt->bindParam(':user_type_assistencia', $user_type);
+$stmt->bindParam(':filtro_ano', $filtro_ano);
 $stmt->execute();
 $eventos_cae = $stmt->fetchAll();
 $anexos_por_evento = [];
@@ -74,8 +101,6 @@ if (!empty($eventos_cae)) {
     }
 }
 
-$ano_corrente = $configuracao->getAnoCorrente();
-$turmas_aluno = $aluno->getTurmasAluno($aluno_id);
 $aluno_ficha = $aluno_data;
 $aluno_ficha['todas_turmas'] = [];
 foreach ($turmas_aluno as $ta) {
@@ -162,6 +187,19 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="card-body">
+                <form method="GET" action="" class="row g-3 mb-3 no-print">
+                    <input type="hidden" name="aluno_id" value="<?php echo htmlspecialchars($aluno_id); ?>">
+                    <div class="col-md-3">
+                        <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
+                        <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
+                            <?php foreach ($anos_disponiveis as $ano): ?>
+                            <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ano); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
                 <div class="row mb-4 no-print">
                     <div class="col-md-3 text-center mb-3">
                         <?php if (!empty($aluno_data['foto'])): ?>
@@ -196,7 +234,7 @@ require_once 'includes/header.php';
                 
                 <?php if (empty($eventos_cae)): ?>
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Nenhum atendimento encontrado para este aluno.
+                    <i class="bi bi-info-circle"></i> Nenhum atendimento encontrado para este aluno no ano <?php echo htmlspecialchars($filtro_ano); ?>.
                 </div>
                 <?php else: ?>
                 <div class="timeline">
