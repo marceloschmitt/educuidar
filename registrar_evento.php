@@ -385,7 +385,7 @@ if ($aluno_id) {
         $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
         $aluno_ficha['is_ano_corrente'] = true;
     }
-    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por);
+    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $ano_corrente);
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
 
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);

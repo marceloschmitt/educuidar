@@ -95,7 +95,7 @@ class AlunosController extends Controller {
             }
             
             // Contar eventos do aluno
-            $a['total_eventos'] = $this->evento->countByAluno($a['id'], $registrado_por);
+            $a['total_eventos'] = $this->evento->countByAluno($a['id'], $registrado_por, $ano_corrente);
         }
         unset($a); // Limpar referência
         

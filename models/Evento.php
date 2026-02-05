@@ -344,19 +344,28 @@ class Evento {
         return $stmt->fetchAll();
     }
 
-    public function countByAluno($aluno_id, $registrado_por = null) {
+    public function countByAluno($aluno_id, $registrado_por = null, $ano_civil = null) {
         $query = "SELECT COUNT(*) as total 
-                  FROM " . $this->table . " 
-                  WHERE aluno_id = :aluno_id";
-        
+                  FROM " . $this->table . " e
+                  LEFT JOIN turmas t ON e.turma_id = t.id";
+
+        $where = ["e.aluno_id = :aluno_id"];
         if ($registrado_por !== null) {
-            $query .= " AND registrado_por = :registrado_por";
+            $where[] = "e.registrado_por = :registrado_por";
         }
+        if ($ano_civil !== null) {
+            $where[] = "t.ano_civil = :ano_civil";
+        }
+
+        $query .= " WHERE " . implode(" AND ", $where);
         
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':aluno_id', $aluno_id);
         if ($registrado_por !== null) {
             $stmt->bindParam(':registrado_por', $registrado_por);
+        }
+        if ($ano_civil !== null) {
+            $stmt->bindParam(':ano_civil', $ano_civil);
         }
         $stmt->execute();
         
