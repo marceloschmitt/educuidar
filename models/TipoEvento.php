@@ -10,7 +10,7 @@ class TipoEvento {
     public $id;
     public $nome;
     public $cor;
-    public $gera_prontuario_cae;
+    public $gera_prontuario;
     public $prontuario_user_type_id;
     public $ativo;
     public $created_at;
@@ -21,15 +21,15 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario_cae, prontuario_user_type_id, ativo) 
-                  VALUES (:nome, :cor, :gera_prontuario_cae, :prontuario_user_type_id, :ativo)";
+                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo) 
+                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo)";
 
         $stmt = $this->conn->prepare($query);
 
         $stmt->bindParam(':nome', $this->nome);
         $stmt->bindParam(':cor', $this->cor);
-        $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
-        $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
+        $gera_prontuario = isset($this->gera_prontuario) ? ($this->gera_prontuario ? 1 : 0) : 0;
+        $stmt->bindParam(':gera_prontuario', $gera_prontuario);
         $prontuario_user_type_id = !empty($this->prontuario_user_type_id) ? $this->prontuario_user_type_id : null;
         $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
@@ -76,7 +76,7 @@ class TipoEvento {
         $query = "UPDATE " . $this->table . " 
                   SET nome = :nome, 
                       cor = :cor,
-                      gera_prontuario_cae = :gera_prontuario_cae,
+                      gera_prontuario = :gera_prontuario,
                       prontuario_user_type_id = :prontuario_user_type_id,
                       ativo = :ativo
                   WHERE id = :id";
@@ -86,8 +86,8 @@ class TipoEvento {
         $stmt->bindParam(':id', $this->id);
         $stmt->bindParam(':nome', $this->nome);
         $stmt->bindParam(':cor', $this->cor);
-        $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
-        $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
+        $gera_prontuario = isset($this->gera_prontuario) ? ($this->gera_prontuario ? 1 : 0) : 0;
+        $stmt->bindParam(':gera_prontuario', $gera_prontuario);
         $prontuario_user_type_id = !empty($this->prontuario_user_type_id) ? $this->prontuario_user_type_id : null;
         $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;

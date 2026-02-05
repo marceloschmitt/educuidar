@@ -61,8 +61,8 @@ function editEvento(evento) {
     if (document.getElementById('edit_observacoes')) {
         document.getElementById('edit_observacoes').value = evento.observacoes || '';
     }
-    if (document.getElementById('edit_prontuario_cae')) {
-        document.getElementById('edit_prontuario_cae').value = evento.prontuario_cae || '';
+    if (document.getElementById('edit_prontuario')) {
+        document.getElementById('edit_prontuario').value = evento.prontuario || '';
     }
 
     var anexosContainer = document.getElementById('edit_anexos_existentes');
@@ -127,9 +127,9 @@ function editEvento(evento) {
     
     // Mostrar campo de prontuário se o tipo for exclusivo do usuário corrente
     var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
-    var prontuarioContainer = document.getElementById('edit_prontuario_cae_container');
+    var prontuarioContainer = document.getElementById('edit_prontuario_container');
     if (tipoEventoSelect && prontuarioContainer) {
-        updateProntuarioVisibility(tipoEventoSelect, prontuarioContainer, document.getElementById('edit_prontuario_cae'));
+        updateProntuarioVisibility(tipoEventoSelect, prontuarioContainer, document.getElementById('edit_prontuario'));
     }
     
     // Abrir modal
@@ -360,10 +360,10 @@ function viewFichaAluno(aluno) {
         modalFicha.setAttribute('data-aluno-data', JSON.stringify(aluno));
     }
     
-    // Atualizar link do prontuário CAE se existir
-    var btnProntuarioCAE = document.getElementById('btnProntuarioCAE');
-    if (btnProntuarioCAE && aluno.id) {
-        btnProntuarioCAE.href = 'prontuario_ae.php?aluno_id=' + aluno.id;
+    // Atualizar link do prontuário se existir
+    var btnProntuario = document.getElementById('btnProntuario');
+    if (btnProntuario && aluno.id) {
+        btnProntuario.href = 'prontuario.php?aluno_id=' + aluno.id;
     }
     
     // Abrir modal
@@ -665,16 +665,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modalRegistrarEventoEl) {
         modalRegistrarEventoEl.addEventListener('shown.bs.modal', function() {
             var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
-            var prontuarioContainer = document.getElementById('prontuario_cae_container');
-            updateProntuarioVisibility(modalTipoEvento, prontuarioContainer, document.getElementById('modal_prontuario_cae'));
+            var prontuarioContainer = document.getElementById('prontuario_container');
+            updateProntuarioVisibility(modalTipoEvento, prontuarioContainer, document.getElementById('modal_prontuario'));
         });
     }
     var editEventoModalEl = document.getElementById('editEventoModal');
     if (editEventoModalEl) {
         editEventoModalEl.addEventListener('shown.bs.modal', function() {
             var editTipoEvento = document.getElementById('edit_tipo_evento_id');
-            var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
-            updateProntuarioVisibility(editTipoEvento, editProntuarioContainer, document.getElementById('edit_prontuario_cae'));
+            var editProntuarioContainer = document.getElementById('edit_prontuario_container');
+            updateProntuarioVisibility(editTipoEvento, editProntuarioContainer, document.getElementById('edit_prontuario'));
         });
     }
 
@@ -921,10 +921,10 @@ document.addEventListener('DOMContentLoaded', function() {
             var linkVerEventos = document.getElementById('contextMenuVerEventos');
             linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id;
             
-            // Configurar link do prontuário CAE se existir
-            var linkProntuarioCAE = document.getElementById('contextMenuProntuarioCAE');
-            if (linkProntuarioCAE) {
-                linkProntuarioCAE.href = 'prontuario_ae.php?aluno_id=' + alunoData.id;
+            // Configurar link do prontuário se existir
+            var linkProntuario = document.getElementById('contextMenuProntuario');
+            if (linkProntuario) {
+                linkProntuario.href = 'prontuario.php?aluno_id=' + alunoData.id;
             }
             
             // Mostrar ações de admin se for admin
@@ -1049,19 +1049,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Mostrar/ocultar campo de prontuário quando tipo de evento mudar
     var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
-    var prontuarioContainer = document.getElementById('prontuario_cae_container');
+    var prontuarioContainer = document.getElementById('prontuario_container');
     if (modalTipoEvento && prontuarioContainer) {
         modalTipoEvento.addEventListener('change', function() {
-            updateProntuarioVisibility(this, prontuarioContainer, document.getElementById('modal_prontuario_cae'));
+            updateProntuarioVisibility(this, prontuarioContainer, document.getElementById('modal_prontuario'));
         });
     }
     
     // Mostrar/ocultar campo de prontuário quando tipo de evento mudar no modal de edição
     var editTipoEvento = document.getElementById('edit_tipo_evento_id');
-    var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
+    var editProntuarioContainer = document.getElementById('edit_prontuario_container');
     if (editTipoEvento && editProntuarioContainer) {
         editTipoEvento.addEventListener('change', function() {
-            updateProntuarioVisibility(this, editProntuarioContainer, document.getElementById('edit_prontuario_cae'));
+            updateProntuarioVisibility(this, editProntuarioContainer, document.getElementById('edit_prontuario'));
         });
     }
     
@@ -1468,7 +1468,7 @@ function showEvento(evento) {
 
     var prontuarioSection = document.getElementById('obs_prontuario_section');
     var prontuarioTexto = document.getElementById('obs_prontuario_texto');
-    var prontuario = evento.prontuario_cae || '';
+    var prontuario = evento.prontuario || '';
     if (prontuarioSection && prontuarioTexto) {
         if (evento.can_view_prontuario === false) {
             prontuarioTexto.textContent = '';

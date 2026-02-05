@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
             $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
-            $tipo_evento->gera_prontuario_cae = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
+            $tipo_evento->gera_prontuario = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
             $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
-            $tipo_evento->gera_prontuario_cae = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
+            $tipo_evento->gera_prontuario = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -165,7 +165,7 @@ $tipos = $tipo_evento->getAll();
                     <div class="mb-3">
                         <?php
                         $prontuario_user_type_id = $tipo_edit['prontuario_user_type_id'] ?? '';
-                        if (empty($prontuario_user_type_id) && !empty($tipo_edit['gera_prontuario_cae'])) {
+                        if (empty($prontuario_user_type_id) && !empty($tipo_edit['gera_prontuario'])) {
                             $prontuario_user_type_id = '';
                         }
                         ?>

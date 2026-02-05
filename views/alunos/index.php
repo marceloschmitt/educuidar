@@ -178,7 +178,7 @@
     <a class="dropdown-item" href="#" id="contextMenuVerEventos">
         <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
     </a>
-    <a class="dropdown-item" href="#" id="contextMenuProntuarioCAE">
+    <a class="dropdown-item" href="#" id="contextMenuProntuario">
         <i class="bi bi-file-text text-info"></i> Ver Prontuário
     </a>
     <div id="contextMenuAdminActions" style="display: none;">
@@ -571,7 +571,7 @@
                 </button>
                 <?php endif; ?>
                 <?php if ($user->isNivel0()): ?>
-                <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
+                <a href="prontuario.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuario">
                     <i class="bi bi-file-text"></i> Ver Prontuário
                 </a>
                 <?php endif; ?>

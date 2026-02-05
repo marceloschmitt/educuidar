@@ -65,7 +65,7 @@ if (empty($anos_disponiveis)) {
 
 // Buscar todos os eventos do prontuário do tipo de usuário corrente
 $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
-          e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
+          e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
           te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
           u.full_name as registrado_por_nome
           FROM eventos e
@@ -83,10 +83,10 @@ $stmt->bindParam(':aluno_id', $aluno_id);
 $stmt->bindParam(':user_type_id', $user_type_id);
 $stmt->bindParam(':filtro_ano', $filtro_ano);
 $stmt->execute();
-$eventos_cae = $stmt->fetchAll();
+$eventos_prontuario = $stmt->fetchAll();
 $anexos_por_evento = [];
-if (!empty($eventos_cae)) {
-    $evento_ids = array_column($eventos_cae, 'id');
+if (!empty($eventos_prontuario)) {
+    $evento_ids = array_column($eventos_prontuario, 'id');
     $placeholders = implode(',', array_fill(0, count($evento_ids), '?'));
     $stmt = $db->prepare("SELECT id, evento_id, nome_original, caminho 
                           FROM eventos_anexos 
@@ -230,13 +230,13 @@ require_once 'includes/header.php';
                 
             <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos - <?php echo htmlspecialchars($prontuario_titulo); ?></h5>
                 
-                <?php if (empty($eventos_cae)): ?>
+                <?php if (empty($eventos_prontuario)): ?>
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i> Nenhum atendimento encontrado para este aluno no ano <?php echo htmlspecialchars($filtro_ano); ?>.
                 </div>
                 <?php else: ?>
                 <div class="timeline">
-                    <?php foreach ($eventos_cae as $ev): ?>
+                    <?php foreach ($eventos_prontuario as $ev): ?>
                     <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center printable-event-header">
                             <div>
@@ -265,12 +265,12 @@ require_once 'includes/header.php';
                                 </div>
                             </div>
                             <?php endif; ?>
-                            <?php if (!empty($ev['prontuario_cae'])): ?>
+                            <?php if (!empty($ev['prontuario'])): ?>
                             <div class="mb-2">
                                 <strong>Descrição do Prontuário:</strong>
                             </div>
                             <div class="p-3 bg-light rounded">
-                                <?php echo nl2br(htmlspecialchars($ev['prontuario_cae'])); ?>
+                                <?php echo nl2br(htmlspecialchars($ev['prontuario'])); ?>
                             </div>
                             <?php endif; ?>
                             <?php if (!empty($anexos_por_evento[$ev['id']])): ?>
@@ -465,7 +465,7 @@ require_once 'includes/header.php';
             </div>
             <div class="modal-footer">
                 <?php if ($user->isNivel0()): ?>
-                <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario_ae.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
+                <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </a>
                 <?php endif; ?>

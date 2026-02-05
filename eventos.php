@@ -220,13 +220,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
-    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $evento->prontuario = $_POST['prontuario'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
         $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
-        $evento->prontuario_cae = '';
+        $evento->prontuario = '';
     }
     $user_id = $_SESSION['user_id'] ?? null;
     
@@ -310,7 +310,7 @@ if (isset($_GET['delete'])) {
             exit;
         }
     } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
-        // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
+        // Níveis não-admin só podem deletar seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
             // Preserve filters in redirect
@@ -561,9 +561,9 @@ require_once 'includes/header.php';
                                 'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
                                 'observacoes' => $evt['observacoes'] ?? '',
-                                'prontuario_cae' => (function() use ($evt, $current_user_type_id) {
+                                'prontuario' => (function() use ($evt, $current_user_type_id) {
                                     $prontuario_tipo_id = $evt['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($evt['prontuario_cae'] ?? '') : '';
+                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($evt['prontuario'] ?? '') : '';
                                 })(),
                                 'prontuario_user_type_id' => ($evt['tipo_evento_prontuario_user_type_id'] ?? ''),
                                 'aluno_id' => $evt['aluno_id'] ?? '',

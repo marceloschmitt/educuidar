@@ -14,7 +14,7 @@ class Evento {
     public $data_evento;
     public $hora_evento;
     public $observacoes;
-    public $prontuario_cae;
+    public $prontuario;
     public $registrado_por;
     public $created_at;
 
@@ -46,8 +46,8 @@ class Evento {
         }
 
         $query = "INSERT INTO " . $this->table . " 
-                  (aluno_id, turma_id, tipo_evento_id, data_evento, hora_evento, observacoes, prontuario_cae, registrado_por) 
-                  VALUES (:aluno_id, :turma_id, :tipo_evento_id, :data_evento, :hora_evento, :observacoes, :prontuario_cae, :registrado_por)";
+                  (aluno_id, turma_id, tipo_evento_id, data_evento, hora_evento, observacoes, prontuario, registrado_por) 
+                  VALUES (:aluno_id, :turma_id, :tipo_evento_id, :data_evento, :hora_evento, :observacoes, :prontuario, :registrado_por)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -57,7 +57,7 @@ class Evento {
         $stmt->bindParam(':data_evento', $this->data_evento);
         $stmt->bindParam(':hora_evento', $this->hora_evento);
         $stmt->bindParam(':observacoes', $this->observacoes);
-        $stmt->bindParam(':prontuario_cae', $this->prontuario_cae);
+        $stmt->bindParam(':prontuario', $this->prontuario);
         $stmt->bindParam(':registrado_por', $this->registrado_por);
 
         if ($stmt->execute()) {
@@ -69,11 +69,11 @@ class Evento {
 
     public function getAll($registrado_por = null, $ano_civil = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
-                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
+                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.id as curso_id, c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
@@ -111,7 +111,7 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
@@ -129,11 +129,11 @@ class Evento {
 
     public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
-                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
+                  e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
@@ -164,7 +164,7 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario as tipo_evento_gera_prontuario, te.prontuario_user_type_id as tipo_evento_prontuario_user_type_id
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
@@ -237,7 +237,7 @@ class Evento {
                       data_evento = :data_evento, 
                       hora_evento = :hora_evento, 
                       observacoes = :observacoes,
-                      prontuario_cae = :prontuario_cae
+                      prontuario = :prontuario
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -249,7 +249,7 @@ class Evento {
         $stmt->bindParam(':data_evento', $this->data_evento);
         $stmt->bindParam(':hora_evento', $this->hora_evento);
         $stmt->bindParam(':observacoes', $this->observacoes);
-        $stmt->bindParam(':prontuario_cae', $this->prontuario_cae);
+        $stmt->bindParam(':prontuario', $this->prontuario);
 
         if ($stmt->execute()) {
             return true;

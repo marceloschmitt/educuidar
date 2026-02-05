@@ -197,13 +197,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
-    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $evento->prontuario = $_POST['prontuario'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
         $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
-        $evento->prontuario_cae = '';
+        $evento->prontuario = '';
     }
     $user_id = $_SESSION['user_id'] ?? null;
     
@@ -295,7 +295,7 @@ if (isset($_GET['delete'])) {
             exit;
         }
     } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
-        // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
+                            // Níveis não-admin só podem deletar seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
             $_SESSION['success'] = 'Evento excluído com sucesso!';
@@ -317,13 +317,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $evento->data_evento = $_POST['data_evento'] ?? '';
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
-    $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $evento->prontuario = $_POST['prontuario'] ?? '';
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
         $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
     }
     if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type_id)) {
-        $evento->prontuario_cae = '';
+        $evento->prontuario = '';
     }
     $evento->registrado_por = $_SESSION['user_id'];
     
@@ -549,7 +549,7 @@ if ($aluno_id) {
                     <button type="button" class="btn btn-secondary btn-sm me-2 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
-                    <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
+                    <a href="prontuario.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
                     <?php if (!$user->isNivel2()): ?>
@@ -649,9 +649,9 @@ if ($aluno_id) {
                                 'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $ev['registrado_por_nome'] ?? '-',
                                 'observacoes' => $ev['observacoes'] ?? '',
-                                'prontuario_cae' => (function() use ($ev, $current_user_type_id) {
+                                'prontuario' => (function() use ($ev, $current_user_type_id) {
                                     $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($ev['prontuario_cae'] ?? '') : '';
+                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($ev['prontuario'] ?? '') : '';
                                 })(),
                                 'prontuario_user_type_id' => ($ev['tipo_evento_prontuario_user_type_id'] ?? ''),
                                 'aluno_id' => $ev['aluno_id'] ?? '',
@@ -750,7 +750,7 @@ if ($aluno_id) {
                                         <?php foreach ($tipos_eventos_criacao as $te): ?>
                                         <?php
                                         $prontuario_tipo = $te['prontuario_user_type_id'] ?? '';
-                                        if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
+                                        if (empty($prontuario_tipo) && !empty($te['gera_prontuario'])) {
                                             $prontuario_tipo = 'assistencia_estudantil';
                                         }
                                         ?>
@@ -792,11 +792,11 @@ if ($aluno_id) {
                             </div>
                             
                             <?php if ($user->isNivel0()): ?>
-                            <div class="mb-3" id="prontuario_cae_container" style="display: none;">
-                                <label for="modal_prontuario_cae" class="form-label">
+                            <div class="mb-3" id="prontuario_container" style="display: none;">
+                                <label for="modal_prontuario" class="form-label">
                                     <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
                                 </label>
-                                <textarea class="form-control" id="modal_prontuario_cae" name="prontuario_cae" rows="5" 
+                                <textarea class="form-control" id="modal_prontuario" name="prontuario" rows="5" 
                                           placeholder="Descrição do atendimento para o prontuário (visível apenas para o tipo de usuário definido no tipo de evento)"></textarea>
                                 <small class="text-muted">Este campo é visível apenas para o tipo de usuário definido no tipo de evento.</small>
                             </div>

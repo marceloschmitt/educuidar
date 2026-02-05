@@ -25,7 +25,7 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                                 <?php foreach ($tipos_eventos as $te): ?>
                                 <?php
                                 $prontuario_tipo = $te['prontuario_user_type_id'] ?? '';
-                                if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
+                                if (empty($prontuario_tipo) && !empty($te['gera_prontuario'])) {
                                     $prontuario_tipo = 'assistencia_estudantil';
                                 }
                                 ?>
@@ -69,11 +69,11 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                     <div class="mb-3" id="edit_anexos_existentes"></div>
                     <div id="edit_anexos_removidos"></div>
                     
-                    <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">
-                        <label for="edit_prontuario_cae" class="form-label">
+                    <div class="mb-3" id="edit_prontuario_container" style="display: none;">
+                        <label for="edit_prontuario" class="form-label">
                             <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
                         </label>
-                        <textarea class="form-control" id="edit_prontuario_cae" name="prontuario_cae" rows="5" 
+                        <textarea class="form-control" id="edit_prontuario" name="prontuario" rows="5" 
                                   placeholder="Descrição do atendimento para o prontuário (visível apenas para o tipo de usuário definido no tipo de evento)"></textarea>
                         <small class="text-muted">Este campo é visível apenas para o tipo de usuário definido no tipo de evento.</small>
                     </div>
