@@ -42,20 +42,29 @@
                                 <td><?php echo htmlspecialchars($usr['username']); ?></td>
                                 <td><?php echo htmlspecialchars($usr['email']); ?></td>
                                 <td>
+                                    <?php
+                                    $user_type_slug = $usr['user_type_slug'] ?? ($usr['user_type'] ?? '');
+                                    ?>
                                     <span class="badge bg-<?php 
-                                        echo $usr['user_type'] === 'administrador' ? 'danger' : 
-                                            ($usr['user_type'] === 'nivel1' ? 'primary' : 
-                                            ($usr['user_type'] === 'nivel2' ? 'info' : 
-                                            ($usr['user_type'] === 'assistencia_estudantil' ? 'success' : 'secondary'))); 
+                                        echo $user_type_slug === 'administrador' ? 'danger' : 
+                                            ($user_type_slug === 'nivel1' ? 'primary' : 
+                                            ($user_type_slug === 'nivel2' ? 'info' : 
+                                            ($user_type_slug === 'assistencia_estudantil' ? 'success' : 
+                                            ($user_type_slug === 'napne' ? 'warning' : 'secondary')))); 
                                     ?>">
                                         <?php 
-                                        $tipo_nome = [
-                                            'administrador' => 'Administrador',
-                                            'nivel1' => 'Professor',
-                                            'nivel2' => 'Nível 2',
-                                            'assistencia_estudantil' => 'Assistência Estudantil'
-                                        ];
-                                        echo $tipo_nome[$usr['user_type']] ?? ucfirst($usr['user_type']); 
+                                        if (!empty($usr['user_type_nome'])) {
+                                            echo htmlspecialchars($usr['user_type_nome']);
+                                        } else {
+                                            $tipo_nome = [
+                                                'administrador' => 'Administrador',
+                                                'nivel1' => 'Professor',
+                                                'nivel2' => 'Nível 2',
+                                                'assistencia_estudantil' => 'Assistência Estudantil',
+                                                'napne' => 'NAPNE'
+                                            ];
+                                            echo $tipo_nome[$user_type_slug] ?? ucfirst($user_type_slug);
+                                        }
                                         ?>
                                     </span>
                                 </td>
@@ -124,10 +133,9 @@
                         <label for="user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
                         <select class="form-select" id="user_type" name="user_type" required>
                             <option value="">Selecione...</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="nivel1">Professor</option>
-                            <option value="nivel2">Usuário Nível 2</option>
-                            <option value="assistencia_estudantil">Assistência Estudantil</option>
+                            <?php foreach ($user_types as $ut): ?>
+                            <option value="<?php echo htmlspecialchars($ut['slug']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     
@@ -190,10 +198,9 @@
                         <label for="edit_user_type" class="form-label">Tipo de Usuário <span class="text-danger">*</span></label>
                         <select class="form-select" id="edit_user_type" name="user_type" required>
                             <option value="">Selecione...</option>
-                            <option value="administrador">Administrador</option>
-                            <option value="nivel1">Professor</option>
-                            <option value="nivel2">Usuário Nível 2</option>
-                            <option value="assistencia_estudantil">Assistência Estudantil</option>
+                            <?php foreach ($user_types as $ut): ?>
+                            <option value="<?php echo htmlspecialchars($ut['slug']); ?>"><?php echo htmlspecialchars($ut['nome']); ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     

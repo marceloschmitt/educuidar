@@ -1438,7 +1438,7 @@ function editUser(user) {
     document.getElementById('edit_username').value = user.username || '';
     document.getElementById('edit_email').value = user.email || '';
     document.getElementById('edit_full_name').value = user.full_name || '';
-    document.getElementById('edit_user_type').value = user.user_type || '';
+    document.getElementById('edit_user_type').value = user.user_type_slug || user.user_type || '';
     document.getElementById('edit_auth_type').value = user.auth_type || 'local';
     document.getElementById('edit_new_password').value = '';
     toggleEditPasswordField();

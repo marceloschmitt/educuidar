@@ -73,13 +73,14 @@ class Evento {
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.id as curso_id, c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type as tipo_evento_prontuario_user_type,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, ut.slug as tipo_evento_prontuario_user_type,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
                   LEFT JOIN cursos c ON t.curso_id = c.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+                  LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
                   LEFT JOIN users u ON e.registrado_por = u.id";
 
         $where = [];
@@ -111,12 +112,13 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type as tipo_evento_prontuario_user_type
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, ut.slug as tipo_evento_prontuario_user_type
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
                   LEFT JOIN cursos c ON t.curso_id = c.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+                  LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
                   WHERE e.aluno_id = :aluno_id
                   ORDER BY e.data_evento DESC, e.hora_evento DESC";
 
@@ -133,13 +135,14 @@ class Evento {
                   a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type as tipo_evento_prontuario_user_type,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, ut.slug as tipo_evento_prontuario_user_type,
                   u.full_name as registrado_por_nome
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
                   LEFT JOIN cursos c ON t.curso_id = c.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+                  LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
                   LEFT JOIN users u ON e.registrado_por = u.id
                   WHERE e.aluno_id = :aluno_id AND e.turma_id = :turma_id";
         
@@ -164,12 +167,13 @@ class Evento {
         $query = "SELECT e.*, a.nome as aluno_nome,
                   t.ano_civil, t.ano_curso,
                   c.nome as curso_nome,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, te.prontuario_user_type as tipo_evento_prontuario_user_type
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, te.gera_prontuario_cae as tipo_evento_gera_prontuario, ut.slug as tipo_evento_prontuario_user_type
                   FROM " . $this->table . " e
                   LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
                   LEFT JOIN cursos c ON t.curso_id = c.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+                  LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
                   WHERE e.id = :id
                   LIMIT 1";
 

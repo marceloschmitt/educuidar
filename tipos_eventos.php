@@ -5,6 +5,15 @@ $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);
 $tipo_evento = new TipoEvento($db);
+$stmt_user_types = $db->prepare("SELECT id, slug, nome FROM user_types ORDER BY nome ASC");
+$stmt_user_types->execute();
+$user_types = $stmt_user_types->fetchAll();
+$user_types_by_id = [];
+$user_types_by_slug = [];
+foreach ($user_types as $ut) {
+    $user_types_by_id[$ut['id']] = $ut;
+    $user_types_by_slug[$ut['slug']] = $ut;
+}
 
 // Only admin can manage tipos de eventos
 if (!$user->isLoggedIn() || !$user->isAdmin()) {
@@ -18,8 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($_POST['action'] == 'create') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
-            $tipo_evento->prontuario_user_type = $_POST['prontuario_user_type'] ?? '';
-            $tipo_evento->gera_prontuario_cae = ($tipo_evento->prontuario_user_type === 'assistencia_estudantil') ? 1 : 0;
+            $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
+            $selected_slug = '';
+            if (!empty($tipo_evento->prontuario_user_type_id) && isset($user_types_by_id[$tipo_evento->prontuario_user_type_id])) {
+                $selected_slug = $user_types_by_id[$tipo_evento->prontuario_user_type_id]['slug'];
+            }
+            $tipo_evento->gera_prontuario_cae = ($selected_slug === 'assistencia_estudantil') ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -36,8 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->id = $_POST['id'];
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
-            $tipo_evento->prontuario_user_type = $_POST['prontuario_user_type'] ?? '';
-            $tipo_evento->gera_prontuario_cae = ($tipo_evento->prontuario_user_type === 'assistencia_estudantil') ? 1 : 0;
+            $tipo_evento->prontuario_user_type_id = $_POST['prontuario_user_type_id'] ?? null;
+            $selected_slug = '';
+            if (!empty($tipo_evento->prontuario_user_type_id) && isset($user_types_by_id[$tipo_evento->prontuario_user_type_id])) {
+                $selected_slug = $user_types_by_id[$tipo_evento->prontuario_user_type_id]['slug'];
+            }
+            $tipo_evento->gera_prontuario_cae = ($selected_slug === 'assistencia_estudantil') ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -157,18 +174,20 @@ $tipos = $tipo_evento->getAll();
                     
                     <div class="mb-3">
                         <?php
-                        $prontuario_user_type = $tipo_edit['prontuario_user_type'] ?? '';
-                        if (empty($prontuario_user_type) && !empty($tipo_edit['gera_prontuario_cae'])) {
-                            $prontuario_user_type = 'assistencia_estudantil';
+                        $prontuario_user_type_id = $tipo_edit['prontuario_user_type_id'] ?? '';
+                        if (empty($prontuario_user_type_id) && !empty($tipo_edit['gera_prontuario_cae'])) {
+                            $assistencia = $user_types_by_slug['assistencia_estudantil']['id'] ?? '';
+                            $prontuario_user_type_id = $assistencia;
                         }
                         ?>
-                        <label for="prontuario_user_type" class="form-label">Prontuário exclusivo de</label>
-                        <select class="form-select" id="prontuario_user_type" name="prontuario_user_type">
+                        <label for="prontuario_user_type_id" class="form-label">Prontuário exclusivo de</label>
+                        <select class="form-select" id="prontuario_user_type_id" name="prontuario_user_type_id">
                             <option value="">Não gera prontuário</option>
-                            <option value="administrador" <?php echo $prontuario_user_type === 'administrador' ? 'selected' : ''; ?>>Administrador</option>
-                            <option value="nivel1" <?php echo $prontuario_user_type === 'nivel1' ? 'selected' : ''; ?>>Professor</option>
-                            <option value="nivel2" <?php echo $prontuario_user_type === 'nivel2' ? 'selected' : ''; ?>>Nível 2</option>
-                            <option value="assistencia_estudantil" <?php echo $prontuario_user_type === 'assistencia_estudantil' ? 'selected' : ''; ?>>Assistência Estudantil</option>
+                            <?php foreach ($user_types as $ut): ?>
+                            <option value="<?php echo $ut['id']; ?>" <?php echo ((string)$prontuario_user_type_id === (string)$ut['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ut['nome']); ?>
+                            </option>
+                            <?php endforeach; ?>
                         </select>
                         <small class="text-muted d-block">Define quem pode visualizar o prontuário deste tipo de evento.</small>
                     </div>
@@ -215,19 +234,13 @@ $tipos = $tipo_evento->getAll();
                                 </td>
                                 <td>
                                     <?php
-                                    $prontuario_tipo = $t['prontuario_user_type'] ?? '';
-                                    if (empty($prontuario_tipo) && !empty($t['gera_prontuario_cae'])) {
-                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    $prontuario_tipo_nome = $t['prontuario_user_type_nome'] ?? '';
+                                    if (empty($prontuario_tipo_nome) && !empty($t['gera_prontuario_cae'])) {
+                                        $prontuario_tipo_nome = $user_types_by_slug['assistencia_estudantil']['nome'] ?? 'Assistência Estudantil';
                                     }
-                                    $prontuario_labels = [
-                                        'administrador' => 'Administrador',
-                                        'nivel1' => 'Professor',
-                                        'nivel2' => 'Nível 2',
-                                        'assistencia_estudantil' => 'Assistência Estudantil'
-                                    ];
                                     ?>
-                                    <?php if (!empty($prontuario_tipo)): ?>
-                                        <span class="badge bg-info"><?php echo htmlspecialchars($prontuario_labels[$prontuario_tipo] ?? $prontuario_tipo); ?></span>
+                                    <?php if (!empty($prontuario_tipo_nome)): ?>
+                                        <span class="badge bg-info"><?php echo htmlspecialchars($prontuario_tipo_nome); ?></span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Não</span>
                                     <?php endif; ?>

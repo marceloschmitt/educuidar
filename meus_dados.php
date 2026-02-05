@@ -92,7 +92,8 @@ require_once 'includes/header.php';
                                 'administrador' => 'Administrador',
                                 'nivel1' => 'Professor',
                                 'nivel2' => 'Nível 2',
-                                'assistencia_estudantil' => 'Assistência Estudantil'
+                                'assistencia_estudantil' => 'Assistência Estudantil',
+                                'napne' => 'NAPNE'
                             ];
                             echo htmlspecialchars($tipo_nome[$user_data['user_type']] ?? ucfirst($user_data['user_type'] ?? '')); 
                         ?>" disabled>

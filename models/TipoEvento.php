@@ -11,7 +11,7 @@ class TipoEvento {
     public $nome;
     public $cor;
     public $gera_prontuario_cae;
-    public $prontuario_user_type;
+    public $prontuario_user_type_id;
     public $ativo;
     public $created_at;
 
@@ -21,8 +21,8 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario_cae, prontuario_user_type, ativo) 
-                  VALUES (:nome, :cor, :gera_prontuario_cae, :prontuario_user_type, :ativo)";
+                  (nome, cor, gera_prontuario_cae, prontuario_user_type_id, ativo) 
+                  VALUES (:nome, :cor, :gera_prontuario_cae, :prontuario_user_type_id, :ativo)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -30,8 +30,8 @@ class TipoEvento {
         $stmt->bindParam(':cor', $this->cor);
         $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
         $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
-        $prontuario_user_type = !empty($this->prontuario_user_type) ? $this->prontuario_user_type : null;
-        $stmt->bindParam(':prontuario_user_type', $prontuario_user_type);
+        $prontuario_user_type_id = !empty($this->prontuario_user_type_id) ? $this->prontuario_user_type_id : null;
+        $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 
@@ -44,9 +44,12 @@ class TipoEvento {
     public function getAll($apenas_ativos = false) {
         $where = $apenas_ativos ? "WHERE ativo = 1" : "";
         $query = "SELECT t.*, 
-                  COUNT(DISTINCT e.id) as total_eventos
+                  COUNT(DISTINCT e.id) as total_eventos,
+                  ut.slug as prontuario_user_type_slug,
+                  ut.nome as prontuario_user_type_nome
                   FROM " . $this->table . " t
                   LEFT JOIN eventos e ON t.id = e.tipo_evento_id
+                  LEFT JOIN user_types ut ON t.prontuario_user_type_id = ut.id
                   $where
                   GROUP BY t.id
                   ORDER BY t.ativo DESC, t.nome ASC";
@@ -58,7 +61,10 @@ class TipoEvento {
     }
 
     public function getById($id) {
-        $query = "SELECT * FROM " . $this->table . " WHERE id = :id LIMIT 1";
+        $query = "SELECT t.*, ut.slug as prontuario_user_type_slug, ut.nome as prontuario_user_type_nome
+                  FROM " . $this->table . " t
+                  LEFT JOIN user_types ut ON t.prontuario_user_type_id = ut.id
+                  WHERE t.id = :id LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
@@ -72,7 +78,7 @@ class TipoEvento {
                   SET nome = :nome, 
                       cor = :cor,
                       gera_prontuario_cae = :gera_prontuario_cae,
-                      prontuario_user_type = :prontuario_user_type,
+                      prontuario_user_type_id = :prontuario_user_type_id,
                       ativo = :ativo
                   WHERE id = :id";
 
@@ -83,8 +89,8 @@ class TipoEvento {
         $stmt->bindParam(':cor', $this->cor);
         $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
         $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
-        $prontuario_user_type = !empty($this->prontuario_user_type) ? $this->prontuario_user_type : null;
-        $stmt->bindParam(':prontuario_user_type', $prontuario_user_type);
+        $prontuario_user_type_id = !empty($this->prontuario_user_type_id) ? $this->prontuario_user_type_id : null;
+        $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 

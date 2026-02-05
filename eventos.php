@@ -127,7 +127,7 @@ function canModifyEvent($db, $evento_id, $user) {
     if (!$user_id) {
         return false;
     }
-    if (!$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
+    if (!$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil() && !$user->isNapne()) {
         return false;
     }
 
@@ -150,7 +150,10 @@ function canUseProntuario($db, $tipo_evento_id, $user_type) {
     if (empty($tipo_evento_id) || empty($user_type)) {
         return false;
     }
-    $stmt = $db->prepare("SELECT prontuario_user_type, gera_prontuario_cae FROM tipos_eventos WHERE id = :id LIMIT 1");
+    $stmt = $db->prepare("SELECT ut.slug as prontuario_user_type, te.gera_prontuario_cae
+                          FROM tipos_eventos te
+                          LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
+                          WHERE te.id = :id LIMIT 1");
     $stmt->bindParam(':id', $tipo_evento_id);
     $stmt->execute();
     $tipo = $stmt->fetch();
@@ -164,8 +167,8 @@ function canUseProntuario($db, $tipo_evento_id, $user_type) {
     return !empty($prontuario_tipo) && $prontuario_tipo === $user_type;
 }
 
-// Only admin, nivel1, nivel2 and assistencia_estudantil can view all events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
+// Only admin, nivel1, nivel2, assistencia_estudantil and napne can view all events
+if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil() && !$user->isNapne()) {
     header('Location: index.php');
     exit;
 }
@@ -183,8 +186,8 @@ $curso = new Curso($db);
 $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
-// Only admin, nivel1, nivel2 and assistencia_estudantil can view all events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
+// Only admin, nivel1, nivel2, assistencia_estudantil and napne can view all events
+if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil() && !$user->isNapne()) {
     header('Location: index.php');
     exit;
 }
@@ -241,7 +244,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             } else {
                 $_SESSION['error'] = 'Erro ao atualizar evento.';
             }
-        } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+        } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil() || $user->isNapne()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
                 $upload_errors = [];
@@ -296,7 +299,7 @@ if (isset($_GET['delete'])) {
             header('Location: ' . $redirect_url);
             exit;
         }
-    } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+    } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil() || $user->isNapne()) && $user_id) {
         // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
@@ -527,7 +530,7 @@ require_once 'includes/header.php';
                             if ($user->isAdmin()) {
                                 $can_edit = true;
                                 $can_delete = true;
-                            } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil()) && $user_id) {
+                            } elseif (($user->isNivel1() || $user->isNivel2() || $user->isAssistenciaEstudantil() || $user->isNapne()) && $user_id) {
                                 if ($evt['registrado_por'] == $user_id) {
                                     $created_at = strtotime($evt['created_at'] ?? '');
                                     $now = time();

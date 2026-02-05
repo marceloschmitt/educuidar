@@ -22,9 +22,12 @@ class User {
     }
 
     public function login($username, $password) {
-        $query = "SELECT id, username, email, password, full_name, user_type, auth_type 
-                  FROM " . $this->table . " 
-                  WHERE username = :username OR email = :email 
+        $query = "SELECT u.id, u.username, u.email, u.password, u.full_name, u.user_type, u.auth_type,
+                  ut.slug as user_type_slug
+                  FROM " . $this->table . " u
+                  LEFT JOIN user_user_types uut ON uut.user_id = u.id
+                  LEFT JOIN user_types ut ON ut.id = uut.user_type_id
+                  WHERE u.username = :username OR u.email = :email 
                   LIMIT 1";
 
         $stmt = $this->conn->prepare($query);
@@ -44,7 +47,7 @@ class User {
                 if ($ldap_result) {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
-                    $_SESSION['user_type'] = $row['user_type'];
+                    $_SESSION['user_type'] = $row['user_type_slug'] ?? $row['user_type'];
                     $_SESSION['full_name'] = $row['full_name'];
                     return true;
                 } else {
@@ -66,7 +69,7 @@ class User {
                 if (!empty($row['password']) && password_verify($password, $row['password'])) {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
-                    $_SESSION['user_type'] = $row['user_type'];
+                    $_SESSION['user_type'] = $row['user_type_slug'] ?? $row['user_type'];
                     $_SESSION['full_name'] = $row['full_name'];
                     return true;
                 }
@@ -104,6 +107,10 @@ class User {
         return $this->getUserType() === 'assistencia_estudantil';
     }
 
+    public function isNapne() {
+        return $this->getUserType() === 'napne';
+    }
+
     public function create() {
         // Set default auth_type if not provided
         if (empty($this->auth_type)) {
@@ -136,6 +143,7 @@ class User {
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
+            $this->setUserTypeForUser($this->id, $this->user_type);
             return true;
         }
         return false;
@@ -154,13 +162,23 @@ class User {
     }
 
     public function getAll() {
-        $query = "SELECT u.id, u.username, u.email, u.full_name, u.user_type, u.auth_type, u.created_at
+        $query = "SELECT u.id, u.username, u.email, u.full_name, u.user_type, u.auth_type, u.created_at,
+                  COALESCE(ut.slug, u.user_type) as user_type_slug,
+                  COALESCE(ut.nome, u.user_type) as user_type_nome
                   FROM " . $this->table . " u
+                  LEFT JOIN user_user_types uut ON uut.user_id = u.id
+                  LEFT JOIN user_types ut ON ut.id = uut.user_type_id
                   ORDER BY u.full_name ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
 
+        return $stmt->fetchAll();
+    }
+
+    public function getUserTypes() {
+        $stmt = $this->conn->prepare("SELECT id, slug, nome FROM user_types ORDER BY nome ASC");
+        $stmt->execute();
         return $stmt->fetchAll();
     }
 
@@ -188,9 +206,34 @@ class User {
         $stmt->bindParam(':auth_type', $this->auth_type);
 
         if ($stmt->execute()) {
+            $this->setUserTypeForUser($this->id, $this->user_type);
             return true;
         }
         return false;
+    }
+
+    private function getUserTypeIdBySlug($slug) {
+        if (empty($slug)) {
+            return null;
+        }
+        $stmt = $this->conn->prepare("SELECT id FROM user_types WHERE slug = :slug LIMIT 1");
+        $stmt->bindParam(':slug', $slug);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row['id'] ?? null;
+    }
+
+    public function setUserTypeForUser($user_id, $slug) {
+        $user_type_id = $this->getUserTypeIdBySlug($slug);
+        if (!$user_type_id || !$user_id) {
+            return false;
+        }
+        $stmt = $this->conn->prepare("INSERT INTO user_user_types (user_id, user_type_id)
+                                      VALUES (:user_id, :user_type_id)
+                                      ON DUPLICATE KEY UPDATE user_type_id = VALUES(user_type_id)");
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':user_type_id', $user_type_id);
+        return $stmt->execute();
     }
 
     public function delete($id) {

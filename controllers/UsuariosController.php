@@ -26,6 +26,7 @@ class UsuariosController extends Controller {
         
         // Get all users
         $usuarios = $this->user->getAll();
+        $user_types = $this->user->getUserTypes();
         
         // Include header
         $page_title = 'Usuários';
@@ -36,6 +37,7 @@ class UsuariosController extends Controller {
             'success' => $success,
             'error' => $error,
             'usuarios' => $usuarios,
+            'user_types' => $user_types,
             'user' => $this->user
         ]);
         

@@ -88,14 +88,14 @@ CREATE TABLE IF NOT EXISTS alunos (
     INDEX idx_numero_matricula (numero_matricula)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Users table (only for system users: admin, nivel1, nivel2, assistencia_estudantil)
+-- Users table (only for system users: admin, nivel1, nivel2, assistencia_estudantil, napne)
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NULL,
     full_name VARCHAR(200) NOT NULL,
-    user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil') NOT NULL,
+    user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil', 'napne') NOT NULL,
     auth_type ENUM('local', 'ldap') NOT NULL DEFAULT 'local',
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -107,9 +107,48 @@ CREATE TABLE IF NOT EXISTS users (
     INDEX idx_ativo (ativo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- User Types table
+CREATE TABLE IF NOT EXISTS user_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    slug VARCHAR(50) UNIQUE NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_slug (slug)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- User x User Types relationship table
+CREATE TABLE IF NOT EXISTS user_user_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    user_type_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_type (user_id),
+    INDEX idx_user (user_id),
+    INDEX idx_user_type (user_type_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_type_id) REFERENCES user_types(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT INTO user_types (slug, nome) VALUES
+('administrador', 'Administrador'),
+('nivel1', 'Professor'),
+('nivel2', 'Nível 2'),
+('assistencia_estudantil', 'Assistência Estudantil'),
+('napne', 'NAPNE')
+ON DUPLICATE KEY UPDATE nome = VALUES(nome);
+
 -- Create initial admin user (password will be set on first login)
 INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES
 ('admin', 'admin@educuidar.local', NULL, 'Administrador', 'administrador', 'local');
+
+INSERT INTO user_user_types (user_id, user_type_id)
+SELECT u.id, ut.id
+FROM users u
+INNER JOIN user_types ut ON ut.slug = 'administrador'
+WHERE u.username = 'admin'
+ON DUPLICATE KEY UPDATE user_type_id = VALUES(user_type_id);
 
 -- Aluno-Turma relationship table (many-to-many)
 CREATE TABLE IF NOT EXISTS aluno_turmas (
@@ -131,12 +170,14 @@ CREATE TABLE IF NOT EXISTS tipos_eventos (
     nome VARCHAR(100) NOT NULL,
     cor VARCHAR(20) DEFAULT 'secondary',
     gera_prontuario_cae TINYINT(1) DEFAULT 0,
-    prontuario_user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil') NULL,
+    prontuario_user_type_id INT NULL,
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_ativo (ativo),
-    INDEX idx_nome (nome)
+    INDEX idx_nome (nome),
+    INDEX idx_prontuario_user_type (prontuario_user_type_id),
+    FOREIGN KEY (prontuario_user_type_id) REFERENCES user_types(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Events table

@@ -40,7 +40,7 @@ class Controller {
      */
     protected function requirePermission() {
         $this->requireLogin();
-        if (!$this->user->isAdmin() && !$this->user->isNivel1() && !$this->user->isNivel2() && !$this->user->isAssistenciaEstudantil()) {
+        if (!$this->user->isAdmin() && !$this->user->isNivel1() && !$this->user->isNivel2() && !$this->user->isAssistenciaEstudantil() && !$this->user->isNapne()) {
             header('Location: index.php');
             exit;
         }

@@ -20,7 +20,8 @@ $user_type_labels = [
     'administrador' => 'Administrador',
     'nivel1' => 'Professor',
     'nivel2' => 'Nível 2',
-    'assistencia_estudantil' => 'Assistência Estudantil'
+    'assistencia_estudantil' => 'Assistência Estudantil',
+    'napne' => 'NAPNE'
 ];
 $prontuario_titulo = $user_type_labels[$user_type] ?? 'Usuário';
 $page_title = 'Prontuário - ' . $prontuario_titulo;
@@ -69,12 +70,13 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           u.full_name as registrado_por_nome
           FROM eventos e
           LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+          LEFT JOIN user_types ut ON te.prontuario_user_type_id = ut.id
           LEFT JOIN turmas t ON e.turma_id = t.id
           LEFT JOIN users u ON e.registrado_por = u.id
           WHERE e.aluno_id = :aluno_id
             AND (
-                te.prontuario_user_type = :user_type
-                OR (te.prontuario_user_type IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
+                ut.slug = :user_type
+                OR (te.prontuario_user_type_id IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
             )
             AND t.ano_civil = :filtro_ano
           ORDER BY e.data_evento ASC, e.hora_evento ASC";
