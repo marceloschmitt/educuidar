@@ -327,10 +327,24 @@ $aluno_id = $_GET['aluno_id'] ?? '';
 
 // Get ano corrente
 $ano_corrente = $configuracao->getAnoCorrente();
+$filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
+if (!is_numeric($filtro_ano)) {
+    $filtro_ano = $ano_corrente;
+} else {
+    $filtro_ano = (int)$filtro_ano;
+}
 
-// Get all classes from ano corrente and courses for filters
+// Get all classes from selected year and courses for filters
 $cursos = $curso->getAll();
-$turmas_ano_corrente_lista = $turma->getTurmasPorAnoCorrente($ano_corrente);
+$turmas_ano_lista = $turma->getTurmasPorAnoCorrente($filtro_ano);
+$stmt_anos = $db->prepare("SELECT DISTINCT ano_civil FROM turmas ORDER BY ano_civil DESC");
+$stmt_anos->execute();
+$anos_disponiveis = $stmt_anos->fetchAll(PDO::FETCH_COLUMN);
+if (empty($anos_disponiveis)) {
+    $anos_disponiveis = [$filtro_ano];
+} elseif (!in_array($filtro_ano, $anos_disponiveis, true)) {
+    array_unshift($anos_disponiveis, $filtro_ano);
+}
 
 // If aluno_id is provided, show student's events
 if ($aluno_id) {
@@ -894,7 +908,7 @@ if ($aluno_id) {
 } else {
     // Show list of students from ano corrente classes
     $ano_corrente = $configuracao->getAnoCorrente();
-    $alunos_raw = $aluno->getAlunosTurmasAnoCorrente($ano_corrente, $filtro_turma ?: null, $filtro_curso ?: null);
+    $alunos_raw = $aluno->getAlunosTurmasAnoCorrente($filtro_ano, $filtro_turma ?: null, $filtro_curso ?: null);
     
     // Process students data and apply nome filter
     $alunos = [];
@@ -943,13 +957,13 @@ if ($aluno_id) {
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $ano_corrente; ?>)</label>
+                        <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $filtro_ano; ?>)</label>
                         <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma">
                             <option value="">Todas as turmas</option>
                             <?php 
-                            $turmas_filtradas = $turmas_ano_corrente_lista;
+                            $turmas_filtradas = $turmas_ano_lista;
                             if ($filtro_curso) {
-                                $turmas_filtradas = array_filter($turmas_ano_corrente_lista, function($t) use ($filtro_curso) {
+                                $turmas_filtradas = array_filter($turmas_ano_lista, function($t) use ($filtro_curso) {
                                     return $t['curso_id'] == $filtro_curso;
                                 });
                             }
@@ -958,6 +972,16 @@ if ($aluno_id) {
                             <option value="<?php echo $t['id']; ?>" <?php echo ($filtro_turma == $t['id']) ? 'selected' : ''; ?>>
                                 <?php echo htmlspecialchars($t['curso_nome'] ?? ''); ?> - 
                                 <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
+                        <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
+                            <?php foreach ($anos_disponiveis as $ano): ?>
+                            <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ano); ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
@@ -975,7 +999,7 @@ if ($aluno_id) {
                         </div>
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
-                        <?php if ($filtro_curso || $filtro_turma || $filtro_nome): ?>
+                        <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente)): ?>
                         <a href="registrar_evento.php" class="btn btn-secondary btn-sm w-100">
                             <i class="bi bi-x-circle"></i> Limpar Filtros
                         </a>
@@ -984,7 +1008,7 @@ if ($aluno_id) {
                 </form>
 
                 <?php if (empty($alunos)): ?>
-                <p class="text-muted text-center">Nenhum aluno encontrado<?php echo ($filtro_curso || $filtro_turma || $filtro_nome) ? ' com os filtros selecionados' : ' nas turmas do ano corrente (' . $ano_corrente . ')'; ?>.</p>
+                <p class="text-muted text-center">Nenhum aluno encontrado<?php echo ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente)) ? ' com os filtros selecionados' : ' nas turmas do ano (' . $filtro_ano . ')'; ?>.</p>
                 <?php else: ?>
                 <div class="table-responsive">
                     <table class="table table-hover">
