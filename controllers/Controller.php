@@ -40,7 +40,7 @@ class Controller {
      */
     protected function requirePermission() {
         $this->requireLogin();
-        if (!$this->user->isAdmin() && !$this->user->isNivel1() && !$this->user->isNivel2()) {
+        if (!$this->user->isAdmin() && !$this->user->isNivel0() && !$this->user->isNivel1() && !$this->user->isNivel2()) {
             header('Location: index.php');
             exit;
         }

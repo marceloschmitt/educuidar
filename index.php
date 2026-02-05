@@ -35,7 +35,7 @@ $tipo_evento_model = new TipoEvento($db);
 $todos_tipos = $tipo_evento_model->getAll(true); // Apenas ativos
 
 // Get statistics
-if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()) {
+if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()) {
     // Nivel2 só vê eventos que ele mesmo registrou
     $registrado_por = ($user->isNivel2()) ? $user_id : null;
     $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por);
@@ -76,7 +76,7 @@ if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()) {
 }
 ?>
 
-<?php if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()): ?>
+<?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
 <!-- Filters -->
 <div class="row mb-4">
     <div class="col-12">
@@ -129,7 +129,7 @@ if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()) {
 <?php endif; ?>
 
 <div class="row">
-    <?php if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()): ?>
+    <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
     <?php 
     // Create a map of statistics by tipo_evento_id
     $estatisticas_map = [];
@@ -262,7 +262,7 @@ if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()) {
                             <tr>
                                 <th>Data</th>
                                 <th>Hora</th>
-                                <?php if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()): ?>
+                                <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <th>Aluno</th>
                                 <?php endif; ?>
                                 <th>Tipo</th>
@@ -282,7 +282,7 @@ if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()) {
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
-                                <?php if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()): ?>
+                                <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
                                 <?php endif; ?>
                                 <td>

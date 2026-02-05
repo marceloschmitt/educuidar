@@ -108,7 +108,7 @@ function canModifyEvent($db, $evento_id, $user) {
     if (!$user_id) {
         return false;
     }
-    if (!$user->isNivel1() && !$user->isNivel2()) {
+    if (!$user->isNivel0() && !$user->isNivel1() && !$user->isNivel2()) {
         return false;
     }
 
@@ -177,7 +177,7 @@ function deleteAttachmentById($db, $anexo_id) {
 }
 
 // Only admin, nivel1, nivel2, assistencia_estudantil and napne can register events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2()) {
+if (!$user->isAdmin() && !$user->isNivel0() && !$user->isNivel1() && !$user->isNivel2()) {
     header('Location: index.php');
     exit;
 }
@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             } else {
                 $_SESSION['error'] = 'Erro ao atualizar evento.';
             }
-        } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+        } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
                 $upload_errors = [];
@@ -294,7 +294,7 @@ if (isset($_GET['delete'])) {
             header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
             exit;
         }
-    } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+    } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
         // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
@@ -630,7 +630,7 @@ if ($aluno_id) {
                                 // Admin pode editar e deletar qualquer evento
                                 $can_edit = true;
                                 $can_delete = true;
-                            } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+                            } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
                                 // Nivel1 e Nivel2 só podem editar/deletar seus próprios eventos criados há menos de 1 hora
                                 if ($ev['registrado_por'] == $user_id) {
                                     $created_at = strtotime($ev['created_at'] ?? '');
@@ -791,7 +791,7 @@ if ($aluno_id) {
                                 <small class="text-muted d-block mt-1">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
                             </div>
                             
-                            <?php if ($user->isNivel1()): ?>
+                            <?php if ($user->isNivel0()): ?>
                             <div class="mb-3" id="prontuario_cae_container" style="display: none;">
                                 <label for="modal_prontuario_cae" class="form-label">
                                     <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
@@ -932,7 +932,7 @@ if ($aluno_id) {
                             </div>
                         </div>
 
-                        <?php if ($user->isNivel1()): ?>
+                        <?php if ($user->isNivel0()): ?>
                         <hr>
                         <div class="row">
                             <div class="col-md-12">
@@ -982,7 +982,7 @@ if ($aluno_id) {
                         <?php endif; ?>
                     </div>
                     <div class="modal-footer">
-                        <?php if ($user->isNivel1()): ?>
+                        <?php if ($user->isNivel0()): ?>
                         <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('registrar_evento.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
                             <i class="bi bi-pencil"></i> Editar Aluno
                         </a>

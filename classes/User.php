@@ -138,6 +138,10 @@ class User {
         return $this->getUserLevel() === 'administrador';
     }
 
+    public function isNivel0() {
+        return $this->getUserLevel() === 'nivel0';
+    }
+
     public function isNivel1() {
         return $this->getUserLevel() === 'nivel1';
     }

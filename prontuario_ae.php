@@ -464,7 +464,7 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="modal-footer">
-                <?php if ($user->isNivel1()): ?>
+                <?php if ($user->isNivel0()): ?>
                 <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario_ae.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </a>

@@ -17,7 +17,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Alunos</h5>
-                <?php if ($user->isAdmin() || $user->isNivel1()): ?>
+                <?php if ($user->isAdmin() || $user->isNivel0()): ?>
                 <div>
                     <?php if ($user->isAdmin()): ?>
                     <a href="importar_alunos.php" class="btn btn-success btn-sm me-2">
@@ -340,7 +340,7 @@
                         <textarea class="form-control" id="modal_outras_observacoes" name="outras_observacoes" rows="3"></textarea>
                     </div>
 
-                    <?php if ($user->isNivel1()): ?>
+                    <?php if ($user->isNivel0()): ?>
                     <hr>
                     <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
                     <div class="mb-3">
@@ -515,7 +515,7 @@
                     </div>
                 </div>
 
-                <?php if ($user->isNivel1()): ?>
+                <?php if ($user->isNivel0()): ?>
                 <hr>
                 <div class="row">
                     <div class="col-md-12">
@@ -565,12 +565,12 @@
                 <?php endif; ?>
             </div>
             <div class="modal-footer">
-                <?php if ($user->isAdmin() || $user->isNivel1()): ?>
+                <?php if ($user->isAdmin() || $user->isNivel0()): ?>
                 <button type="button" class="btn btn-primary" id="btnEditarDaFicha">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </button>
                 <?php endif; ?>
-                <?php if ($user->isNivel1()): ?>
+                <?php if ($user->isNivel0()): ?>
                 <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno['id'] ?? ''); ?>" class="btn btn-info" id="btnProntuarioCAE">
                     <i class="bi bi-file-text"></i> Ver Prontuário
                 </a>

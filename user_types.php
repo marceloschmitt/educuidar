@@ -38,12 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     $id = $_POST['id'] ?? null;
     $nome = trim($_POST['nome'] ?? '');
-    $nivel = $_POST['nivel'] ?? 'nivel1';
+    $nivel = $_POST['nivel'] ?? 'nivel0';
 
     if ($action === 'create' || $action === 'update') {
         if (empty($nome) || empty($nivel)) {
             $error = 'Por favor, preencha todos os campos obrigatórios.';
-        } elseif (!in_array($nivel, ['administrador', 'nivel1', 'nivel2'], true)) {
+        } elseif (!in_array($nivel, ['administrador', 'nivel0', 'nivel1', 'nivel2'], true)) {
             $error = 'Nível inválido.';
         } else {
             if ($action === 'create') {
@@ -140,7 +140,8 @@ require_once 'includes/header.php';
                         <label for="nivel" class="form-label">Nível <span class="text-danger">*</span></label>
                         <select class="form-select" id="nivel" name="nivel" required>
                             <option value="administrador" <?php echo (($tipo_edit['nivel'] ?? '') === 'administrador') ? 'selected' : ''; ?>>Administrador</option>
-                            <option value="nivel1" <?php echo ((!isset($tipo_edit) || ($tipo_edit['nivel'] ?? '') === 'nivel1')) ? 'selected' : ''; ?>>Nível 1</option>
+                            <option value="nivel0" <?php echo ((!isset($tipo_edit) || ($tipo_edit['nivel'] ?? '') === 'nivel0')) ? 'selected' : ''; ?>>Nível 0</option>
+                            <option value="nivel1" <?php echo (($tipo_edit['nivel'] ?? '') === 'nivel1') ? 'selected' : ''; ?>>Nível 1</option>
                             <option value="nivel2" <?php echo (($tipo_edit['nivel'] ?? '') === 'nivel2') ? 'selected' : ''; ?>>Nível 2</option>
                         </select>
                         <small class="text-muted">Define as permissões gerais do tipo.</small>
@@ -185,6 +186,7 @@ require_once 'includes/header.php';
                                     <?php
                                     $nivel_label = [
                                         'administrador' => 'Administrador',
+                                        'nivel0' => 'Nível 0',
                                         'nivel1' => 'Nível 1',
                                         'nivel2' => 'Nível 2'
                                     ];

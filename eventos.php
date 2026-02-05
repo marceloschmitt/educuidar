@@ -127,7 +127,7 @@ function canModifyEvent($db, $evento_id, $user) {
     if (!$user_id) {
         return false;
     }
-    if (!$user->isNivel1() && !$user->isNivel2()) {
+    if (!$user->isNivel0() && !$user->isNivel1() && !$user->isNivel2()) {
         return false;
     }
 
@@ -175,7 +175,7 @@ function canUseProntuario($db, $tipo_evento_id, $user_type_id) {
 }
 
 // Only admin, nivel1, nivel2, assistencia_estudantil and napne can view all events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2()) {
+if (!$user->isAdmin() && !$user->isNivel0() && !$user->isNivel1() && !$user->isNivel2()) {
     header('Location: index.php');
     exit;
 }
@@ -194,7 +194,7 @@ $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
 // Only admin, nivel1, nivel2, assistencia_estudantil and napne can view all events
-if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2()) {
+if (!$user->isAdmin() && !$user->isNivel0() && !$user->isNivel1() && !$user->isNivel2()) {
     header('Location: index.php');
     exit;
 }
@@ -254,7 +254,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             } else {
                 $_SESSION['error'] = 'Erro ao atualizar evento.';
             }
-        } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+        } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
                 $upload_errors = [];
@@ -309,7 +309,7 @@ if (isset($_GET['delete'])) {
             header('Location: ' . $redirect_url);
             exit;
         }
-    } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+    } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
         // Nivel1, Nivel2 e Assistência Estudantil podem deletar apenas seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
@@ -543,7 +543,7 @@ require_once 'includes/header.php';
                             if ($user->isAdmin()) {
                                 $can_edit = true;
                                 $can_delete = true;
-                            } elseif (($user->isNivel1() || $user->isNivel2()) && $user_id) {
+                            } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
                                 if ($evt['registrado_por'] == $user_id) {
                                     $created_at = strtotime($evt['created_at'] ?? '');
                                     $now = time();

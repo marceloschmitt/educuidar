@@ -48,8 +48,9 @@
                                     <span class="badge bg-<?php 
                                         $nivel = $usr['user_level'] ?? '';
                                         echo $nivel === 'administrador' ? 'danger' :
-                                            ($nivel === 'nivel1' ? 'primary' :
-                                            ($nivel === 'nivel2' ? 'info' : 'secondary'));
+                                            ($nivel === 'nivel0' ? 'primary' :
+                                            ($nivel === 'nivel1' ? 'info' :
+                                            ($nivel === 'nivel2' ? 'secondary' : 'secondary')));
                                     ?>">
                                         <?php echo htmlspecialchars($user_type_nome); ?>
                                     </span>

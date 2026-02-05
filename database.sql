@@ -109,7 +109,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS user_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
-    nivel ENUM('administrador', 'nivel1', 'nivel2') NOT NULL DEFAULT 'nivel1',
+    nivel ENUM('administrador', 'nivel0', 'nivel1', 'nivel2') NOT NULL DEFAULT 'nivel0',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_nome (nome),
@@ -132,10 +132,11 @@ CREATE TABLE IF NOT EXISTS user_user_types (
 
 INSERT INTO user_types (nome, nivel) VALUES
 ('Administrador', 'administrador'),
-('Professor', 'nivel1'),
+('Professor', 'nivel0'),
+('Nível 1', 'nivel1'),
 ('Nível 2', 'nivel2'),
-('Assistência Estudantil', 'nivel1'),
-('NAPNE', 'nivel1')
+('Assistência Estudantil', 'nivel0'),
+('NAPNE', 'nivel0')
 ON DUPLICATE KEY UPDATE nivel = VALUES(nivel);
 
 -- Create initial admin user (password will be set on first login)

@@ -4,7 +4,7 @@
             <i class="bi bi-house-door"></i> Dashboard
         </a>
     </li>
-    <?php if ($user->isAdmin() || $user->isNivel1() || $user->isNivel2()): ?>
+    <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'eventos.php' ? 'active' : ''; ?>" href="eventos.php">
             <i class="bi bi-calendar-event"></i> Eventos
@@ -47,10 +47,11 @@
     // Verificar permissão para ver alunos (admin, nivel1, nivel2)
     $user_level_session = $_SESSION['user_level'] ?? null;
     $is_admin = $user->isAdmin();
+    $is_nivel0 = $user->isNivel0();
     $is_nivel1 = $user->isNivel1();
     $is_nivel2 = $user->isNivel2();
     
-    $can_view_alunos = $is_admin || $is_nivel1 || $is_nivel2 || $user_level_session === 'nivel1' || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
+    $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2 || $user_level_session === 'nivel0' || $user_level_session === 'nivel1' || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
     
     if ($can_view_alunos): 
     ?>

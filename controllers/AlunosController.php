@@ -186,9 +186,9 @@ class AlunosController extends Controller {
      * Handle POST requests
      */
     private function handlePost() {
-        // Only admin and assistencia_estudantil can create/update/delete alunos
-        if (!$this->user->isAdmin() && !$this->user->isNivel1()) {
-            $this->setError('Apenas administradores e usuários nível 1 podem criar, editar ou excluir alunos.');
+        // Only admin and nivel0 can create/update/delete alunos
+        if (!$this->user->isAdmin() && !$this->user->isNivel0()) {
+            $this->setError('Apenas administradores e usuários nível 0 podem criar, editar ou excluir alunos.');
             $this->redirect('alunos.php');
             return;
         }
@@ -282,7 +282,7 @@ class AlunosController extends Controller {
         $this->aluno->pei = isset($_POST['pei']) ? ($_POST['pei'] == '1') : false;
         $this->aluno->profissionais_referencia = $_POST['profissionais_referencia'] ?? '';
         $this->aluno->outras_observacoes = $_POST['outras_observacoes'] ?? '';
-        if ($this->user->isNivel1()) {
+        if ($this->user->isNivel0()) {
             $this->aluno->identidade_genero = $_POST['identidade_genero'] ?? '';
             $this->aluno->grupo_familiar = $_POST['grupo_familiar'] ?? '';
             $this->aluno->guarda_legal = $_POST['guarda_legal'] ?? '';
@@ -393,7 +393,7 @@ class AlunosController extends Controller {
             return;
         }
         
-        $is_assistencia = $this->user->isNivel1();
+        $is_assistencia = $this->user->isNivel0();
 
         // Get current aluno data to check for existing photo
         $aluno_atual = $this->aluno->getById($this->aluno->id);
