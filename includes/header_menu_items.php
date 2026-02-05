@@ -37,6 +37,11 @@
             <i class="bi bi-people"></i> Usuários
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'user_types.php' ? 'active' : ''; ?>" href="user_types.php">
+            <i class="bi bi-person-badge"></i> Tipos de Usuário
+        </a>
+    </li>
     <?php endif; ?>
     <?php 
     // Verificar permissão para ver alunos (admin, nivel1, nivel2)
