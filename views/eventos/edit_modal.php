@@ -23,7 +23,13 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                             <select class="form-select" id="edit_tipo_evento_id" name="tipo_evento_id" required>
                                 <option value="">Selecione o tipo...</option>
                                 <?php foreach ($tipos_eventos as $te): ?>
-                                <option value="<?php echo $te['id']; ?>" data-gera-prontuario="<?php echo !empty($te['gera_prontuario_cae']) ? '1' : '0'; ?>">
+                                <?php
+                                $prontuario_tipo = $te['prontuario_user_type'] ?? '';
+                                if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
+                                    $prontuario_tipo = 'assistencia_estudantil';
+                                }
+                                ?>
+                                <option value="<?php echo $te['id']; ?>" data-prontuario-user-type="<?php echo htmlspecialchars($prontuario_tipo); ?>">
                                     <?php echo htmlspecialchars($te['nome']); ?>
                                 </option>
                                 <?php endforeach; ?>
@@ -63,16 +69,14 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                     <div class="mb-3" id="edit_anexos_existentes"></div>
                     <div id="edit_anexos_removidos"></div>
                     
-                    <?php if ($user->isAssistenciaEstudantil()): ?>
                     <div class="mb-3" id="edit_prontuario_cae_container" style="display: none;">
                         <label for="edit_prontuario_cae" class="form-label">
-                            <i class="bi bi-file-text"></i> Descrição de Prontuário (Assistência Estudantil)
+                            <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
                         </label>
                         <textarea class="form-control" id="edit_prontuario_cae" name="prontuario_cae" rows="5" 
-                                  placeholder="Descrição do atendimento para o prontuário da Assistência Estudantil (visível apenas para a equipe da Assistência Estudantil)"></textarea>
-                        <small class="text-muted">Este campo é visível apenas para a equipe da Assistência Estudantil.</small>
+                                  placeholder="Descrição do atendimento para o prontuário (visível apenas para o tipo de usuário definido no tipo de evento)"></textarea>
+                        <small class="text-muted">Este campo é visível apenas para o tipo de usuário definido no tipo de evento.</small>
                     </div>
-                    <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

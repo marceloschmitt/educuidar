@@ -22,7 +22,7 @@
                 <div id="obs_prontuario_section" style="display: none;">
                     <hr>
                     <div>
-                        <strong>Descrição do Prontuário:</strong>
+                        <strong>Prontuário:</strong>
                         <p id="obs_prontuario_texto" class="mt-2"></p>
                     </div>
                 </div>

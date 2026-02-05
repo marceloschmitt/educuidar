@@ -33,6 +33,11 @@ if (isset($aluno_edit) && $aluno_edit) {
 if ($user->isAdmin()) {
     echo ' data-is-admin="1"';
 }
+// Passar tipo de usuário
+$user_type_attr = $_SESSION['user_type'] ?? '';
+if ($user_type_attr !== '') {
+    echo ' data-user-type="' . htmlspecialchars($user_type_attr, ENT_QUOTES) . '"';
+}
 ?>>
     
     <?php if ($user->isLoggedIn()): ?>

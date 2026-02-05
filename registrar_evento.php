@@ -127,6 +127,24 @@ function canModifyEvent($db, $evento_id, $user) {
     return (time() - $created_at) <= 3600;
 }
 
+function canUseProntuario($db, $tipo_evento_id, $user_type) {
+    if (empty($tipo_evento_id) || empty($user_type)) {
+        return false;
+    }
+    $stmt = $db->prepare("SELECT prontuario_user_type, gera_prontuario_cae FROM tipos_eventos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $tipo_evento_id);
+    $stmt->execute();
+    $tipo = $stmt->fetch();
+    if (!$tipo) {
+        return false;
+    }
+    $prontuario_tipo = $tipo['prontuario_user_type'] ?? '';
+    if (empty($prontuario_tipo) && !empty($tipo['gera_prontuario_cae'])) {
+        $prontuario_tipo = 'assistencia_estudantil';
+    }
+    return !empty($prontuario_tipo) && $prontuario_tipo === $user_type;
+}
+
 function deleteAttachmentById($db, $anexo_id) {
     $stmt = $db->prepare("SELECT id, evento_id, caminho FROM eventos_anexos WHERE id = :id LIMIT 1");
     $stmt->bindParam(':id', $anexo_id);
@@ -170,6 +188,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $current_user_type = $_SESSION['user_type'] ?? '';
+    if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type)) {
+        $evento->prontuario_cae = '';
+    }
     $user_id = $_SESSION['user_id'] ?? null;
     
     if (empty($evento->id) || empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -283,6 +305,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $current_user_type = $_SESSION['user_type'] ?? '';
+    if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type)) {
+        $evento->prontuario_cae = '';
+    }
     $evento->registrado_por = $_SESSION['user_id'];
     
     if (empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -416,6 +442,7 @@ if ($aluno_id) {
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
 
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
+    $current_user_type = $_SESSION['user_type'] ?? '';
     $anexos_por_evento = [];
     if (!empty($eventos_aluno)) {
         $evento_ids = array_column($eventos_aluno, 'id');
@@ -499,11 +526,9 @@ if ($aluno_id) {
                     <button type="button" class="btn btn-secondary btn-sm me-2 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
-                    <?php if ($user->isAssistenciaEstudantil()): ?>
                     <a href="prontuario_ae.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
-                    <?php endif; ?>
                     <?php if (!$user->isNivel2()): ?>
                     <button type="button" class="btn btn-secondary btn-sm me-2" id="btnImprimir">
                         <i class="bi bi-printer"></i> Imprimir
@@ -601,7 +626,20 @@ if ($aluno_id) {
                                 'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $ev['registrado_por_nome'] ?? '-',
                                 'observacoes' => $ev['observacoes'] ?? '',
-                                'prontuario_cae' => $user->isAssistenciaEstudantil() ? ($ev['prontuario_cae'] ?? '') : '',
+                                'prontuario_cae' => (function() use ($ev, $current_user_type) {
+                                    $prontuario_tipo = $ev['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($ev['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return ($prontuario_tipo !== '' && $current_user_type === $prontuario_tipo) ? ($ev['prontuario_cae'] ?? '') : '';
+                                })(),
+                                'prontuario_user_type' => (function() use ($ev) {
+                                    $prontuario_tipo = $ev['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($ev['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return $prontuario_tipo;
+                                })(),
                                 'aluno_id' => $ev['aluno_id'] ?? '',
                                 'turma_id' => $ev['turma_id'] ?? '',
                                 'tipo_evento_id' => $ev['tipo_evento_id'] ?? '',
@@ -612,7 +650,20 @@ if ($aluno_id) {
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
                                 'anexos' => $anexos_por_evento[$ev['id']] ?? [],
-                                'can_view_anexos' => ($user->isAssistenciaEstudantil() || empty($ev['tipo_evento_gera_prontuario']))
+                                'can_view_anexos' => (function() use ($ev, $current_user_type) {
+                                    $prontuario_tipo = $ev['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($ev['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return empty($prontuario_tipo) || ($current_user_type === $prontuario_tipo);
+                                })(),
+                                'can_view_prontuario' => (function() use ($ev, $current_user_type) {
+                                    $prontuario_tipo = $ev['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($ev['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return ($prontuario_tipo !== '' && $current_user_type === $prontuario_tipo);
+                                })()
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
@@ -689,7 +740,13 @@ if ($aluno_id) {
                                     <select class="form-select" id="modal_tipo_evento_id" name="tipo_evento_id" required>
                                         <option value="">Selecione o tipo...</option>
                                         <?php foreach ($tipos_eventos as $te): ?>
-                                        <option value="<?php echo $te['id']; ?>" data-gera-prontuario="<?php echo !empty($te['gera_prontuario_cae']) ? '1' : '0'; ?>">
+                                        <?php
+                                        $prontuario_tipo = $te['prontuario_user_type'] ?? '';
+                                        if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
+                                            $prontuario_tipo = 'assistencia_estudantil';
+                                        }
+                                        ?>
+                                        <option value="<?php echo $te['id']; ?>" data-prontuario-user-type="<?php echo htmlspecialchars($prontuario_tipo); ?>">
                                             <?php echo htmlspecialchars($te['nome']); ?>
                                         </option>
                                         <?php endforeach; ?>
@@ -729,11 +786,11 @@ if ($aluno_id) {
                             <?php if ($user->isAssistenciaEstudantil()): ?>
                             <div class="mb-3" id="prontuario_cae_container" style="display: none;">
                                 <label for="modal_prontuario_cae" class="form-label">
-                                    <i class="bi bi-file-text"></i> Descrição de Prontuário (Assistência Estudantil)
+                                    <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
                                 </label>
                                 <textarea class="form-control" id="modal_prontuario_cae" name="prontuario_cae" rows="5" 
-                                          placeholder="Descrição do atendimento para o prontuário da Assistência Estudantil (visível apenas para a equipe da Assistência Estudantil)"></textarea>
-                                <small class="text-muted">Este campo é visível apenas para a equipe da Assistência Estudantil.</small>
+                                          placeholder="Descrição do atendimento para o prontuário (visível apenas para o tipo de usuário definido no tipo de evento)"></textarea>
+                                <small class="text-muted">Este campo é visível apenas para o tipo de usuário definido no tipo de evento.</small>
                             </div>
                             <?php endif; ?>
                         </div>

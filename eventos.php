@@ -146,6 +146,24 @@ function canModifyEvent($db, $evento_id, $user) {
     return (time() - $created_at) <= 3600;
 }
 
+function canUseProntuario($db, $tipo_evento_id, $user_type) {
+    if (empty($tipo_evento_id) || empty($user_type)) {
+        return false;
+    }
+    $stmt = $db->prepare("SELECT prontuario_user_type, gera_prontuario_cae FROM tipos_eventos WHERE id = :id LIMIT 1");
+    $stmt->bindParam(':id', $tipo_evento_id);
+    $stmt->execute();
+    $tipo = $stmt->fetch();
+    if (!$tipo) {
+        return false;
+    }
+    $prontuario_tipo = $tipo['prontuario_user_type'] ?? '';
+    if (empty($prontuario_tipo) && !empty($tipo['gera_prontuario_cae'])) {
+        $prontuario_tipo = 'assistencia_estudantil';
+    }
+    return !empty($prontuario_tipo) && $prontuario_tipo === $user_type;
+}
+
 // Only admin, nivel1, nivel2 and assistencia_estudantil can view all events
 if (!$user->isAdmin() && !$user->isNivel1() && !$user->isNivel2() && !$user->isAssistenciaEstudantil()) {
     header('Location: index.php');
@@ -193,6 +211,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     $evento->hora_evento = $_POST['hora_evento'] ?? '';
     $evento->observacoes = $_POST['observacoes'] ?? '';
     $evento->prontuario_cae = $_POST['prontuario_cae'] ?? '';
+    $current_user_type = $_SESSION['user_type'] ?? '';
+    if (!canUseProntuario($db, $evento->tipo_evento_id, $current_user_type)) {
+        $evento->prontuario_cae = '';
+    }
     $user_id = $_SESSION['user_id'] ?? null;
     
     if (empty($evento->id) || empty($evento->aluno_id) || empty($evento->tipo_evento_id) || empty($evento->data_evento)) {
@@ -297,6 +319,7 @@ if (isset($_GET['delete'])) {
 // Nivel2 só vê eventos que ele mesmo registrou
 $user_id = $_SESSION['user_id'] ?? null;
 $registrado_por = ($user->isNivel2()) ? $user_id : null;
+$current_user_type = $_SESSION['user_type'] ?? '';
 $eventos = $evento->getAll($registrado_por, $filtro_ano);
 $anexos_por_evento = [];
 if (!empty($eventos)) {
@@ -522,7 +545,20 @@ require_once 'includes/header.php';
                                 'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
                                 'observacoes' => $evt['observacoes'] ?? '',
-                                'prontuario_cae' => $user->isAssistenciaEstudantil() ? ($evt['prontuario_cae'] ?? '') : '',
+                                'prontuario_cae' => (function() use ($evt, $current_user_type) {
+                                    $prontuario_tipo = $evt['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($evt['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return ($prontuario_tipo !== '' && $current_user_type === $prontuario_tipo) ? ($evt['prontuario_cae'] ?? '') : '';
+                                })(),
+                                'prontuario_user_type' => (function() use ($evt) {
+                                    $prontuario_tipo = $evt['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($evt['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return $prontuario_tipo;
+                                })(),
                                 'aluno_id' => $evt['aluno_id'] ?? '',
                                 'turma_id' => $evt['turma_id'] ?? '',
                                 'tipo_evento_id' => $evt['tipo_evento_id'] ?? '',
@@ -533,7 +569,20 @@ require_once 'includes/header.php';
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
                                 'anexos' => $anexos_por_evento[$evt['id']] ?? [],
-                                'can_view_anexos' => ($user->isAssistenciaEstudantil() || empty($evt['tipo_evento_gera_prontuario']))
+                                'can_view_anexos' => (function() use ($evt, $current_user_type) {
+                                    $prontuario_tipo = $evt['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($evt['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return empty($prontuario_tipo) || ($current_user_type === $prontuario_tipo);
+                                })(),
+                                'can_view_prontuario' => (function() use ($evt, $current_user_type) {
+                                    $prontuario_tipo = $evt['tipo_evento_prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($evt['tipo_evento_gera_prontuario'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    return ($prontuario_tipo !== '' && $current_user_type === $prontuario_tipo);
+                                })()
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>

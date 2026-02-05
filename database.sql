@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS tipos_eventos (
     nome VARCHAR(100) NOT NULL,
     cor VARCHAR(20) DEFAULT 'secondary',
     gera_prontuario_cae TINYINT(1) DEFAULT 0,
+    prontuario_user_type ENUM('administrador', 'nivel1', 'nivel2', 'assistencia_estudantil') NULL,
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

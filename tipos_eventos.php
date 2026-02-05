@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($_POST['action'] == 'create') {
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
-            $tipo_evento->gera_prontuario_cae = isset($_POST['gera_prontuario_cae']) ? 1 : 0;
+            $tipo_evento->prontuario_user_type = $_POST['prontuario_user_type'] ?? '';
+            $tipo_evento->gera_prontuario_cae = ($tipo_evento->prontuario_user_type === 'assistencia_estudantil') ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -35,7 +36,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->id = $_POST['id'];
             $tipo_evento->nome = $_POST['nome'] ?? '';
             $tipo_evento->cor = $_POST['cor'] ?? 'secondary';
-            $tipo_evento->gera_prontuario_cae = isset($_POST['gera_prontuario_cae']) ? 1 : 0;
+            $tipo_evento->prontuario_user_type = $_POST['prontuario_user_type'] ?? '';
+            $tipo_evento->gera_prontuario_cae = ($tipo_evento->prontuario_user_type === 'assistencia_estudantil') ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
@@ -154,14 +156,21 @@ $tipos = $tipo_evento->getAll();
                     </div>
                     
                     <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="gera_prontuario_cae" name="gera_prontuario_cae" value="1" 
-                                   <?php echo (!empty($tipo_edit['gera_prontuario_cae'])) ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="gera_prontuario_cae">
-                                Gera campo de prontuário da Assistência Estudantil
-                            </label>
-                            <small class="text-muted d-block">Marca se este tipo de evento deve exibir o campo de prontuário da Assistência Estudantil</small>
-                        </div>
+                        <?php
+                        $prontuario_user_type = $tipo_edit['prontuario_user_type'] ?? '';
+                        if (empty($prontuario_user_type) && !empty($tipo_edit['gera_prontuario_cae'])) {
+                            $prontuario_user_type = 'assistencia_estudantil';
+                        }
+                        ?>
+                        <label for="prontuario_user_type" class="form-label">Prontuário exclusivo de</label>
+                        <select class="form-select" id="prontuario_user_type" name="prontuario_user_type">
+                            <option value="">Não gera prontuário</option>
+                            <option value="administrador" <?php echo $prontuario_user_type === 'administrador' ? 'selected' : ''; ?>>Administrador</option>
+                            <option value="nivel1" <?php echo $prontuario_user_type === 'nivel1' ? 'selected' : ''; ?>>Professor</option>
+                            <option value="nivel2" <?php echo $prontuario_user_type === 'nivel2' ? 'selected' : ''; ?>>Nível 2</option>
+                            <option value="assistencia_estudantil" <?php echo $prontuario_user_type === 'assistencia_estudantil' ? 'selected' : ''; ?>>Assistência Estudantil</option>
+                        </select>
+                        <small class="text-muted d-block">Define quem pode visualizar o prontuário deste tipo de evento.</small>
                     </div>
                     
                     <button type="submit" class="btn btn-primary w-100">
@@ -209,8 +218,20 @@ $tipos = $tipo_evento->getAll();
                                     <span class="badge bg-info"><?php echo htmlspecialchars($t['total_eventos'] ?? 0); ?></span>
                                 </td>
                                 <td>
-                                    <?php if (!empty($t['gera_prontuario_cae'])): ?>
-                                        <span class="badge bg-info">Sim</span>
+                                    <?php
+                                    $prontuario_tipo = $t['prontuario_user_type'] ?? '';
+                                    if (empty($prontuario_tipo) && !empty($t['gera_prontuario_cae'])) {
+                                        $prontuario_tipo = 'assistencia_estudantil';
+                                    }
+                                    $prontuario_labels = [
+                                        'administrador' => 'Administrador',
+                                        'nivel1' => 'Professor',
+                                        'nivel2' => 'Nível 2',
+                                        'assistencia_estudantil' => 'Assistência Estudantil'
+                                    ];
+                                    ?>
+                                    <?php if (!empty($prontuario_tipo)): ?>
+                                        <span class="badge bg-info"><?php echo htmlspecialchars($prontuario_labels[$prontuario_tipo] ?? $prontuario_tipo); ?></span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Não</span>
                                     <?php endif; ?>

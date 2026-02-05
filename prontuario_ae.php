@@ -1,5 +1,4 @@
 <?php
-$page_title = 'Prontuário Assistência Estudantil';
 require_once 'config/init.php';
 
 $database = new Database();
@@ -10,11 +9,21 @@ $aluno = new Aluno($db);
 $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
-// Apenas usuários da Assistência Estudantil podem acessar
-if (!$user->isAssistenciaEstudantil()) {
+// Apenas usuários logados podem acessar
+if (!$user->isLoggedIn()) {
     header('Location: index.php');
     exit;
 }
+
+$user_type = $user->getUserType();
+$user_type_labels = [
+    'administrador' => 'Administrador',
+    'nivel1' => 'Professor',
+    'nivel2' => 'Nível 2',
+    'assistencia_estudantil' => 'Assistência Estudantil'
+];
+$prontuario_titulo = $user_type_labels[$user_type] ?? 'Usuário';
+$page_title = 'Prontuário - ' . $prontuario_titulo;
 
 $aluno_id = $_GET['aluno_id'] ?? '';
 
@@ -29,7 +38,7 @@ if (!$aluno_data) {
     exit;
 }
 
-// Buscar todos os eventos da Assistência Estudantil do aluno, com ou sem descrição
+// Buscar todos os eventos do prontuário do tipo de usuário corrente
 $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
           e.data_evento, e.hora_evento, e.observacoes, e.prontuario_cae, e.registrado_por, e.created_at,
           te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
@@ -37,11 +46,16 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           FROM eventos e
           LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
           LEFT JOIN users u ON e.registrado_por = u.id
-          WHERE e.aluno_id = :aluno_id AND te.gera_prontuario_cae = 1
+          WHERE e.aluno_id = :aluno_id
+            AND (
+                te.prontuario_user_type = :user_type
+                OR (te.prontuario_user_type IS NULL AND te.gera_prontuario_cae = 1 AND :user_type = 'assistencia_estudantil')
+            )
           ORDER BY e.data_evento ASC, e.hora_evento ASC";
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
+$stmt->bindParam(':user_type', $user_type);
 $stmt->execute();
 $eventos_cae = $stmt->fetchAll();
 $anexos_por_evento = [];
@@ -99,7 +113,7 @@ require_once 'includes/header.php';
         <div class="card mb-3 printable-area">
             <div class="card-header d-flex justify-content-between align-items-center no-print">
                 <h5 class="mb-0">
-                    <i class="bi bi-file-text"></i> Prontuário Assistência Estudantil - 
+                    <i class="bi bi-file-text"></i> Prontuário <?php echo htmlspecialchars($prontuario_titulo); ?> - 
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
                 <div class="d-flex gap-2">
@@ -177,11 +191,11 @@ require_once 'includes/header.php';
                 
                 <hr>
                 
-                <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos da Assistência Estudantil</h5>
+            <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos - <?php echo htmlspecialchars($prontuario_titulo); ?></h5>
                 
                 <?php if (empty($eventos_cae)): ?>
                 <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> Nenhum atendimento da Assistência Estudantil encontrado para este aluno.
+                    <i class="bi bi-info-circle"></i> Nenhum atendimento encontrado para este aluno.
                 </div>
                 <?php else: ?>
                 <div class="timeline">

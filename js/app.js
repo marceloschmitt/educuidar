@@ -1,5 +1,16 @@
 // JavaScript para Sistema de Controle IFRS
 
+function getCurrentUserType() {
+    return document.body.getAttribute('data-user-type') || '';
+}
+
+function shouldShowProntuarioForType(prontuarioUserType) {
+    if (!prontuarioUserType) {
+        return false;
+    }
+    return prontuarioUserType === getCurrentUserType();
+}
+
 // Função para editar evento
 function editEvento(evento) {
     // Prevenir propagação do evento se necessário
@@ -98,13 +109,18 @@ function editEvento(evento) {
         }
     }
     
-    // Mostrar campo de prontuário se o tipo marcar essa opção
+    // Mostrar campo de prontuário se o tipo for exclusivo do usuário corrente
     var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
     var prontuarioContainer = document.getElementById('edit_prontuario_cae_container');
     if (tipoEventoSelect && prontuarioContainer) {
         var selectedOption = tipoEventoSelect.options[tipoEventoSelect.selectedIndex];
-        var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
-        prontuarioContainer.style.display = (geraProntuario === '1') ? 'block' : 'none';
+        var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
+        if (shouldShowProntuarioForType(prontuarioUserType)) {
+            prontuarioContainer.style.display = 'block';
+        } else {
+            prontuarioContainer.style.display = 'none';
+            document.getElementById('edit_prontuario_cae').value = '';
+        }
     }
     
     // Abrir modal
@@ -1004,14 +1020,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Mostrar/ocultar campo de prontuário CAE quando tipo de evento mudar
+    // Mostrar/ocultar campo de prontuário quando tipo de evento mudar
     var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
     var prontuarioContainer = document.getElementById('prontuario_cae_container');
     if (modalTipoEvento && prontuarioContainer) {
         modalTipoEvento.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
-            var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
-            if (geraProntuario === '1') {
+            var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
+            if (shouldShowProntuarioForType(prontuarioUserType)) {
                 prontuarioContainer.style.display = 'block';
             } else {
                 prontuarioContainer.style.display = 'none';
@@ -1020,14 +1036,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Mostrar/ocultar campo de prontuário CAE quando tipo de evento mudar no modal de edição
+    // Mostrar/ocultar campo de prontuário quando tipo de evento mudar no modal de edição
     var editTipoEvento = document.getElementById('edit_tipo_evento_id');
     var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
     if (editTipoEvento && editProntuarioContainer) {
         editTipoEvento.addEventListener('change', function() {
             var selectedOption = this.options[this.selectedIndex];
-            var geraProntuario = selectedOption && selectedOption.dataset ? selectedOption.dataset.geraProntuario : '0';
-            if (geraProntuario === '1') {
+            var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
+            if (shouldShowProntuarioForType(prontuarioUserType)) {
                 editProntuarioContainer.style.display = 'block';
             } else {
                 editProntuarioContainer.style.display = 'none';
@@ -1439,7 +1455,10 @@ function showEvento(evento) {
     var prontuarioTexto = document.getElementById('obs_prontuario_texto');
     var prontuario = evento.prontuario_cae || '';
     if (prontuarioSection && prontuarioTexto) {
-        if (prontuario.trim() !== '') {
+        if (evento.can_view_prontuario === false) {
+            prontuarioTexto.textContent = '';
+            prontuarioSection.style.display = 'none';
+        } else if (prontuario.trim() !== '') {
             prontuarioTexto.textContent = prontuario;
             prontuarioSection.style.display = 'block';
         } else {

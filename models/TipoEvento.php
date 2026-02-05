@@ -11,6 +11,7 @@ class TipoEvento {
     public $nome;
     public $cor;
     public $gera_prontuario_cae;
+    public $prontuario_user_type;
     public $ativo;
     public $created_at;
 
@@ -20,8 +21,8 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario_cae, ativo) 
-                  VALUES (:nome, :cor, :gera_prontuario_cae, :ativo)";
+                  (nome, cor, gera_prontuario_cae, prontuario_user_type, ativo) 
+                  VALUES (:nome, :cor, :gera_prontuario_cae, :prontuario_user_type, :ativo)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -29,6 +30,8 @@ class TipoEvento {
         $stmt->bindParam(':cor', $this->cor);
         $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
         $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
+        $prontuario_user_type = !empty($this->prontuario_user_type) ? $this->prontuario_user_type : null;
+        $stmt->bindParam(':prontuario_user_type', $prontuario_user_type);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 
@@ -69,6 +72,7 @@ class TipoEvento {
                   SET nome = :nome, 
                       cor = :cor,
                       gera_prontuario_cae = :gera_prontuario_cae,
+                      prontuario_user_type = :prontuario_user_type,
                       ativo = :ativo
                   WHERE id = :id";
 
@@ -79,6 +83,8 @@ class TipoEvento {
         $stmt->bindParam(':cor', $this->cor);
         $gera_prontuario_cae = isset($this->gera_prontuario_cae) ? ($this->gera_prontuario_cae ? 1 : 0) : 0;
         $stmt->bindParam(':gera_prontuario_cae', $gera_prontuario_cae);
+        $prontuario_user_type = !empty($this->prontuario_user_type) ? $this->prontuario_user_type : null;
+        $stmt->bindParam(':prontuario_user_type', $prontuario_user_type);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
 
