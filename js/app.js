@@ -11,6 +11,22 @@ function shouldShowProntuarioForType(prontuarioUserType) {
     return prontuarioUserType === getCurrentUserType();
 }
 
+function updateProntuarioVisibility(selectEl, containerEl, textareaEl) {
+    if (!selectEl || !containerEl) {
+        return;
+    }
+    var selectedOption = selectEl.options[selectEl.selectedIndex];
+    var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
+    if (shouldShowProntuarioForType(prontuarioUserType)) {
+        containerEl.style.display = 'block';
+    } else {
+        containerEl.style.display = 'none';
+        if (textareaEl) {
+            textareaEl.value = '';
+        }
+    }
+}
+
 // Função para editar evento
 function editEvento(evento) {
     // Prevenir propagação do evento se necessário
@@ -113,14 +129,7 @@ function editEvento(evento) {
     var tipoEventoSelect = document.getElementById('edit_tipo_evento_id');
     var prontuarioContainer = document.getElementById('edit_prontuario_cae_container');
     if (tipoEventoSelect && prontuarioContainer) {
-        var selectedOption = tipoEventoSelect.options[tipoEventoSelect.selectedIndex];
-        var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
-        if (shouldShowProntuarioForType(prontuarioUserType)) {
-            prontuarioContainer.style.display = 'block';
-        } else {
-            prontuarioContainer.style.display = 'none';
-            document.getElementById('edit_prontuario_cae').value = '';
-        }
+        updateProntuarioVisibility(tipoEventoSelect, prontuarioContainer, document.getElementById('edit_prontuario_cae'));
     }
     
     // Abrir modal
@@ -651,6 +660,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Garantir visibilidade do prontuário ao abrir modais de evento
+    var modalRegistrarEventoEl = document.getElementById('modalRegistrarEvento');
+    if (modalRegistrarEventoEl) {
+        modalRegistrarEventoEl.addEventListener('shown.bs.modal', function() {
+            var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
+            var prontuarioContainer = document.getElementById('prontuario_cae_container');
+            updateProntuarioVisibility(modalTipoEvento, prontuarioContainer, document.getElementById('modal_prontuario_cae'));
+        });
+    }
+    var editEventoModalEl = document.getElementById('editEventoModal');
+    if (editEventoModalEl) {
+        editEventoModalEl.addEventListener('shown.bs.modal', function() {
+            var editTipoEvento = document.getElementById('edit_tipo_evento_id');
+            var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
+            updateProntuarioVisibility(editTipoEvento, editProntuarioContainer, document.getElementById('edit_prontuario_cae'));
+        });
+    }
+
     // Abrir ficha ou edição automaticamente quando vindo com ?ficha=ID ou ?edit=ID
     var urlParams = new URLSearchParams(window.location.search);
     var fichaParam = urlParams.get('ficha');
@@ -1025,14 +1052,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var prontuarioContainer = document.getElementById('prontuario_cae_container');
     if (modalTipoEvento && prontuarioContainer) {
         modalTipoEvento.addEventListener('change', function() {
-            var selectedOption = this.options[this.selectedIndex];
-            var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
-            if (shouldShowProntuarioForType(prontuarioUserType)) {
-                prontuarioContainer.style.display = 'block';
-            } else {
-                prontuarioContainer.style.display = 'none';
-                document.getElementById('modal_prontuario_cae').value = '';
-            }
+            updateProntuarioVisibility(this, prontuarioContainer, document.getElementById('modal_prontuario_cae'));
         });
     }
     
@@ -1041,14 +1061,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var editProntuarioContainer = document.getElementById('edit_prontuario_cae_container');
     if (editTipoEvento && editProntuarioContainer) {
         editTipoEvento.addEventListener('change', function() {
-            var selectedOption = this.options[this.selectedIndex];
-            var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
-            if (shouldShowProntuarioForType(prontuarioUserType)) {
-                editProntuarioContainer.style.display = 'block';
-            } else {
-                editProntuarioContainer.style.display = 'none';
-                document.getElementById('edit_prontuario_cae').value = '';
-            }
+            updateProntuarioVisibility(this, editProntuarioContainer, document.getElementById('edit_prontuario_cae'));
         });
     }
     
