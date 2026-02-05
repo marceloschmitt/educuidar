@@ -600,6 +600,14 @@ document.addEventListener('DOMContentLoaded', function() {
             this.form.submit();
         });
     }
+
+    // Filtro de ano - submeter quando mudar
+    var filtroAno = document.getElementById('filtro_ano');
+    if (filtroAno) {
+        filtroAno.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
     
     // Filtro de nome - submeter ao pressionar Enter
     var filtroNome = document.getElementById('filtro_nome');
