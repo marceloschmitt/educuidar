@@ -354,19 +354,32 @@ if ($aluno_id) {
         exit;
     }
     
-    // Buscar primeira turma do ano corrente do aluno
+    // Buscar primeira turma do ano selecionado do aluno
     $ano_corrente = $configuracao->getAnoCorrente();
     $turmas_aluno = $aluno->getTurmasAluno($aluno_id);
+    $anos_disponiveis_aluno = [];
+    foreach ($turmas_aluno as $ta) {
+        if (!in_array($ta['ano_civil'], $anos_disponiveis_aluno, true)) {
+            $anos_disponiveis_aluno[] = $ta['ano_civil'];
+        }
+    }
+    rsort($anos_disponiveis_aluno);
+    if (empty($anos_disponiveis_aluno)) {
+        $anos_disponiveis_aluno = [$filtro_ano];
+    } elseif (!in_array($filtro_ano, $anos_disponiveis_aluno, true)) {
+        array_unshift($anos_disponiveis_aluno, $filtro_ano);
+    }
+
     $turma_corrente = null;
     foreach ($turmas_aluno as $ta) {
-        if ($ta['ano_civil'] == $ano_corrente) {
+        if ($ta['ano_civil'] == $filtro_ano) {
             $turma_corrente = $ta;
             break;
         }
     }
     
     if (!$turma_corrente) {
-        echo '<div class="alert alert-warning">Este aluno não está associado a nenhuma turma do ano corrente (' . $ano_corrente . ').</div>';
+        echo '<div class="alert alert-warning">Este aluno não está associado a nenhuma turma do ano (' . $filtro_ano . ').</div>';
         echo '<a href="alunos.php" class="btn btn-secondary">Voltar para Alunos</a>';
         require_once 'includes/footer.php';
         exit;
@@ -399,7 +412,7 @@ if ($aluno_id) {
         $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
         $aluno_ficha['is_ano_corrente'] = true;
     }
-    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $ano_corrente);
+    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $filtro_ano);
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
 
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
@@ -530,6 +543,19 @@ if ($aluno_id) {
                 </div>
             </div>
             <div class="card-body">
+                <form method="GET" action="" class="row g-3 mb-3 no-print">
+                    <input type="hidden" name="aluno_id" value="<?php echo htmlspecialchars($aluno_id); ?>">
+                    <div class="col-md-3">
+                        <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
+                        <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
+                            <?php foreach ($anos_disponiveis_aluno as $ano): ?>
+                            <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ano); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
                 <?php if (empty($eventos_aluno)): ?>
                 <p class="text-muted">Nenhum evento registrado para este aluno nesta turma.</p>
                 <?php else: ?>
