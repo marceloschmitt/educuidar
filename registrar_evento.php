@@ -458,6 +458,14 @@ if ($aluno_id) {
         }
     }
     $tipos_eventos = $tipo_evento->getAll(true); // Apenas ativos
+    $current_user_type = $_SESSION['user_type'] ?? '';
+    $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($current_user_type) {
+        $prontuario_tipo = $te['prontuario_user_type'] ?? '';
+        if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
+            $prontuario_tipo = 'assistencia_estudantil';
+        }
+        return empty($prontuario_tipo) || $prontuario_tipo === $current_user_type;
+    });
     ?>
 
 <div class="row">
@@ -739,7 +747,7 @@ if ($aluno_id) {
                                     <label for="modal_tipo_evento_id" class="form-label">Tipo de Evento <span class="text-danger">*</span></label>
                                     <select class="form-select" id="modal_tipo_evento_id" name="tipo_evento_id" required>
                                         <option value="">Selecione o tipo...</option>
-                                        <?php foreach ($tipos_eventos as $te): ?>
+                                        <?php foreach ($tipos_eventos_criacao as $te): ?>
                                         <?php
                                         $prontuario_tipo = $te['prontuario_user_type'] ?? '';
                                         if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
