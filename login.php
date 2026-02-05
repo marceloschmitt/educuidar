@@ -24,7 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $is_installed = $configuracao->isSistemaInstalado();
         
         // Check if admin user exists and has no password (first installation)
-        $check_query = "SELECT id, user_type, password FROM users WHERE username = :username OR email = :email LIMIT 1";
+        $check_query = "SELECT u.id, u.password, ut.nivel as user_level
+                        FROM users u
+                        LEFT JOIN user_user_types uut ON uut.user_id = u.id
+                        LEFT JOIN user_types ut ON ut.id = uut.user_type_id
+                        WHERE u.username = :username OR u.email = :email
+                        LIMIT 1";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(':username', $username);
         $check_stmt->bindParam(':email', $username);
@@ -33,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $is_admin_without_password = false;
         if ($check_stmt->rowCount() > 0) {
             $check_user = $check_stmt->fetch();
-            if ($check_user['user_type'] === 'administrador' && empty($check_user['password']) && !$is_installed) {
+            if (($check_user['user_level'] ?? '') === 'administrador' && empty($check_user['password']) && !$is_installed) {
                 $is_admin_without_password = true;
             }
         }
