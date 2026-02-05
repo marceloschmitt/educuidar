@@ -1,7 +1,7 @@
 // JavaScript para Sistema de Controle IFRS
 
 function getCurrentUserType() {
-    return document.body.getAttribute('data-user-type') || '';
+    return document.body.getAttribute('data-user-type-id') || '';
 }
 
 function shouldShowProntuarioForType(prontuarioUserType) {
@@ -16,8 +16,8 @@ function updateProntuarioVisibility(selectEl, containerEl, textareaEl) {
         return;
     }
     var selectedOption = selectEl.options[selectEl.selectedIndex];
-    var prontuarioUserType = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserType || '') : '';
-    if (shouldShowProntuarioForType(prontuarioUserType)) {
+    var prontuarioUserTypeId = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserTypeId || '') : '';
+    if (shouldShowProntuarioForType(prontuarioUserTypeId)) {
         containerEl.style.display = 'block';
     } else {
         containerEl.style.display = 'none';

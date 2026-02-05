@@ -24,12 +24,12 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                                 <option value="">Selecione o tipo...</option>
                                 <?php foreach ($tipos_eventos as $te): ?>
                                 <?php
-                                $prontuario_tipo = $te['prontuario_user_type_slug'] ?? '';
+                                $prontuario_tipo = $te['prontuario_user_type_id'] ?? '';
                                 if (empty($prontuario_tipo) && !empty($te['gera_prontuario_cae'])) {
                                     $prontuario_tipo = 'assistencia_estudantil';
                                 }
                                 ?>
-                                <option value="<?php echo $te['id']; ?>" data-prontuario-user-type="<?php echo htmlspecialchars($prontuario_tipo); ?>">
+                                <option value="<?php echo $te['id']; ?>" data-prontuario-user-type-id="<?php echo htmlspecialchars($prontuario_tipo); ?>">
                                     <?php echo htmlspecialchars($te['nome']); ?>
                                 </option>
                                 <?php endforeach; ?>

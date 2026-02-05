@@ -2,6 +2,7 @@
 // Process all PHP logic BEFORE any HTML output
 require_once __DIR__ . '/../config/init.php';
 $user = new User((new Database())->getConnection());
+$user->ensureUserTypeSession();
 
 // Check login and redirect if needed (before any output)
 $allowed_pages = ['login.php', 'definir_senha_admin.php'];
@@ -37,6 +38,14 @@ if ($user->isAdmin()) {
 $user_type_attr = $_SESSION['user_type'] ?? '';
 if ($user_type_attr !== '') {
     echo ' data-user-type="' . htmlspecialchars($user_type_attr, ENT_QUOTES) . '"';
+}
+$user_type_id_attr = $_SESSION['user_type_id'] ?? '';
+if ($user_type_id_attr !== '') {
+    echo ' data-user-type-id="' . htmlspecialchars($user_type_id_attr, ENT_QUOTES) . '"';
+}
+$user_level_attr = $_SESSION['user_level'] ?? '';
+if ($user_level_attr !== '') {
+    echo ' data-user-level="' . htmlspecialchars($user_level_attr, ENT_QUOTES) . '"';
 }
 ?>>
     
@@ -77,7 +86,7 @@ if ($user_type_attr !== '') {
                     <h1 class="h2"><?php echo isset($page_title) ? $page_title : 'Dashboard'; ?></h1>
                     <div class="text-end no-print">
                         <span class="text-muted">Olá, <?php echo htmlspecialchars($_SESSION['full_name']); ?></span>
-                        <span class="badge bg-secondary ms-2"><?php echo ucfirst($_SESSION['user_type']); ?></span>
+                        <span class="badge bg-secondary ms-2"><?php echo htmlspecialchars($_SESSION['user_type_nome'] ?? ucfirst($_SESSION['user_type'] ?? '')); ?></span>
                     </div>
                 </div>
     <?php endif; ?>

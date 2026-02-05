@@ -16,14 +16,16 @@ if (!$user->isLoggedIn()) {
 }
 
 $user_type = $user->getUserType();
-$user_type_labels = [
-    'administrador' => 'Administrador',
-    'nivel1' => 'Professor',
-    'nivel2' => 'Nível 2',
-    'assistencia_estudantil' => 'Assistência Estudantil',
-    'napne' => 'NAPNE'
-];
-$prontuario_titulo = $user_type_labels[$user_type] ?? 'Usuário';
+$user_type_id = $user->getUserTypeId();
+if (empty($user_type_id)) {
+    $stmt = $db->prepare("SELECT id FROM user_types WHERE slug = :slug LIMIT 1");
+    $slug = $user->getUserType();
+    $stmt->bindParam(':slug', $slug);
+    $stmt->execute();
+    $row = $stmt->fetch();
+    $user_type_id = $row['id'] ?? null;
+}
+$prontuario_titulo = $_SESSION['user_type_nome'] ?? 'Usuário';
 $page_title = 'Prontuário - ' . $prontuario_titulo;
 
 $aluno_id = $_GET['aluno_id'] ?? '';
@@ -75,7 +77,7 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           LEFT JOIN users u ON e.registrado_por = u.id
           WHERE e.aluno_id = :aluno_id
             AND (
-                ut.slug = :user_type
+                te.prontuario_user_type_id = :user_type_id
                 OR (te.prontuario_user_type_id IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
             )
             AND t.ano_civil = :filtro_ano
@@ -83,7 +85,7 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
-$stmt->bindParam(':user_type', $user_type);
+$stmt->bindParam(':user_type_id', $user_type_id);
 $stmt->bindParam(':user_type_assistencia', $user_type);
 $stmt->bindParam(':filtro_ano', $filtro_ano);
 $stmt->execute();
@@ -468,7 +470,7 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="modal-footer">
-                <?php if ($user->isAssistenciaEstudantil()): ?>
+                <?php if ($user->isNivel1()): ?>
                 <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario_ae.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </a>

@@ -112,9 +112,11 @@ CREATE TABLE IF NOT EXISTS user_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(50) UNIQUE NOT NULL,
     nome VARCHAR(100) NOT NULL,
+    nivel ENUM('administrador', 'nivel1', 'nivel2') NOT NULL DEFAULT 'nivel1',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_slug (slug)
+    INDEX idx_slug (slug),
+    INDEX idx_nivel (nivel)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- User x User Types relationship table
@@ -131,13 +133,13 @@ CREATE TABLE IF NOT EXISTS user_user_types (
     FOREIGN KEY (user_type_id) REFERENCES user_types(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO user_types (slug, nome) VALUES
-('administrador', 'Administrador'),
-('nivel1', 'Professor'),
-('nivel2', 'Nível 2'),
-('assistencia_estudantil', 'Assistência Estudantil'),
-('napne', 'NAPNE')
-ON DUPLICATE KEY UPDATE nome = VALUES(nome);
+INSERT INTO user_types (slug, nome, nivel) VALUES
+('administrador', 'Administrador', 'administrador'),
+('nivel1', 'Professor', 'nivel1'),
+('nivel2', 'Nível 2', 'nivel2'),
+('assistencia_estudantil', 'Assistência Estudantil', 'nivel1'),
+('napne', 'NAPNE', 'nivel1')
+ON DUPLICATE KEY UPDATE nome = VALUES(nome), nivel = VALUES(nivel);
 
 -- Create initial admin user (password will be set on first login)
 INSERT INTO users (username, email, password, full_name, user_type, auth_type) VALUES

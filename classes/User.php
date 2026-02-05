@@ -23,7 +23,7 @@ class User {
 
     public function login($username, $password) {
         $query = "SELECT u.id, u.username, u.email, u.password, u.full_name, u.user_type, u.auth_type,
-                  ut.slug as user_type_slug
+                  ut.id as user_type_id, ut.slug as user_type_slug, ut.nome as user_type_nome, ut.nivel as user_level
                   FROM " . $this->table . " u
                   LEFT JOIN user_user_types uut ON uut.user_id = u.id
                   LEFT JOIN user_types ut ON ut.id = uut.user_type_id
@@ -47,7 +47,11 @@ class User {
                 if ($ldap_result) {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
-                    $_SESSION['user_type'] = $row['user_type_slug'] ?? $row['user_type'];
+                    $resolved = $this->resolveUserTypeFromRow($row);
+                    $_SESSION['user_type'] = $resolved['slug'];
+                    $_SESSION['user_type_id'] = $resolved['id'];
+                    $_SESSION['user_level'] = $resolved['level'];
+                    $_SESSION['user_type_nome'] = $resolved['nome'];
                     $_SESSION['full_name'] = $row['full_name'];
                     return true;
                 } else {
@@ -69,7 +73,11 @@ class User {
                 if (!empty($row['password']) && password_verify($password, $row['password'])) {
                     $_SESSION['user_id'] = $row['id'];
                     $_SESSION['username'] = $row['username'];
-                    $_SESSION['user_type'] = $row['user_type_slug'] ?? $row['user_type'];
+                    $resolved = $this->resolveUserTypeFromRow($row);
+                    $_SESSION['user_type'] = $resolved['slug'];
+                    $_SESSION['user_type_id'] = $resolved['id'];
+                    $_SESSION['user_level'] = $resolved['level'];
+                    $_SESSION['user_type_nome'] = $resolved['nome'];
                     $_SESSION['full_name'] = $row['full_name'];
                     return true;
                 }
@@ -87,28 +95,52 @@ class User {
         return isset($_SESSION['user_id']);
     }
 
+    public function ensureUserTypeSession() {
+        $slug = $_SESSION['user_type'] ?? null;
+        if (!$slug) {
+            return;
+        }
+        if (!empty($_SESSION['user_type_id']) && !empty($_SESSION['user_level']) && !empty($_SESSION['user_type_nome'])) {
+            return;
+        }
+        $meta = $this->getUserTypeMetaBySlug($slug);
+        if ($meta) {
+            $_SESSION['user_type_id'] = $meta['id'] ?? null;
+            $_SESSION['user_level'] = $meta['nivel'] ?? null;
+            $_SESSION['user_type_nome'] = $meta['nome'] ?? null;
+        }
+    }
+
     public function getUserType() {
         return $_SESSION['user_type'] ?? null;
     }
 
+    public function getUserTypeId() {
+        return $_SESSION['user_type_id'] ?? null;
+    }
+
+    public function getUserLevel() {
+        return $_SESSION['user_level'] ?? null;
+    }
+
     public function isAdmin() {
-        return $this->getUserType() === 'administrador';
+        return $this->getUserLevel() === 'administrador';
     }
 
     public function isNivel1() {
-        return $this->getUserType() === 'nivel1';
+        return $this->getUserLevel() === 'nivel1';
     }
 
     public function isNivel2() {
-        return $this->getUserType() === 'nivel2';
+        return $this->getUserLevel() === 'nivel2';
     }
 
     public function isAssistenciaEstudantil() {
-        return $this->getUserType() === 'assistencia_estudantil';
+        return false;
     }
 
     public function isNapne() {
-        return $this->getUserType() === 'napne';
+        return false;
     }
 
     public function create() {
@@ -177,7 +209,7 @@ class User {
     }
 
     public function getUserTypes() {
-        $stmt = $this->conn->prepare("SELECT id, slug, nome FROM user_types ORDER BY nome ASC");
+        $stmt = $this->conn->prepare("SELECT id, slug, nome, nivel FROM user_types ORDER BY nome ASC");
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -210,6 +242,39 @@ class User {
             return true;
         }
         return false;
+    }
+
+    private function resolveUserTypeFromRow($row) {
+        if (!empty($row['user_type_id'])) {
+            return [
+                'id' => $row['user_type_id'],
+                'slug' => $row['user_type_slug'] ?? ($row['user_type'] ?? ''),
+                'nome' => $row['user_type_nome'] ?? ($row['user_type'] ?? ''),
+                'level' => $row['user_level'] ?? null
+            ];
+        }
+
+        $legacy_slug = $row['user_type'] ?? '';
+        if (empty($legacy_slug)) {
+            return ['id' => null, 'slug' => '', 'nome' => '', 'level' => null];
+        }
+        $meta = $this->getUserTypeMetaBySlug($legacy_slug);
+        return [
+            'id' => $meta['id'] ?? null,
+            'slug' => $meta['slug'] ?? $legacy_slug,
+            'nome' => $meta['nome'] ?? $legacy_slug,
+            'level' => $meta['nivel'] ?? null
+        ];
+    }
+
+    private function getUserTypeMetaBySlug($slug) {
+        if (empty($slug)) {
+            return null;
+        }
+        $stmt = $this->conn->prepare("SELECT id, slug, nome, nivel FROM user_types WHERE slug = :slug LIMIT 1");
+        $stmt->bindParam(':slug', $slug);
+        $stmt->execute();
+        return $stmt->fetch();
     }
 
     private function getUserTypeIdBySlug($slug) {
