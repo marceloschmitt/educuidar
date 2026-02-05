@@ -49,13 +49,14 @@ $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id,
           WHERE e.aluno_id = :aluno_id
             AND (
                 te.prontuario_user_type = :user_type
-                OR (te.prontuario_user_type IS NULL AND te.gera_prontuario_cae = 1 AND :user_type = 'assistencia_estudantil')
+                OR (te.prontuario_user_type IS NULL AND te.gera_prontuario_cae = 1 AND :user_type_assistencia = 'assistencia_estudantil')
             )
           ORDER BY e.data_evento ASC, e.hora_evento ASC";
 
 $stmt = $db->prepare($query);
 $stmt->bindParam(':aluno_id', $aluno_id);
 $stmt->bindParam(':user_type', $user_type);
+$stmt->bindParam(':user_type_assistencia', $user_type);
 $stmt->execute();
 $eventos_cae = $stmt->fetchAll();
 $anexos_por_evento = [];
