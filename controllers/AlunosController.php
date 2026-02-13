@@ -311,6 +311,11 @@ class AlunosController extends Controller {
             $this->redirect('alunos.php');
             return;
         }
+        if (!empty($this->aluno->telefone_pessoa_referencia) && strlen($this->aluno->telefone_pessoa_referencia) > 100) {
+            $this->setError('Telefone da pessoa de referência muito longo (máx. 100 caracteres).');
+            $this->redirect('alunos.php');
+            return;
+        }
         
         try {
             // Upload foto antes de criar o aluno
@@ -389,6 +394,11 @@ class AlunosController extends Controller {
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
+            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
+            return;
+        }
+        if (!empty($this->aluno->telefone_pessoa_referencia) && strlen($this->aluno->telefone_pessoa_referencia) > 100) {
+            $this->setError('Telefone da pessoa de referência muito longo (máx. 100 caracteres).');
             $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
             return;
         }

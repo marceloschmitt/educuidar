@@ -285,7 +285,7 @@
                             <div class="mb-3">
                                 <label for="modal_telefone_pessoa_referencia" class="form-label">Telefone da Pessoa de Referência</label>
                                 <input type="text" class="form-control" id="modal_telefone_pessoa_referencia" name="telefone_pessoa_referencia" 
-                                       placeholder="(51) 99999-9999">
+                                       placeholder="(51) 99999-9999" maxlength="100">
                             </div>
                         </div>
                     </div>

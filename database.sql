@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS alunos (
     endereco TEXT NULL,
     foto VARCHAR(255) NULL,
     pessoa_referencia VARCHAR(200) NULL,
-    telefone_pessoa_referencia VARCHAR(20) NULL,
+    telefone_pessoa_referencia VARCHAR(100) NULL,
     rede_atendimento TEXT NULL,
     auxilio_estudantil TINYINT(1) DEFAULT 0,
     nee TEXT NULL,
