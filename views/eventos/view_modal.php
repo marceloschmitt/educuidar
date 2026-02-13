@@ -17,13 +17,13 @@
                 <hr>
                 <div>
                     <strong>Observações:</strong>
-                    <p id="obs_texto" class="mt-2"></p>
+                    <p id="obs_texto" class="mt-2" style="white-space: pre-wrap;"></p>
                 </div>
                 <div id="obs_prontuario_section" style="display: none;">
                     <hr>
                     <div>
                         <strong>Prontuário:</strong>
-                        <p id="obs_prontuario_texto" class="mt-2"></p>
+                        <p id="obs_prontuario_texto" class="mt-2" style="white-space: pre-wrap;"></p>
                     </div>
                 </div>
                 <div id="obs_anexos_section" style="display: none;">
