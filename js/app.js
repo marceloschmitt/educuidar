@@ -192,6 +192,54 @@ function resetForm() {
     if (document.getElementById('modal_rede_atendimento_familia')) {
         document.getElementById('modal_rede_atendimento_familia').value = '';
     }
+    if (document.getElementById('modal_estabelecimento_ensino_fundamental')) {
+        document.getElementById('modal_estabelecimento_ensino_fundamental').value = '';
+    }
+    if (document.getElementById('modal_monitoria_atendimento_reprovacao_fundamental')) {
+        document.getElementById('modal_monitoria_atendimento_reprovacao_fundamental').value = '';
+    }
+    if (document.getElementById('modal_deficiencia_necessidade_especifica')) {
+        document.getElementById('modal_deficiencia_necessidade_especifica').value = '';
+    }
+    if (document.getElementById('modal_necessidade_adequacao_aprendizagem')) {
+        document.getElementById('modal_necessidade_adequacao_aprendizagem').value = '';
+    }
+    if (document.getElementById('modal_medidas_disciplinares')) {
+        document.getElementById('modal_medidas_disciplinares').value = '';
+    }
+    if (document.getElementById('modal_bullying')) {
+        document.getElementById('modal_bullying').value = '';
+    }
+    if (document.getElementById('modal_maiores_dificuldades')) {
+        document.getElementById('modal_maiores_dificuldades').value = '';
+    }
+    if (document.getElementById('modal_acesso_internet_casa')) {
+        document.getElementById('modal_acesso_internet_casa').value = '';
+    }
+    if (document.getElementById('modal_local_estudo')) {
+        document.getElementById('modal_local_estudo').value = '';
+    }
+    if (document.getElementById('modal_rotina_estudo_casa')) {
+        document.getElementById('modal_rotina_estudo_casa').value = '';
+    }
+    if (document.getElementById('modal_habito_leitura')) {
+        document.getElementById('modal_habito_leitura').value = '';
+    }
+    if (document.getElementById('modal_atividades_extracurriculares')) {
+        document.getElementById('modal_atividades_extracurriculares').value = '';
+    }
+    if (document.getElementById('modal_acompanhamento_tratamento_especializado')) {
+        document.getElementById('modal_acompanhamento_tratamento_especializado').value = '';
+    }
+    if (document.getElementById('modal_alergias')) {
+        document.getElementById('modal_alergias').value = '';
+    }
+    if (document.getElementById('modal_medicacao_uso_continuo')) {
+        document.getElementById('modal_medicacao_uso_continuo').value = '';
+    }
+    if (document.getElementById('modal_situacao_marcante_vida')) {
+        document.getElementById('modal_situacao_marcante_vida').value = '';
+    }
     document.getElementById('modal_foto').value = '';
     document.getElementById('foto_preview').innerHTML = '';
     var fotoAtual = document.getElementById('foto_atual');
@@ -353,6 +401,22 @@ function viewFichaAluno(aluno) {
     setFichaTexto('ficha_expectativa_estudante_familia', aluno.expectativa_estudante_familia || '');
     setFichaTexto('ficha_conhecimento_curso_tecnico', aluno.conhecimento_curso_tecnico || '');
     setFichaTexto('ficha_rede_atendimento_familia', aluno.rede_atendimento_familia || '');
+    setFichaTexto('ficha_estabelecimento_ensino_fundamental', aluno.estabelecimento_ensino_fundamental || '');
+    setFichaTexto('ficha_monitoria_atendimento_reprovacao_fundamental', aluno.monitoria_atendimento_reprovacao_fundamental || '');
+    setFichaTexto('ficha_deficiencia_necessidade_especifica', aluno.deficiencia_necessidade_especifica || '');
+    setFichaTexto('ficha_necessidade_adequacao_aprendizagem', aluno.necessidade_adequacao_aprendizagem || '');
+    setFichaTexto('ficha_medidas_disciplinares', aluno.medidas_disciplinares || '');
+    setFichaTexto('ficha_bullying', aluno.bullying || '');
+    setFichaTexto('ficha_maiores_dificuldades', aluno.maiores_dificuldades || '');
+    setFichaTexto('ficha_acesso_internet_casa', aluno.acesso_internet_casa || '');
+    setFichaTexto('ficha_local_estudo', aluno.local_estudo || '');
+    setFichaTexto('ficha_rotina_estudo_casa', aluno.rotina_estudo_casa || '');
+    setFichaTexto('ficha_habito_leitura', aluno.habito_leitura || '');
+    setFichaTexto('ficha_atividades_extracurriculares', aluno.atividades_extracurriculares || '');
+    setFichaTexto('ficha_acompanhamento_tratamento_especializado', aluno.acompanhamento_tratamento_especializado || '');
+    setFichaTexto('ficha_alergias', aluno.alergias || '');
+    setFichaTexto('ficha_medicacao_uso_continuo', aluno.medicacao_uso_continuo || '');
+    setFichaTexto('ficha_situacao_marcante_vida', aluno.situacao_marcante_vida || '');
     
     // Armazenar dados do aluno para o botão de editar
     var modalFicha = document.getElementById('modalFichaAluno');
@@ -425,6 +489,54 @@ function editAluno(aluno) {
     }
     if (document.getElementById('modal_rede_atendimento_familia')) {
         document.getElementById('modal_rede_atendimento_familia').value = aluno.rede_atendimento_familia || '';
+    }
+    if (document.getElementById('modal_estabelecimento_ensino_fundamental')) {
+        document.getElementById('modal_estabelecimento_ensino_fundamental').value = aluno.estabelecimento_ensino_fundamental || '';
+    }
+    if (document.getElementById('modal_monitoria_atendimento_reprovacao_fundamental')) {
+        document.getElementById('modal_monitoria_atendimento_reprovacao_fundamental').value = aluno.monitoria_atendimento_reprovacao_fundamental || '';
+    }
+    if (document.getElementById('modal_deficiencia_necessidade_especifica')) {
+        document.getElementById('modal_deficiencia_necessidade_especifica').value = aluno.deficiencia_necessidade_especifica || '';
+    }
+    if (document.getElementById('modal_necessidade_adequacao_aprendizagem')) {
+        document.getElementById('modal_necessidade_adequacao_aprendizagem').value = aluno.necessidade_adequacao_aprendizagem || '';
+    }
+    if (document.getElementById('modal_medidas_disciplinares')) {
+        document.getElementById('modal_medidas_disciplinares').value = aluno.medidas_disciplinares || '';
+    }
+    if (document.getElementById('modal_bullying')) {
+        document.getElementById('modal_bullying').value = aluno.bullying || '';
+    }
+    if (document.getElementById('modal_maiores_dificuldades')) {
+        document.getElementById('modal_maiores_dificuldades').value = aluno.maiores_dificuldades || '';
+    }
+    if (document.getElementById('modal_acesso_internet_casa')) {
+        document.getElementById('modal_acesso_internet_casa').value = aluno.acesso_internet_casa || '';
+    }
+    if (document.getElementById('modal_local_estudo')) {
+        document.getElementById('modal_local_estudo').value = aluno.local_estudo || '';
+    }
+    if (document.getElementById('modal_rotina_estudo_casa')) {
+        document.getElementById('modal_rotina_estudo_casa').value = aluno.rotina_estudo_casa || '';
+    }
+    if (document.getElementById('modal_habito_leitura')) {
+        document.getElementById('modal_habito_leitura').value = aluno.habito_leitura || '';
+    }
+    if (document.getElementById('modal_atividades_extracurriculares')) {
+        document.getElementById('modal_atividades_extracurriculares').value = aluno.atividades_extracurriculares || '';
+    }
+    if (document.getElementById('modal_acompanhamento_tratamento_especializado')) {
+        document.getElementById('modal_acompanhamento_tratamento_especializado').value = aluno.acompanhamento_tratamento_especializado || '';
+    }
+    if (document.getElementById('modal_alergias')) {
+        document.getElementById('modal_alergias').value = aluno.alergias || '';
+    }
+    if (document.getElementById('modal_medicacao_uso_continuo')) {
+        document.getElementById('modal_medicacao_uso_continuo').value = aluno.medicacao_uso_continuo || '';
+    }
+    if (document.getElementById('modal_situacao_marcante_vida')) {
+        document.getElementById('modal_situacao_marcante_vida').value = aluno.situacao_marcante_vida || '';
     }
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';

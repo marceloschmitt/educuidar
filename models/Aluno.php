@@ -35,6 +35,22 @@ class Aluno {
     public $expectativa_estudante_familia;
     public $conhecimento_curso_tecnico;
     public $rede_atendimento_familia;
+    public $estabelecimento_ensino_fundamental;
+    public $monitoria_atendimento_reprovacao_fundamental;
+    public $deficiencia_necessidade_especifica;
+    public $necessidade_adequacao_aprendizagem;
+    public $medidas_disciplinares;
+    public $bullying;
+    public $maiores_dificuldades;
+    public $acesso_internet_casa;
+    public $local_estudo;
+    public $rotina_estudo_casa;
+    public $habito_leitura;
+    public $atividades_extracurriculares;
+    public $acompanhamento_tratamento_especializado;
+    public $alergias;
+    public $medicacao_uso_continuo;
+    public $situacao_marcante_vida;
     public $created_at;
 
     public function __construct($db) {
@@ -47,12 +63,18 @@ class Aluno {
                    pessoa_referencia, telefone_pessoa_referencia, rede_atendimento, auxilio_estudantil, nee, 
                    indigena, pei, profissionais_referencia, outras_observacoes,
                    identidade_genero, grupo_familiar, guarda_legal, escolaridade_pais_responsaveis, necessidade_mudanca,
-                   meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia) 
+                   meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia,
+                   estabelecimento_ensino_fundamental, monitoria_atendimento_reprovacao_fundamental, deficiencia_necessidade_especifica, necessidade_adequacao_aprendizagem,
+                   medidas_disciplinares, bullying, maiores_dificuldades, acesso_internet_casa, local_estudo, rotina_estudo_casa, habito_leitura, atividades_extracurriculares,
+                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida) 
                   VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
                           :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
                           :indigena, :pei, :profissionais_referencia, :outras_observacoes,
                           :identidade_genero, :grupo_familiar, :guarda_legal, :escolaridade_pais_responsaveis, :necessidade_mudanca,
-                          :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia)";
+                          :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia,
+                          :estabelecimento_ensino_fundamental, :monitoria_atendimento_reprovacao_fundamental, :deficiencia_necessidade_especifica, :necessidade_adequacao_aprendizagem,
+                          :medidas_disciplinares, :bullying, :maiores_dificuldades, :acesso_internet_casa, :local_estudo, :rotina_estudo_casa, :habito_leitura, :atividades_extracurriculares,
+                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -110,6 +132,38 @@ class Aluno {
         $stmt->bindParam(':conhecimento_curso_tecnico', $conhecimento_curso_tecnico);
         $rede_atendimento_familia = !empty($this->rede_atendimento_familia) ? $this->rede_atendimento_familia : null;
         $stmt->bindParam(':rede_atendimento_familia', $rede_atendimento_familia);
+        $estabelecimento_ensino_fundamental = !empty($this->estabelecimento_ensino_fundamental) ? $this->estabelecimento_ensino_fundamental : null;
+        $stmt->bindParam(':estabelecimento_ensino_fundamental', $estabelecimento_ensino_fundamental);
+        $monitoria_atendimento_reprovacao_fundamental = !empty($this->monitoria_atendimento_reprovacao_fundamental) ? $this->monitoria_atendimento_reprovacao_fundamental : null;
+        $stmt->bindParam(':monitoria_atendimento_reprovacao_fundamental', $monitoria_atendimento_reprovacao_fundamental);
+        $deficiencia_necessidade_especifica = !empty($this->deficiencia_necessidade_especifica) ? $this->deficiencia_necessidade_especifica : null;
+        $stmt->bindParam(':deficiencia_necessidade_especifica', $deficiencia_necessidade_especifica);
+        $necessidade_adequacao_aprendizagem = !empty($this->necessidade_adequacao_aprendizagem) ? $this->necessidade_adequacao_aprendizagem : null;
+        $stmt->bindParam(':necessidade_adequacao_aprendizagem', $necessidade_adequacao_aprendizagem);
+        $medidas_disciplinares = !empty($this->medidas_disciplinares) ? $this->medidas_disciplinares : null;
+        $stmt->bindParam(':medidas_disciplinares', $medidas_disciplinares);
+        $bullying = !empty($this->bullying) ? $this->bullying : null;
+        $stmt->bindParam(':bullying', $bullying);
+        $maiores_dificuldades = !empty($this->maiores_dificuldades) ? $this->maiores_dificuldades : null;
+        $stmt->bindParam(':maiores_dificuldades', $maiores_dificuldades);
+        $acesso_internet_casa = !empty($this->acesso_internet_casa) ? $this->acesso_internet_casa : null;
+        $stmt->bindParam(':acesso_internet_casa', $acesso_internet_casa);
+        $local_estudo = !empty($this->local_estudo) ? $this->local_estudo : null;
+        $stmt->bindParam(':local_estudo', $local_estudo);
+        $rotina_estudo_casa = !empty($this->rotina_estudo_casa) ? $this->rotina_estudo_casa : null;
+        $stmt->bindParam(':rotina_estudo_casa', $rotina_estudo_casa);
+        $habito_leitura = !empty($this->habito_leitura) ? $this->habito_leitura : null;
+        $stmt->bindParam(':habito_leitura', $habito_leitura);
+        $atividades_extracurriculares = !empty($this->atividades_extracurriculares) ? $this->atividades_extracurriculares : null;
+        $stmt->bindParam(':atividades_extracurriculares', $atividades_extracurriculares);
+        $acompanhamento_tratamento_especializado = !empty($this->acompanhamento_tratamento_especializado) ? $this->acompanhamento_tratamento_especializado : null;
+        $stmt->bindParam(':acompanhamento_tratamento_especializado', $acompanhamento_tratamento_especializado);
+        $alergias = !empty($this->alergias) ? $this->alergias : null;
+        $stmt->bindParam(':alergias', $alergias);
+        $medicacao_uso_continuo = !empty($this->medicacao_uso_continuo) ? $this->medicacao_uso_continuo : null;
+        $stmt->bindParam(':medicacao_uso_continuo', $medicacao_uso_continuo);
+        $situacao_marcante_vida = !empty($this->situacao_marcante_vida) ? $this->situacao_marcante_vida : null;
+        $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -167,7 +221,23 @@ class Aluno {
                       razao_escolha_ifrs = :razao_escolha_ifrs,
                       expectativa_estudante_familia = :expectativa_estudante_familia,
                       conhecimento_curso_tecnico = :conhecimento_curso_tecnico,
-                      rede_atendimento_familia = :rede_atendimento_familia
+                      rede_atendimento_familia = :rede_atendimento_familia,
+                      estabelecimento_ensino_fundamental = :estabelecimento_ensino_fundamental,
+                      monitoria_atendimento_reprovacao_fundamental = :monitoria_atendimento_reprovacao_fundamental,
+                      deficiencia_necessidade_especifica = :deficiencia_necessidade_especifica,
+                      necessidade_adequacao_aprendizagem = :necessidade_adequacao_aprendizagem,
+                      medidas_disciplinares = :medidas_disciplinares,
+                      bullying = :bullying,
+                      maiores_dificuldades = :maiores_dificuldades,
+                      acesso_internet_casa = :acesso_internet_casa,
+                      local_estudo = :local_estudo,
+                      rotina_estudo_casa = :rotina_estudo_casa,
+                      habito_leitura = :habito_leitura,
+                      atividades_extracurriculares = :atividades_extracurriculares,
+                      acompanhamento_tratamento_especializado = :acompanhamento_tratamento_especializado,
+                      alergias = :alergias,
+                      medicacao_uso_continuo = :medicacao_uso_continuo,
+                      situacao_marcante_vida = :situacao_marcante_vida
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -227,6 +297,38 @@ class Aluno {
         $stmt->bindParam(':conhecimento_curso_tecnico', $conhecimento_curso_tecnico);
         $rede_atendimento_familia = !empty($this->rede_atendimento_familia) ? $this->rede_atendimento_familia : null;
         $stmt->bindParam(':rede_atendimento_familia', $rede_atendimento_familia);
+        $estabelecimento_ensino_fundamental = !empty($this->estabelecimento_ensino_fundamental) ? $this->estabelecimento_ensino_fundamental : null;
+        $stmt->bindParam(':estabelecimento_ensino_fundamental', $estabelecimento_ensino_fundamental);
+        $monitoria_atendimento_reprovacao_fundamental = !empty($this->monitoria_atendimento_reprovacao_fundamental) ? $this->monitoria_atendimento_reprovacao_fundamental : null;
+        $stmt->bindParam(':monitoria_atendimento_reprovacao_fundamental', $monitoria_atendimento_reprovacao_fundamental);
+        $deficiencia_necessidade_especifica = !empty($this->deficiencia_necessidade_especifica) ? $this->deficiencia_necessidade_especifica : null;
+        $stmt->bindParam(':deficiencia_necessidade_especifica', $deficiencia_necessidade_especifica);
+        $necessidade_adequacao_aprendizagem = !empty($this->necessidade_adequacao_aprendizagem) ? $this->necessidade_adequacao_aprendizagem : null;
+        $stmt->bindParam(':necessidade_adequacao_aprendizagem', $necessidade_adequacao_aprendizagem);
+        $medidas_disciplinares = !empty($this->medidas_disciplinares) ? $this->medidas_disciplinares : null;
+        $stmt->bindParam(':medidas_disciplinares', $medidas_disciplinares);
+        $bullying = !empty($this->bullying) ? $this->bullying : null;
+        $stmt->bindParam(':bullying', $bullying);
+        $maiores_dificuldades = !empty($this->maiores_dificuldades) ? $this->maiores_dificuldades : null;
+        $stmt->bindParam(':maiores_dificuldades', $maiores_dificuldades);
+        $acesso_internet_casa = !empty($this->acesso_internet_casa) ? $this->acesso_internet_casa : null;
+        $stmt->bindParam(':acesso_internet_casa', $acesso_internet_casa);
+        $local_estudo = !empty($this->local_estudo) ? $this->local_estudo : null;
+        $stmt->bindParam(':local_estudo', $local_estudo);
+        $rotina_estudo_casa = !empty($this->rotina_estudo_casa) ? $this->rotina_estudo_casa : null;
+        $stmt->bindParam(':rotina_estudo_casa', $rotina_estudo_casa);
+        $habito_leitura = !empty($this->habito_leitura) ? $this->habito_leitura : null;
+        $stmt->bindParam(':habito_leitura', $habito_leitura);
+        $atividades_extracurriculares = !empty($this->atividades_extracurriculares) ? $this->atividades_extracurriculares : null;
+        $stmt->bindParam(':atividades_extracurriculares', $atividades_extracurriculares);
+        $acompanhamento_tratamento_especializado = !empty($this->acompanhamento_tratamento_especializado) ? $this->acompanhamento_tratamento_especializado : null;
+        $stmt->bindParam(':acompanhamento_tratamento_especializado', $acompanhamento_tratamento_especializado);
+        $alergias = !empty($this->alergias) ? $this->alergias : null;
+        $stmt->bindParam(':alergias', $alergias);
+        $medicacao_uso_continuo = !empty($this->medicacao_uso_continuo) ? $this->medicacao_uso_continuo : null;
+        $stmt->bindParam(':medicacao_uso_continuo', $medicacao_uso_continuo);
+        $situacao_marcante_vida = !empty($this->situacao_marcante_vida) ? $this->situacao_marcante_vida : null;
+        $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
 
         if ($stmt->execute()) {
             return true;

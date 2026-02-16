@@ -937,6 +937,7 @@ if ($aluno_id) {
                         <div class="row">
                             <div class="col-md-12">
                                 <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                                <h6 class="mt-2 mb-3">Geral</h6>
                                 <div class="mb-3">
                                     <strong>Identidade de gênero:</strong>
                                     <div id="ficha_identidade_genero" class="text-muted mt-1 ficha-text">-</div>
@@ -973,9 +974,77 @@ if ($aluno_id) {
                                     <strong>Conhecimento sobre curso técnico:</strong>
                                     <div id="ficha_conhecimento_curso_tecnico" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
+                                <hr>
+                                <h6 class="mt-2 mb-3">Percurso Formativo</h6>
+                                <div class="mb-3">
+                                    <strong>Estabelecimento onde cursou o Ensino Fundamental:</strong>
+                                    <div id="ficha_estabelecimento_ensino_fundamental" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Monitoria, atendimento especializado ou reprovação no Ensino Fundamental:</strong>
+                                    <div id="ficha_monitoria_atendimento_reprovacao_fundamental" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Deficiência ou necessidade específica:</strong>
+                                    <div id="ficha_deficiencia_necessidade_especifica" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Necessidade de adequação física ou de metodologia para aprendizagem:</strong>
+                                    <div id="ficha_necessidade_adequacao_aprendizagem" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Situações envolvendo medidas disciplinares:</strong>
+                                    <div id="ficha_medidas_disciplinares" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Bullying, sofrido ou praticado:</strong>
+                                    <div id="ficha_bullying" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Maiores dificuldades:</strong>
+                                    <div id="ficha_maiores_dificuldades" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Acesso à internet em casa (qual equipamento):</strong>
+                                    <div id="ficha_acesso_internet_casa" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Local de estudo:</strong>
+                                    <div id="ficha_local_estudo" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Rotina de estudo em casa:</strong>
+                                    <div id="ficha_rotina_estudo_casa" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Hábito de leitura:</strong>
+                                    <div id="ficha_habito_leitura" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Atividades extra-curriculares:</strong>
+                                    <div id="ficha_atividades_extracurriculares" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <hr>
+                                <h6 class="mt-2 mb-3">Saúde e outras redes de atenção</h6>
                                 <div class="mb-3">
                                     <strong>Rede de atendimento da família:</strong>
                                     <div id="ficha_rede_atendimento_familia" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Acompanhamento/tratamento especializado:</strong>
+                                    <div id="ficha_acompanhamento_tratamento_especializado" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Alergias:</strong>
+                                    <div id="ficha_alergias" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Medicação de uso contínuo:</strong>
+                                    <div id="ficha_medicacao_uso_continuo" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Situação marcante na vida:</strong>
+                                    <div id="ficha_situacao_marcante_vida" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
                             </div>
                         </div>

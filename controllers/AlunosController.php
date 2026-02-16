@@ -293,6 +293,22 @@ class AlunosController extends Controller {
             $this->aluno->expectativa_estudante_familia = $_POST['expectativa_estudante_familia'] ?? '';
             $this->aluno->conhecimento_curso_tecnico = $_POST['conhecimento_curso_tecnico'] ?? '';
             $this->aluno->rede_atendimento_familia = $_POST['rede_atendimento_familia'] ?? '';
+            $this->aluno->estabelecimento_ensino_fundamental = $_POST['estabelecimento_ensino_fundamental'] ?? '';
+            $this->aluno->monitoria_atendimento_reprovacao_fundamental = $_POST['monitoria_atendimento_reprovacao_fundamental'] ?? '';
+            $this->aluno->deficiencia_necessidade_especifica = $_POST['deficiencia_necessidade_especifica'] ?? '';
+            $this->aluno->necessidade_adequacao_aprendizagem = $_POST['necessidade_adequacao_aprendizagem'] ?? '';
+            $this->aluno->medidas_disciplinares = $_POST['medidas_disciplinares'] ?? '';
+            $this->aluno->bullying = $_POST['bullying'] ?? '';
+            $this->aluno->maiores_dificuldades = $_POST['maiores_dificuldades'] ?? '';
+            $this->aluno->acesso_internet_casa = $_POST['acesso_internet_casa'] ?? '';
+            $this->aluno->local_estudo = $_POST['local_estudo'] ?? '';
+            $this->aluno->rotina_estudo_casa = $_POST['rotina_estudo_casa'] ?? '';
+            $this->aluno->habito_leitura = $_POST['habito_leitura'] ?? '';
+            $this->aluno->atividades_extracurriculares = $_POST['atividades_extracurriculares'] ?? '';
+            $this->aluno->acompanhamento_tratamento_especializado = $_POST['acompanhamento_tratamento_especializado'] ?? '';
+            $this->aluno->alergias = $_POST['alergias'] ?? '';
+            $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
+            $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
         } else {
             $this->aluno->identidade_genero = null;
             $this->aluno->grupo_familiar = null;
@@ -304,6 +320,22 @@ class AlunosController extends Controller {
             $this->aluno->expectativa_estudante_familia = null;
             $this->aluno->conhecimento_curso_tecnico = null;
             $this->aluno->rede_atendimento_familia = null;
+            $this->aluno->estabelecimento_ensino_fundamental = null;
+            $this->aluno->monitoria_atendimento_reprovacao_fundamental = null;
+            $this->aluno->deficiencia_necessidade_especifica = null;
+            $this->aluno->necessidade_adequacao_aprendizagem = null;
+            $this->aluno->medidas_disciplinares = null;
+            $this->aluno->bullying = null;
+            $this->aluno->maiores_dificuldades = null;
+            $this->aluno->acesso_internet_casa = null;
+            $this->aluno->local_estudo = null;
+            $this->aluno->rotina_estudo_casa = null;
+            $this->aluno->habito_leitura = null;
+            $this->aluno->atividades_extracurriculares = null;
+            $this->aluno->acompanhamento_tratamento_especializado = null;
+            $this->aluno->alergias = null;
+            $this->aluno->medicacao_uso_continuo = null;
+            $this->aluno->situacao_marcante_vida = null;
         }
         
         if (empty($this->aluno->nome)) {
@@ -420,6 +452,22 @@ class AlunosController extends Controller {
             $this->aluno->expectativa_estudante_familia = $_POST['expectativa_estudante_familia'] ?? '';
             $this->aluno->conhecimento_curso_tecnico = $_POST['conhecimento_curso_tecnico'] ?? '';
             $this->aluno->rede_atendimento_familia = $_POST['rede_atendimento_familia'] ?? '';
+            $this->aluno->estabelecimento_ensino_fundamental = $_POST['estabelecimento_ensino_fundamental'] ?? '';
+            $this->aluno->monitoria_atendimento_reprovacao_fundamental = $_POST['monitoria_atendimento_reprovacao_fundamental'] ?? '';
+            $this->aluno->deficiencia_necessidade_especifica = $_POST['deficiencia_necessidade_especifica'] ?? '';
+            $this->aluno->necessidade_adequacao_aprendizagem = $_POST['necessidade_adequacao_aprendizagem'] ?? '';
+            $this->aluno->medidas_disciplinares = $_POST['medidas_disciplinares'] ?? '';
+            $this->aluno->bullying = $_POST['bullying'] ?? '';
+            $this->aluno->maiores_dificuldades = $_POST['maiores_dificuldades'] ?? '';
+            $this->aluno->acesso_internet_casa = $_POST['acesso_internet_casa'] ?? '';
+            $this->aluno->local_estudo = $_POST['local_estudo'] ?? '';
+            $this->aluno->rotina_estudo_casa = $_POST['rotina_estudo_casa'] ?? '';
+            $this->aluno->habito_leitura = $_POST['habito_leitura'] ?? '';
+            $this->aluno->atividades_extracurriculares = $_POST['atividades_extracurriculares'] ?? '';
+            $this->aluno->acompanhamento_tratamento_especializado = $_POST['acompanhamento_tratamento_especializado'] ?? '';
+            $this->aluno->alergias = $_POST['alergias'] ?? '';
+            $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
+            $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
         } else {
             $this->aluno->identidade_genero = $aluno_atual['identidade_genero'] ?? null;
             $this->aluno->grupo_familiar = $aluno_atual['grupo_familiar'] ?? null;
@@ -431,6 +479,22 @@ class AlunosController extends Controller {
             $this->aluno->expectativa_estudante_familia = $aluno_atual['expectativa_estudante_familia'] ?? null;
             $this->aluno->conhecimento_curso_tecnico = $aluno_atual['conhecimento_curso_tecnico'] ?? null;
             $this->aluno->rede_atendimento_familia = $aluno_atual['rede_atendimento_familia'] ?? null;
+            $this->aluno->estabelecimento_ensino_fundamental = $aluno_atual['estabelecimento_ensino_fundamental'] ?? null;
+            $this->aluno->monitoria_atendimento_reprovacao_fundamental = $aluno_atual['monitoria_atendimento_reprovacao_fundamental'] ?? null;
+            $this->aluno->deficiencia_necessidade_especifica = $aluno_atual['deficiencia_necessidade_especifica'] ?? null;
+            $this->aluno->necessidade_adequacao_aprendizagem = $aluno_atual['necessidade_adequacao_aprendizagem'] ?? null;
+            $this->aluno->medidas_disciplinares = $aluno_atual['medidas_disciplinares'] ?? null;
+            $this->aluno->bullying = $aluno_atual['bullying'] ?? null;
+            $this->aluno->maiores_dificuldades = $aluno_atual['maiores_dificuldades'] ?? null;
+            $this->aluno->acesso_internet_casa = $aluno_atual['acesso_internet_casa'] ?? null;
+            $this->aluno->local_estudo = $aluno_atual['local_estudo'] ?? null;
+            $this->aluno->rotina_estudo_casa = $aluno_atual['rotina_estudo_casa'] ?? null;
+            $this->aluno->habito_leitura = $aluno_atual['habito_leitura'] ?? null;
+            $this->aluno->atividades_extracurriculares = $aluno_atual['atividades_extracurriculares'] ?? null;
+            $this->aluno->acompanhamento_tratamento_especializado = $aluno_atual['acompanhamento_tratamento_especializado'] ?? null;
+            $this->aluno->alergias = $aluno_atual['alergias'] ?? null;
+            $this->aluno->medicacao_uso_continuo = $aluno_atual['medicacao_uso_continuo'] ?? null;
+            $this->aluno->situacao_marcante_vida = $aluno_atual['situacao_marcante_vida'] ?? null;
         }
         
         // Handle photo upload

@@ -343,6 +343,7 @@
                     <?php if ($user->isNivel0()): ?>
                     <hr>
                     <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                    <h6 class="mt-2 mb-3">Geral</h6>
                     <div class="mb-3">
                         <label for="modal_identidade_genero" class="form-label">Identidade de gênero</label>
                         <textarea class="form-control" id="modal_identidade_genero" name="identidade_genero" rows="2"></textarea>
@@ -379,9 +380,77 @@
                         <label for="modal_conhecimento_curso_tecnico" class="form-label">Conhecimento sobre curso técnico</label>
                         <textarea class="form-control" id="modal_conhecimento_curso_tecnico" name="conhecimento_curso_tecnico" rows="2"></textarea>
                     </div>
+                    <hr>
+                    <h6 class="mt-2 mb-3">Percurso Formativo</h6>
+                    <div class="mb-3">
+                        <label for="modal_estabelecimento_ensino_fundamental" class="form-label">Estabelecimento onde cursou o Ensino Fundamental</label>
+                        <textarea class="form-control" id="modal_estabelecimento_ensino_fundamental" name="estabelecimento_ensino_fundamental" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_monitoria_atendimento_reprovacao_fundamental" class="form-label">Monitoria, atendimento especializado ou reprovação no Ensino Fundamental</label>
+                        <textarea class="form-control" id="modal_monitoria_atendimento_reprovacao_fundamental" name="monitoria_atendimento_reprovacao_fundamental" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_deficiencia_necessidade_especifica" class="form-label">Deficiência ou necessidade específica</label>
+                        <textarea class="form-control" id="modal_deficiencia_necessidade_especifica" name="deficiencia_necessidade_especifica" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_necessidade_adequacao_aprendizagem" class="form-label">Necessidade de adequação física ou de metodologia para aprendizagem</label>
+                        <textarea class="form-control" id="modal_necessidade_adequacao_aprendizagem" name="necessidade_adequacao_aprendizagem" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_medidas_disciplinares" class="form-label">Situações envolvendo medidas disciplinares</label>
+                        <textarea class="form-control" id="modal_medidas_disciplinares" name="medidas_disciplinares" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_bullying" class="form-label">Bullying, sofrido ou praticado</label>
+                        <textarea class="form-control" id="modal_bullying" name="bullying" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_maiores_dificuldades" class="form-label">Maiores dificuldades</label>
+                        <textarea class="form-control" id="modal_maiores_dificuldades" name="maiores_dificuldades" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_acesso_internet_casa" class="form-label">Acesso à internet em casa (qual equipamento)</label>
+                        <textarea class="form-control" id="modal_acesso_internet_casa" name="acesso_internet_casa" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_local_estudo" class="form-label">Local de estudo</label>
+                        <textarea class="form-control" id="modal_local_estudo" name="local_estudo" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_rotina_estudo_casa" class="form-label">Rotina de estudo em casa</label>
+                        <textarea class="form-control" id="modal_rotina_estudo_casa" name="rotina_estudo_casa" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_habito_leitura" class="form-label">Hábito de leitura</label>
+                        <textarea class="form-control" id="modal_habito_leitura" name="habito_leitura" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_atividades_extracurriculares" class="form-label">Atividades extra-curriculares</label>
+                        <textarea class="form-control" id="modal_atividades_extracurriculares" name="atividades_extracurriculares" rows="2"></textarea>
+                    </div>
+                    <hr>
+                    <h6 class="mt-2 mb-3">Saúde e outras redes de atenção</h6>
                     <div class="mb-3">
                         <label for="modal_rede_atendimento_familia" class="form-label">Rede de atendimento da família</label>
                         <textarea class="form-control" id="modal_rede_atendimento_familia" name="rede_atendimento_familia" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_acompanhamento_tratamento_especializado" class="form-label">Acompanhamento/tratamento especializado</label>
+                        <textarea class="form-control" id="modal_acompanhamento_tratamento_especializado" name="acompanhamento_tratamento_especializado" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_alergias" class="form-label">Alergias</label>
+                        <textarea class="form-control" id="modal_alergias" name="alergias" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_medicacao_uso_continuo" class="form-label">Medicação de uso contínuo</label>
+                        <textarea class="form-control" id="modal_medicacao_uso_continuo" name="medicacao_uso_continuo" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_situacao_marcante_vida" class="form-label">Situação marcante na vida</label>
+                        <textarea class="form-control" id="modal_situacao_marcante_vida" name="situacao_marcante_vida" rows="2"></textarea>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -520,6 +589,7 @@
                 <div class="row">
                     <div class="col-md-12">
                         <h6 class="mb-3"><i class="bi bi-people"></i> Dados da Assistência Estudantil</h6>
+                        <h6 class="mt-2 mb-3">Geral</h6>
                         <div class="mb-3">
                             <strong>Identidade de gênero:</strong>
                             <div id="ficha_identidade_genero" class="text-muted mt-1 ficha-text">-</div>
@@ -556,9 +626,77 @@
                             <strong>Conhecimento sobre curso técnico:</strong>
                             <div id="ficha_conhecimento_curso_tecnico" class="text-muted mt-1 ficha-text">-</div>
                         </div>
+                        <hr>
+                        <h6 class="mt-2 mb-3">Percurso Formativo</h6>
+                        <div class="mb-3">
+                            <strong>Estabelecimento onde cursou o Ensino Fundamental:</strong>
+                            <div id="ficha_estabelecimento_ensino_fundamental" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Monitoria, atendimento especializado ou reprovação no Ensino Fundamental:</strong>
+                            <div id="ficha_monitoria_atendimento_reprovacao_fundamental" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Deficiência ou necessidade específica:</strong>
+                            <div id="ficha_deficiencia_necessidade_especifica" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Necessidade de adequação física ou de metodologia para aprendizagem:</strong>
+                            <div id="ficha_necessidade_adequacao_aprendizagem" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Situações envolvendo medidas disciplinares:</strong>
+                            <div id="ficha_medidas_disciplinares" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Bullying, sofrido ou praticado:</strong>
+                            <div id="ficha_bullying" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Maiores dificuldades:</strong>
+                            <div id="ficha_maiores_dificuldades" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Acesso à internet em casa (qual equipamento):</strong>
+                            <div id="ficha_acesso_internet_casa" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Local de estudo:</strong>
+                            <div id="ficha_local_estudo" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Rotina de estudo em casa:</strong>
+                            <div id="ficha_rotina_estudo_casa" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Hábito de leitura:</strong>
+                            <div id="ficha_habito_leitura" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Atividades extra-curriculares:</strong>
+                            <div id="ficha_atividades_extracurriculares" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <hr>
+                        <h6 class="mt-2 mb-3">Saúde e outras redes de atenção</h6>
                         <div class="mb-3">
                             <strong>Rede de atendimento da família:</strong>
                             <div id="ficha_rede_atendimento_familia" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Acompanhamento/tratamento especializado:</strong>
+                            <div id="ficha_acompanhamento_tratamento_especializado" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Alergias:</strong>
+                            <div id="ficha_alergias" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Medicação de uso contínuo:</strong>
+                            <div id="ficha_medicacao_uso_continuo" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Situação marcante na vida:</strong>
+                            <div id="ficha_situacao_marcante_vida" class="text-muted mt-1 ficha-text">-</div>
                         </div>
                     </div>
                 </div>
