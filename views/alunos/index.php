@@ -365,10 +365,6 @@
                         <textarea class="form-control" id="modal_necessidade_mudanca" name="necessidade_mudanca" rows="2"></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="modal_meio_transporte" class="form-label">Meio de transporte</label>
-                        <textarea class="form-control" id="modal_meio_transporte" name="meio_transporte" rows="2"></textarea>
-                    </div>
-                    <div class="mb-3">
                         <label for="modal_razao_escolha_ifrs" class="form-label">Razão para escolha do IFRS, Campus e Curso</label>
                         <textarea class="form-control" id="modal_razao_escolha_ifrs" name="razao_escolha_ifrs" rows="2"></textarea>
                     </div>
@@ -451,6 +447,16 @@
                     <div class="mb-3">
                         <label for="modal_situacao_marcante_vida" class="form-label">Situação marcante na vida</label>
                         <textarea class="form-control" id="modal_situacao_marcante_vida" name="situacao_marcante_vida" rows="2"></textarea>
+                    </div>
+                    <hr>
+                    <h6 class="mt-2 mb-3">Auxílios de direitos estudantis</h6>
+                    <div class="mb-3">
+                        <label for="modal_meio_transporte" class="form-label">Meio de transporte</label>
+                        <textarea class="form-control" id="modal_meio_transporte" name="meio_transporte" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modal_auxilios_direitos_estudantis" class="form-label">Auxílios</label>
+                        <textarea class="form-control" id="modal_auxilios_direitos_estudantis" name="auxilios_direitos_estudantis" rows="2"></textarea>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -611,10 +617,6 @@
                             <div id="ficha_necessidade_mudanca" class="text-muted mt-1 ficha-text">-</div>
                         </div>
                         <div class="mb-3">
-                            <strong>Meio de transporte:</strong>
-                            <div id="ficha_meio_transporte" class="text-muted mt-1 ficha-text">-</div>
-                        </div>
-                        <div class="mb-3">
                             <strong>Razão para escolha do IFRS, Campus e Curso:</strong>
                             <div id="ficha_razao_escolha_ifrs" class="text-muted mt-1 ficha-text">-</div>
                         </div>
@@ -697,6 +699,16 @@
                         <div class="mb-3">
                             <strong>Situação marcante na vida:</strong>
                             <div id="ficha_situacao_marcante_vida" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <hr>
+                        <h6 class="mt-2 mb-3">Auxílios de direitos estudantis</h6>
+                        <div class="mb-3">
+                            <strong>Meio de transporte:</strong>
+                            <div id="ficha_meio_transporte" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Auxílios:</strong>
+                            <div id="ficha_auxilios_direitos_estudantis" class="text-muted mt-1 ficha-text">-</div>
                         </div>
                     </div>
                 </div>

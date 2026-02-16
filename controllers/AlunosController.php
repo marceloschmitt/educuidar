@@ -309,6 +309,7 @@ class AlunosController extends Controller {
             $this->aluno->alergias = $_POST['alergias'] ?? '';
             $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
             $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
+            $this->aluno->auxilios_direitos_estudantis = $_POST['auxilios_direitos_estudantis'] ?? '';
         } else {
             $this->aluno->identidade_genero = null;
             $this->aluno->grupo_familiar = null;
@@ -336,6 +337,7 @@ class AlunosController extends Controller {
             $this->aluno->alergias = null;
             $this->aluno->medicacao_uso_continuo = null;
             $this->aluno->situacao_marcante_vida = null;
+            $this->aluno->auxilios_direitos_estudantis = null;
         }
         
         if (empty($this->aluno->nome)) {
@@ -468,6 +470,7 @@ class AlunosController extends Controller {
             $this->aluno->alergias = $_POST['alergias'] ?? '';
             $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
             $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
+            $this->aluno->auxilios_direitos_estudantis = $_POST['auxilios_direitos_estudantis'] ?? '';
         } else {
             $this->aluno->identidade_genero = $aluno_atual['identidade_genero'] ?? null;
             $this->aluno->grupo_familiar = $aluno_atual['grupo_familiar'] ?? null;
@@ -495,6 +498,7 @@ class AlunosController extends Controller {
             $this->aluno->alergias = $aluno_atual['alergias'] ?? null;
             $this->aluno->medicacao_uso_continuo = $aluno_atual['medicacao_uso_continuo'] ?? null;
             $this->aluno->situacao_marcante_vida = $aluno_atual['situacao_marcante_vida'] ?? null;
+            $this->aluno->auxilios_direitos_estudantis = $aluno_atual['auxilios_direitos_estudantis'] ?? null;
         }
         
         // Handle photo upload

@@ -240,6 +240,9 @@ function resetForm() {
     if (document.getElementById('modal_situacao_marcante_vida')) {
         document.getElementById('modal_situacao_marcante_vida').value = '';
     }
+    if (document.getElementById('modal_auxilios_direitos_estudantis')) {
+        document.getElementById('modal_auxilios_direitos_estudantis').value = '';
+    }
     document.getElementById('modal_foto').value = '';
     document.getElementById('foto_preview').innerHTML = '';
     var fotoAtual = document.getElementById('foto_atual');
@@ -417,6 +420,7 @@ function viewFichaAluno(aluno) {
     setFichaTexto('ficha_alergias', aluno.alergias || '');
     setFichaTexto('ficha_medicacao_uso_continuo', aluno.medicacao_uso_continuo || '');
     setFichaTexto('ficha_situacao_marcante_vida', aluno.situacao_marcante_vida || '');
+    setFichaTexto('ficha_auxilios_direitos_estudantis', aluno.auxilios_direitos_estudantis || '');
     
     // Armazenar dados do aluno para o botão de editar
     var modalFicha = document.getElementById('modalFichaAluno');
@@ -537,6 +541,9 @@ function editAluno(aluno) {
     }
     if (document.getElementById('modal_situacao_marcante_vida')) {
         document.getElementById('modal_situacao_marcante_vida').value = aluno.situacao_marcante_vida || '';
+    }
+    if (document.getElementById('modal_auxilios_direitos_estudantis')) {
+        document.getElementById('modal_auxilios_direitos_estudantis').value = aluno.auxilios_direitos_estudantis || '';
     }
     document.getElementById('modalTitle').textContent = 'Editar Aluno';
     document.getElementById('modalSubmitText').textContent = 'Salvar';

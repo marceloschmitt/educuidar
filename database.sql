@@ -96,6 +96,7 @@ CREATE TABLE IF NOT EXISTS alunos (
     alergias TEXT NULL,
     medicacao_uso_continuo TEXT NULL,
     situacao_marcante_vida TEXT NULL,
+    auxilios_direitos_estudantis TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_nome (nome),

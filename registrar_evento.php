@@ -959,10 +959,6 @@ if ($aluno_id) {
                                     <div id="ficha_necessidade_mudanca" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
                                 <div class="mb-3">
-                                    <strong>Meio de transporte:</strong>
-                                    <div id="ficha_meio_transporte" class="text-muted mt-1 ficha-text">-</div>
-                                </div>
-                                <div class="mb-3">
                                     <strong>Razão para escolha do IFRS, Campus e Curso:</strong>
                                     <div id="ficha_razao_escolha_ifrs" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
@@ -1045,6 +1041,16 @@ if ($aluno_id) {
                                 <div class="mb-3">
                                     <strong>Situação marcante na vida:</strong>
                                     <div id="ficha_situacao_marcante_vida" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <hr>
+                                <h6 class="mt-2 mb-3">Auxílios de direitos estudantis</h6>
+                                <div class="mb-3">
+                                    <strong>Meio de transporte:</strong>
+                                    <div id="ficha_meio_transporte" class="text-muted mt-1 ficha-text">-</div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Auxílios:</strong>
+                                    <div id="ficha_auxilios_direitos_estudantis" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
                             </div>
                         </div>

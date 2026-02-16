@@ -51,6 +51,7 @@ class Aluno {
     public $alergias;
     public $medicacao_uso_continuo;
     public $situacao_marcante_vida;
+    public $auxilios_direitos_estudantis;
     public $created_at;
 
     public function __construct($db) {
@@ -66,7 +67,7 @@ class Aluno {
                    meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia,
                    estabelecimento_ensino_fundamental, monitoria_atendimento_reprovacao_fundamental, deficiencia_necessidade_especifica, necessidade_adequacao_aprendizagem,
                    medidas_disciplinares, bullying, maiores_dificuldades, acesso_internet_casa, local_estudo, rotina_estudo_casa, habito_leitura, atividades_extracurriculares,
-                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida) 
+                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida, auxilios_direitos_estudantis) 
                   VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
                           :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
                           :indigena, :pei, :profissionais_referencia, :outras_observacoes,
@@ -74,7 +75,7 @@ class Aluno {
                           :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia,
                           :estabelecimento_ensino_fundamental, :monitoria_atendimento_reprovacao_fundamental, :deficiencia_necessidade_especifica, :necessidade_adequacao_aprendizagem,
                           :medidas_disciplinares, :bullying, :maiores_dificuldades, :acesso_internet_casa, :local_estudo, :rotina_estudo_casa, :habito_leitura, :atividades_extracurriculares,
-                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida)";
+                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida, :auxilios_direitos_estudantis)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -164,6 +165,8 @@ class Aluno {
         $stmt->bindParam(':medicacao_uso_continuo', $medicacao_uso_continuo);
         $situacao_marcante_vida = !empty($this->situacao_marcante_vida) ? $this->situacao_marcante_vida : null;
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
+        $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
+        $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -237,7 +240,8 @@ class Aluno {
                       acompanhamento_tratamento_especializado = :acompanhamento_tratamento_especializado,
                       alergias = :alergias,
                       medicacao_uso_continuo = :medicacao_uso_continuo,
-                      situacao_marcante_vida = :situacao_marcante_vida
+                      situacao_marcante_vida = :situacao_marcante_vida,
+                      auxilios_direitos_estudantis = :auxilios_direitos_estudantis
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -329,6 +333,8 @@ class Aluno {
         $stmt->bindParam(':medicacao_uso_continuo', $medicacao_uso_continuo);
         $situacao_marcante_vida = !empty($this->situacao_marcante_vida) ? $this->situacao_marcante_vida : null;
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
+        $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
+        $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
 
         if ($stmt->execute()) {
             return true;
