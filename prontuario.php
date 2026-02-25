@@ -39,6 +39,18 @@ if (!$aluno_data) {
     exit;
 }
 
+$filtro_curso = $_GET['filtro_curso'] ?? '';
+$filtro_turma = $_GET['filtro_turma'] ?? '';
+$filtro_nome = $_GET['filtro_nome'] ?? '';
+$voltar_params = [];
+if ((string)$filtro_curso !== '') $voltar_params[] = 'filtro_curso=' . urlencode($filtro_curso);
+if ((string)$filtro_turma !== '') $voltar_params[] = 'filtro_turma=' . urlencode($filtro_turma);
+if ((string)$filtro_nome !== '') $voltar_params[] = 'filtro_nome=' . urlencode($filtro_nome);
+$voltar_alunos_url = 'alunos.php';
+if (!empty($voltar_params)) $voltar_alunos_url .= '?' . implode('&', $voltar_params);
+$voltar_registrar_url = 'registrar_evento.php?aluno_id=' . urlencode($aluno_id);
+if (!empty($voltar_params)) $voltar_registrar_url .= '&' . implode('&', $voltar_params);
+
 // Get ano corrente e filtro de ano
 $ano_corrente = $configuracao->getAnoCorrente();
 $filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
@@ -149,7 +161,7 @@ require_once 'includes/header.php';
                         <i class="bi bi-printer"></i> Imprimir
                     </button>
                     <?php endif; ?>
-                    <a href="registrar_evento.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-sm btn-secondary">
+                    <a href="<?php echo htmlspecialchars($voltar_registrar_url); ?>" class="btn btn-sm btn-secondary">
                         <i class="bi bi-arrow-left"></i> Voltar para Aluno
                     </a>
                 </div>
@@ -540,7 +552,7 @@ require_once 'includes/header.php';
             </div>
             <div class="modal-footer">
                 <?php if ($user->isNivel0()): ?>
-                <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
+                <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('prontuario.php?aluno_id=' . $aluno_id . (empty($voltar_params) ? '' : '&' . implode('&', $voltar_params))); ?><?php echo empty($voltar_params) ? '' : '&' . implode('&', $voltar_params); ?>" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Editar Aluno
                 </a>
                 <?php endif; ?>

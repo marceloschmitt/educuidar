@@ -367,6 +367,13 @@ $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_nome = $_GET['filtro_nome'] ?? '';
 $aluno_id = $_GET['aluno_id'] ?? '';
 
+$voltar_params = [];
+if ((string)$filtro_curso !== '') $voltar_params[] = 'filtro_curso=' . urlencode($filtro_curso);
+if ((string)$filtro_turma !== '') $voltar_params[] = 'filtro_turma=' . urlencode($filtro_turma);
+if ((string)$filtro_nome !== '') $voltar_params[] = 'filtro_nome=' . urlencode($filtro_nome);
+$voltar_alunos_url = 'alunos.php';
+if (!empty($voltar_params)) $voltar_alunos_url .= '?' . implode('&', $voltar_params);
+
 // Get ano corrente
 $ano_corrente = $configuracao->getAnoCorrente();
 $filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
@@ -422,7 +429,7 @@ if ($aluno_id) {
     
     if (!$turma_corrente) {
         echo '<div class="alert alert-warning">Este aluno não está associado a nenhuma turma do ano (' . $filtro_ano . ').</div>';
-        echo '<a href="alunos.php" class="btn btn-secondary">Voltar para Alunos</a>';
+        echo '<a href="' . htmlspecialchars($voltar_alunos_url) . '" class="btn btn-secondary">Voltar para Alunos</a>';
         require_once 'includes/footer.php';
         exit;
     }
@@ -490,7 +497,7 @@ if ($aluno_id) {
                 <h5 class="mb-0">
                     <i class="bi bi-person"></i> <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
-                <a href="alunos.php" class="btn btn-sm btn-secondary">
+                <a href="<?php echo htmlspecialchars($voltar_alunos_url); ?>" class="btn btn-sm btn-secondary">
                     <i class="bi bi-arrow-left"></i> Voltar para Alunos
                 </a>
             </div>
@@ -549,7 +556,7 @@ if ($aluno_id) {
                     <button type="button" class="btn btn-secondary btn-sm me-2 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
-                    <a href="prontuario.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?>" class="btn btn-info btn-sm me-2">
+                    <a href="prontuario.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?><?php echo empty($voltar_params) ? '' : '&' . implode('&', $voltar_params); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
                     <?php if (!$user->isNivel2()): ?>
@@ -1058,7 +1065,7 @@ if ($aluno_id) {
                     </div>
                     <div class="modal-footer">
                         <?php if ($user->isNivel0()): ?>
-                        <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('registrar_evento.php?aluno_id=' . $aluno_id); ?>" class="btn btn-primary">
+                        <a href="alunos.php?edit=<?php echo htmlspecialchars($aluno_id); ?>&return_to=<?php echo urlencode('registrar_evento.php?aluno_id=' . $aluno_id . (empty($voltar_params) ? '' : '&' . implode('&', $voltar_params))); ?><?php echo empty($voltar_params) ? '' : '&' . implode('&', $voltar_params); ?>" class="btn btn-primary">
                             <i class="bi bi-pencil"></i> Editar Aluno
                         </a>
                         <?php endif; ?>

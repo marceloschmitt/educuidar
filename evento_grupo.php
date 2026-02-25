@@ -37,6 +37,7 @@ $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($curren
 
 $selected_turma_id = $_GET['turma_id'] ?? ($_POST['turma_id'] ?? '');
 $selected_tipo_evento_id = $_GET['tipo_evento_id'] ?? ($_POST['tipo_evento_id'] ?? '');
+$observacoes_preservar = $_POST['observacoes'] ?? '';
 $alunos_turma = [];
 
 if (!empty($selected_turma_id) && !empty($selected_tipo_evento_id)) {
@@ -84,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $evento->tipo_evento_id = $selected_tipo_evento_id;
                     $evento->data_evento = date('Y-m-d');
                     $evento->hora_evento = date('H:i');
-                    $evento->observacoes = '';
+                    $evento->observacoes = $_POST['observacoes'] ?? '';
                     $evento->prontuario = '';
                     $evento->registrado_por = $user_id;
 
@@ -162,6 +163,11 @@ require_once 'includes/header.php';
                             <input type="hidden" name="action" value="create_group">
                             <input type="hidden" name="turma_id" value="<?php echo htmlspecialchars($selected_turma_id); ?>">
                             <input type="hidden" name="tipo_evento_id" value="<?php echo htmlspecialchars($selected_tipo_evento_id); ?>">
+
+                            <div class="mb-3">
+                                <label for="observacoes" class="form-label">Observações</label>
+                                <textarea class="form-control" id="observacoes" name="observacoes" rows="3" placeholder="Observações comuns a todos os eventos criados"><?php echo htmlspecialchars($observacoes_preservar); ?></textarea>
+                            </div>
 
                             <div class="table-responsive">
                                 <table class="table table-hover">

@@ -12,6 +12,14 @@
 </div>
 <?php endif; ?>
 
+<script>
+window.ALUNOS_FILTROS = {
+    curso: <?php echo json_encode($filtro_curso ?? ''); ?>,
+    turma: <?php echo json_encode($filtro_turma ?? ''); ?>,
+    nome: <?php echo json_encode($filtro_nome ?? ''); ?>
+};
+</script>
+
 <div class="row">
     <div class="col-12">
         <div class="card">

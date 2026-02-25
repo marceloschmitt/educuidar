@@ -4,6 +4,23 @@ function getCurrentUserType() {
     return document.body.getAttribute('data-user-type-id') || '';
 }
 
+function getAlunosFilterQuery() {
+    if (typeof window.ALUNOS_FILTROS === 'undefined') {
+        return '';
+    }
+    var q = [];
+    if (window.ALUNOS_FILTROS.curso) {
+        q.push('filtro_curso=' + encodeURIComponent(window.ALUNOS_FILTROS.curso));
+    }
+    if (window.ALUNOS_FILTROS.turma) {
+        q.push('filtro_turma=' + encodeURIComponent(window.ALUNOS_FILTROS.turma));
+    }
+    if (window.ALUNOS_FILTROS.nome) {
+        q.push('filtro_nome=' + encodeURIComponent(window.ALUNOS_FILTROS.nome));
+    }
+    return q.length ? '&' + q.join('&') : '';
+}
+
 function shouldShowProntuarioForType(prontuarioUserType) {
     if (!prontuarioUserType) {
         return false;
@@ -431,7 +448,7 @@ function viewFichaAluno(aluno) {
     // Atualizar link do prontuário se existir
     var btnProntuario = document.getElementById('btnProntuario');
     if (btnProntuario && aluno.id) {
-        btnProntuario.href = 'prontuario.php?aluno_id=' + aluno.id;
+        btnProntuario.href = 'prontuario.php?aluno_id=' + aluno.id + getAlunosFilterQuery();
     }
     
     // Abrir modal
@@ -1038,12 +1055,12 @@ document.addEventListener('DOMContentLoaded', function() {
             btnViewFicha.setAttribute('data-aluno', JSON.stringify(alunoData));
             
             var linkVerEventos = document.getElementById('contextMenuVerEventos');
-            linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id;
-            
+            linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();
+
             // Configurar link do prontuário se existir
             var linkProntuario = document.getElementById('contextMenuProntuario');
             if (linkProntuario) {
-                linkProntuario.href = 'prontuario.php?aluno_id=' + alunoData.id;
+                linkProntuario.href = 'prontuario.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();
             }
             
             // Mostrar ações de admin se for admin
