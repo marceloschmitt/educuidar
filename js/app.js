@@ -5,19 +5,29 @@ function getCurrentUserType() {
 }
 
 function getAlunosFilterQuery() {
-    if (typeof window.ALUNOS_FILTROS === 'undefined') {
-        return '';
-    }
     var q = [];
-    if (window.ALUNOS_FILTROS.curso) {
-        q.push('filtro_curso=' + encodeURIComponent(window.ALUNOS_FILTROS.curso));
+    var curso, turma, nome;
+    var elCurso = document.getElementById('filtro_curso');
+    var elTurma = document.getElementById('filtro_turma');
+    var elNome = document.getElementById('filtro_nome');
+    if (elCurso && elCurso.value) {
+        curso = elCurso.value;
+    } else if (typeof window.ALUNOS_FILTROS !== 'undefined' && window.ALUNOS_FILTROS.curso) {
+        curso = window.ALUNOS_FILTROS.curso;
     }
-    if (window.ALUNOS_FILTROS.turma) {
-        q.push('filtro_turma=' + encodeURIComponent(window.ALUNOS_FILTROS.turma));
+    if (elTurma && elTurma.value) {
+        turma = elTurma.value;
+    } else if (typeof window.ALUNOS_FILTROS !== 'undefined' && window.ALUNOS_FILTROS.turma) {
+        turma = window.ALUNOS_FILTROS.turma;
     }
-    if (window.ALUNOS_FILTROS.nome) {
-        q.push('filtro_nome=' + encodeURIComponent(window.ALUNOS_FILTROS.nome));
+    if (elNome && elNome.value) {
+        nome = elNome.value;
+    } else if (typeof window.ALUNOS_FILTROS !== 'undefined' && window.ALUNOS_FILTROS.nome) {
+        nome = window.ALUNOS_FILTROS.nome;
     }
+    if (curso) q.push('filtro_curso=' + encodeURIComponent(curso));
+    if (turma) q.push('filtro_turma=' + encodeURIComponent(turma));
+    if (nome) q.push('filtro_nome=' + encodeURIComponent(nome));
     return q.length ? '&' + q.join('&') : '';
 }
 

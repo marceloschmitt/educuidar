@@ -188,6 +188,13 @@ $error = '';
 // Get aluno_id early for delete/update redirect
 $aluno_id = $_GET['aluno_id'] ?? '';
 
+// Preserve filter params for redirects (from current request URL)
+$preserve_filtros = [];
+if (!empty($_GET['filtro_curso'])) $preserve_filtros[] = 'filtro_curso=' . urlencode($_GET['filtro_curso']);
+if (!empty($_GET['filtro_turma'])) $preserve_filtros[] = 'filtro_turma=' . urlencode($_GET['filtro_turma']);
+if (!empty($_GET['filtro_nome'])) $preserve_filtros[] = 'filtro_nome=' . urlencode($_GET['filtro_nome']);
+$preserve_query = empty($preserve_filtros) ? '' : '&' . implode('&', $preserve_filtros);
+
 // Handle update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update') {
     $evento->id = $_POST['id'] ?? '';
@@ -255,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         }
     }
     
-    header('Location: registrar_evento.php?aluno_id=' . urlencode($evento->aluno_id));
+    header('Location: registrar_evento.php?aluno_id=' . urlencode($evento->aluno_id) . $preserve_query);
     exit;
 }
 
@@ -276,7 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
             $_SESSION['error'] = 'Não é possível remover este anexo.';
         }
     }
-    header('Location: registrar_evento.php?aluno_id=' . urlencode($aluno_id));
+    header('Location: registrar_evento.php?aluno_id=' . urlencode($aluno_id) . $preserve_query);
     exit;
 }
 
@@ -291,7 +298,7 @@ if (isset($_GET['delete'])) {
         if ($evento->delete()) {
             deleteEventAttachments($db, $evento->id);
             $_SESSION['success'] = 'Evento excluído com sucesso!';
-            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
+            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id) . $preserve_query);
             exit;
         }
     } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
@@ -299,11 +306,11 @@ if (isset($_GET['delete'])) {
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
             $_SESSION['success'] = 'Evento excluído com sucesso!';
-            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
+            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id) . $preserve_query);
             exit;
         } else {
             $_SESSION['error'] = 'Não é possível excluir este evento. Você só pode excluir eventos criados por você há menos de 1 hora.';
-            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id));
+            header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id) . $preserve_query);
             exit;
         }
     }
@@ -340,7 +347,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
             $_SESSION['success'] = 'Evento registrado com sucesso!';
             // Redirecionar de volta para a tela de registrar evento do mesmo aluno
-            header('Location: registrar_evento.php?aluno_id=' . urlencode($evento->aluno_id));
+            header('Location: registrar_evento.php?aluno_id=' . urlencode($evento->aluno_id) . $preserve_query);
             exit;
         } else {
             $_SESSION['error'] = 'Erro ao registrar evento. Tente novamente.';
