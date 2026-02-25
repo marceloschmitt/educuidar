@@ -10,6 +10,11 @@
             <i class="bi bi-calendar-event"></i> Eventos
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'evento_grupo.php' ? 'active' : ''; ?>" href="evento_grupo.php">
+            <i class="bi bi-people"></i> Evento de grupo
+        </a>
+    </li>
     <?php endif; ?>
     <?php if ($user->isAdmin()): ?>
     <li class="nav-item">
