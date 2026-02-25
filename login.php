@@ -100,7 +100,7 @@ require_once 'includes/header.php';
                     
                     <form method="POST" action="">
                         <div class="mb-3">
-                            <label for="username" class="form-label">Usuário ou E-mail</label>
+                            <label for="username" class="form-label">Usuário</label>
                             <input type="text" class="form-control" id="username" name="username" required autofocus>
                         </div>
                         <div class="mb-3">
