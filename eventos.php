@@ -614,11 +614,11 @@ require_once 'includes/header.php';
 
 <!-- Menu contextual para ações do evento (dinâmico) -->
 <div class="dropdown-menu" id="eventoContextMenu" style="position: absolute; display: none;">
-    <button class="dropdown-item" type="button" id="contextMenuVerEvento">
-        <i class="bi bi-info-circle text-info"></i> Ver Evento
-    </button>
     <button class="dropdown-item" type="button" id="contextMenuVerFichaAluno">
         <i class="bi bi-file-text text-info"></i> Ver Ficha do Aluno
+    </button>
+    <button class="dropdown-item" type="button" id="contextMenuVerEvento">
+        <i class="bi bi-info-circle text-info"></i> Ver Evento
     </button>
     <div id="contextMenuEventoActions" style="display: none;">
         <hr class="dropdown-divider">

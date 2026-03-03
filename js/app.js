@@ -77,6 +77,22 @@ function updateEditModalSizeForProntuario() {
     }
 }
 
+function updateRegistrarEventoModalSizeForProntuario() {
+    var modalEl = document.getElementById('modalRegistrarEvento');
+    if (!modalEl) return;
+    var dialog = modalEl.querySelector('.modal-dialog');
+    if (!dialog) return;
+    var selectEl = document.getElementById('modal_tipo_evento_id');
+    if (!selectEl) return;
+    var selectedOption = selectEl.options[selectEl.selectedIndex];
+    var prontuarioUserTypeId = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserTypeId || '') : '';
+    if (shouldShowProntuarioForType(prontuarioUserTypeId)) {
+        dialog.classList.add('modal-fullscreen');
+    } else {
+        dialog.classList.remove('modal-fullscreen');
+    }
+}
+
 // Função para editar evento
 function editEvento(evento) {
     // Prevenir propagação do evento se necessário
@@ -850,6 +866,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var modalTipoEvento = document.getElementById('modal_tipo_evento_id');
             var prontuarioContainer = document.getElementById('prontuario_container');
             updateProntuarioVisibility(modalTipoEvento, prontuarioContainer, document.getElementById('modal_prontuario'));
+            updateRegistrarEventoModalSizeForProntuario();
+        });
+        modalRegistrarEventoEl.addEventListener('hidden.bs.modal', function() {
+            var dialog = modalRegistrarEventoEl.querySelector('.modal-dialog');
+            if (dialog) dialog.classList.remove('modal-fullscreen');
         });
     }
     var editEventoModalEl = document.getElementById('editEventoModal');
@@ -1236,6 +1257,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (modalTipoEvento && prontuarioContainer) {
         modalTipoEvento.addEventListener('change', function() {
             updateProntuarioVisibility(this, prontuarioContainer, document.getElementById('modal_prontuario'));
+            updateRegistrarEventoModalSizeForProntuario();
         });
     }
     
