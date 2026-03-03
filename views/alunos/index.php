@@ -234,7 +234,7 @@ window.ALUNOS_FILTROS = {
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="modal_email" class="form-label">E-mail</label>
-                                        <input type="email" class="form-control" id="modal_email" name="email">
+                                        <input type="text" class="form-control" id="modal_email" name="email" placeholder="E-mail ou texto livre">
                                     </div>
                                 </div>
                                 <div class="col-md-6">
