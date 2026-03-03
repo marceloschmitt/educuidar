@@ -97,12 +97,14 @@ CREATE TABLE IF NOT EXISTS alunos (
     medicacao_uso_continuo TEXT NULL,
     situacao_marcante_vida TEXT NULL,
     auxilios_direitos_estudantis TEXT NULL,
+    desistente TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_nome (nome),
     INDEX idx_email (email),
     INDEX idx_nome_email (nome, email),
-    INDEX idx_numero_matricula (numero_matricula)
+    INDEX idx_numero_matricula (numero_matricula),
+    INDEX idx_desistente (desistente)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Users table
@@ -252,3 +254,7 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Entrada atrasada (após recreio)', 'danger', 1),
 ('Atendimento no NAPNE', 'primary', 1),
 ('Ausência na aula estando no campus', 'danger', 1);
+
+-- Migração: se o banco já existia antes do campo desistente, execute:
+-- ALTER TABLE alunos ADD COLUMN desistente TINYINT(1) DEFAULT 0 AFTER auxilios_direitos_estudantis;
+-- ALTER TABLE alunos ADD INDEX idx_desistente (desistente);

@@ -35,9 +35,12 @@ class AlunosController extends Controller {
         $filtro_curso = $_GET['filtro_curso'] ?? '';
         $filtro_turma = $_GET['filtro_turma'] ?? '';
         $filtro_nome = $_GET['filtro_nome'] ?? '';
+        $is_desistentes_page = isset($_GET['desistentes']) && $_GET['desistentes'] == '1';
         
-        // Get data
-        $alunos = $this->aluno->getAll();
+        // Get data: lista normal = apenas ativos; tela desistentes = apenas desistentes
+        $alunos = $is_desistentes_page
+            ? $this->aluno->getDesistentes()
+            : $this->aluno->getAll(true);
         $turmas = $this->turma->getAll();
         $cursos = $this->curso->getAll();
         $ano_corrente = $this->configuracao->getAnoCorrente();
@@ -152,10 +155,13 @@ class AlunosController extends Controller {
         }
         
         $return_to = $_GET['return_to'] ?? '';
+        $desistentes_param = $is_desistentes_page ? '&desistentes=1' : '';
 
         // Prepare view data
         $data = [
-            'page_title' => 'Alunos',
+            'page_title' => $is_desistentes_page ? 'Alunos desistentes' : 'Alunos',
+            'is_desistentes_page' => $is_desistentes_page,
+            'desistentes_param' => $desistentes_param,
             'success' => $this->getSuccess(),
             'error' => $this->getError(),
             'alunos' => $alunos,
@@ -172,7 +178,7 @@ class AlunosController extends Controller {
         ];
         
         // Include header
-        $page_title = 'Alunos';
+        $page_title = $data['page_title'];
         require_once __DIR__ . '/../includes/header.php';
         
         // Render view
@@ -206,6 +212,13 @@ class AlunosController extends Controller {
         } elseif ($action == 'delete' && isset($_POST['id'])) {
             $this->delete();
         }
+    }
+    
+    /**
+     * Retorna a URL base para redirect após ação (lista normal ou desistentes).
+     */
+    private function getRedirectBase() {
+        return !empty($_POST['desistentes']) ? 'alunos.php?desistentes=1' : 'alunos.php';
     }
     
     /**
@@ -339,15 +352,16 @@ class AlunosController extends Controller {
             $this->aluno->situacao_marcante_vida = null;
             $this->aluno->auxilios_direitos_estudantis = null;
         }
+        $this->aluno->desistente = isset($_POST['desistente']) && $_POST['desistente'] == '1';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
-            $this->redirect('alunos.php');
+            $this->redirect($this->getRedirectBase());
             return;
         }
         if (!empty($this->aluno->telefone_pessoa_referencia) && strlen($this->aluno->telefone_pessoa_referencia) > 100) {
             $this->setError('Telefone da pessoa de referência muito longo (máx. 100 caracteres).');
-            $this->redirect('alunos.php');
+            $this->redirect($this->getRedirectBase());
             return;
         }
         
@@ -356,14 +370,15 @@ class AlunosController extends Controller {
             $foto_path = $this->uploadFoto();
             if ($foto_path === null && isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
                 // Se houve erro no upload e não foi "arquivo não enviado", já foi setado o erro
-                $this->redirect('alunos.php');
+                $this->redirect($this->getRedirectBase());
                 return;
             }
             $this->aluno->foto = $foto_path;
             
             if ($this->aluno->create()) {
                 $this->setSuccess('Aluno criado com sucesso!');
-                $this->redirect('alunos.php?success=created');
+                $base = $this->getRedirectBase();
+                $this->redirect($base . (strpos($base, '?') !== false ? '&' : '?') . 'success=created');
             } else {
                 // Se falhou ao criar, deletar foto enviada
                 if ($foto_path) {
@@ -375,7 +390,7 @@ class AlunosController extends Controller {
                     $errorMsg .= ' Detalhes: ' . $errorInfo[2];
                 }
                 $this->setError($errorMsg);
-                $this->redirect('alunos.php');
+                $this->redirect($this->getRedirectBase());
             }
         } catch (PDOException $e) {
             // Se falhou, deletar foto enviada
@@ -384,7 +399,7 @@ class AlunosController extends Controller {
             }
             $this->setError('Erro ao criar aluno: ' . $e->getMessage());
             error_log("PDO Error ao criar aluno: " . $e->getMessage());
-            $this->redirect('alunos.php');
+            $this->redirect($this->getRedirectBase());
         } catch (Exception $e) {
             // Se falhou, deletar foto enviada
             if (isset($foto_path) && $foto_path) {
@@ -392,7 +407,7 @@ class AlunosController extends Controller {
             }
             $this->setError('Erro ao criar aluno: ' . $e->getMessage());
             error_log("Error ao criar aluno: " . $e->getMessage());
-            $this->redirect('alunos.php');
+            $this->redirect($this->getRedirectBase());
         }
     }
     
@@ -425,15 +440,16 @@ class AlunosController extends Controller {
         $this->aluno->pei = isset($_POST['pei']) ? ($_POST['pei'] == '1') : false;
         $this->aluno->profissionais_referencia = $_POST['profissionais_referencia'] ?? '';
         $this->aluno->outras_observacoes = $_POST['outras_observacoes'] ?? '';
+        $this->aluno->desistente = isset($_POST['desistente']) && $_POST['desistente'] == '1';
         
         if (empty($this->aluno->nome)) {
             $this->setError('Por favor, preencha o nome do aluno!');
-            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : $this->getRedirectBase());
             return;
         }
         if (!empty($this->aluno->telefone_pessoa_referencia) && strlen($this->aluno->telefone_pessoa_referencia) > 100) {
             $this->setError('Telefone da pessoa de referência muito longo (máx. 100 caracteres).');
-            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : $this->getRedirectBase());
             return;
         }
         
@@ -505,7 +521,7 @@ class AlunosController extends Controller {
         $foto_path = $this->uploadFoto($this->aluno->id);
         if ($foto_path === null && isset($_FILES['foto']) && $_FILES['foto']['error'] !== UPLOAD_ERR_NO_FILE) {
             // Se houve erro no upload e não foi "arquivo não enviado", já foi setado o erro
-            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : $this->getRedirectBase());
             return;
         }
         
@@ -531,14 +547,15 @@ class AlunosController extends Controller {
         
         if ($this->aluno->update()) {
             $this->setSuccess('Aluno atualizado com sucesso!');
-            $this->redirect($return_to !== '' ? $return_to : 'alunos.php?success=updated');
+            $target = $return_to !== '' ? $return_to : $this->getRedirectBase();
+            $this->redirect($target . (strpos($target, '?') !== false ? '&' : '?') . 'success=updated');
         } else {
             // Se falhou ao atualizar, deletar nova foto se foi enviada
             if ($foto_path && $foto_path !== $foto_antiga) {
                 $this->deleteFoto($foto_path);
             }
             $this->setError('Erro ao atualizar aluno.');
-            $this->redirect($return_to !== '' ? $return_to : 'alunos.php');
+            $this->redirect($return_to !== '' ? $return_to : $this->getRedirectBase());
         }
     }
     
@@ -556,10 +573,11 @@ class AlunosController extends Controller {
         
         if ($this->aluno->delete()) {
             $this->setSuccess('Aluno excluído com sucesso!');
-            $this->redirect('alunos.php?success=deleted');
+            $base = $this->getRedirectBase();
+            $this->redirect($base . (strpos($base, '?') !== false ? '&' : '?') . 'success=deleted');
         } else {
             $this->setError('Erro ao excluir aluno.');
-            $this->redirect('alunos.php');
+            $this->redirect($this->getRedirectBase());
         }
     }
 }

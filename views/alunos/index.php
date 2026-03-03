@@ -24,8 +24,8 @@ window.ALUNOS_FILTROS = {
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Alunos</h5>
-                <?php if ($user->isAdmin() || $user->isNivel0()): ?>
+                <h5 class="mb-0"><i class="bi bi-people"></i> <?php echo $is_desistentes_page ? 'Alunos desistentes' : 'Lista de Alunos'; ?></h5>
+                <?php if (($user->isAdmin() || $user->isNivel0()) && !$is_desistentes_page): ?>
                 <div>
                     <?php if ($user->isAdmin()): ?>
                     <a href="importar_alunos.php" class="btn btn-success btn-sm me-2">
@@ -40,7 +40,10 @@ window.ALUNOS_FILTROS = {
             </div>
             <div class="card-body">
                 <!-- Filters -->
-                <form method="GET" action="" class="row g-3 mb-4">
+                <form method="POST" action="" class="row g-3 mb-4">
+                    <?php if (!empty($is_desistentes_page)): ?>
+                    <input type="hidden" name="desistentes" value="1">
+                    <?php endif; ?>
                     <div class="col-md-3">
                         <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
                         <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
@@ -77,7 +80,7 @@ window.ALUNOS_FILTROS = {
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <?php if ($filtro_curso || $filtro_turma || $filtro_nome): ?>
-                        <a href="alunos.php" class="btn btn-secondary btn-sm w-100">
+                        <a href="alunos.php<?php echo !empty($is_desistentes_page) ? '?desistentes=1' : ''; ?>" class="btn btn-secondary btn-sm w-100">
                             <i class="bi bi-x-circle"></i> Limpar Filtros
                         </a>
                         <?php endif; ?>
@@ -219,6 +222,9 @@ window.ALUNOS_FILTROS = {
                     <input type="hidden" name="action" id="formAction" value="create">
                     <input type="hidden" name="id" id="formId" value="">
                     <input type="hidden" name="return_to" id="formReturnTo" value="<?php echo htmlspecialchars($return_to ?? ''); ?>">
+                    <?php if (!empty($is_desistentes_page)): ?>
+                    <input type="hidden" name="desistentes" id="formDesistentes" value="1">
+                    <?php endif; ?>
                     
                     <div class="row">
                         <div class="col-md-8">
@@ -346,6 +352,13 @@ window.ALUNOS_FILTROS = {
                     <div class="mb-3">
                         <label for="modal_outras_observacoes" class="form-label">Outras Observações</label>
                         <textarea class="form-control" id="modal_outras_observacoes" name="outras_observacoes" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="modal_desistente" name="desistente" value="1">
+                            <label class="form-check-label" for="modal_desistente">Desistente</label>
+                        </div>
+                        <small class="text-muted">Alunos desistentes aparecem apenas na tela específica de desistentes.</small>
                     </div>
 
                     <?php if ($user->isNivel0()): ?>

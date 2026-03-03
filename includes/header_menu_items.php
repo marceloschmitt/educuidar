@@ -61,8 +61,13 @@
     if ($can_view_alunos): 
     ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alunos.php' ? 'active' : ''; ?>" href="alunos.php">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alunos.php' && empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php">
             <i class="bi bi-person"></i> Alunos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alunos.php' && !empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php?desistentes=1">
+            <i class="bi bi-person-x"></i> Alunos desistentes
         </a>
     </li>
     <?php endif; ?>

@@ -324,6 +324,8 @@ function resetForm() {
     fotoAtual.appendChild(defaultDiv);
     document.getElementById('remover_foto_container').style.display = 'none';
     document.getElementById('remover_foto').checked = false;
+    var desistenteEl = document.getElementById('modal_desistente');
+    if (desistenteEl) desistenteEl.checked = false;
     document.getElementById('modalTitle').textContent = 'Novo Aluno';
     document.getElementById('modalSubmitText').textContent = 'Criar';
     var returnToInput = document.getElementById('formReturnTo');
@@ -544,6 +546,8 @@ function editAluno(aluno) {
     document.getElementById('modal_pei').value = (aluno.pei == 1 || aluno.pei === '1') ? '1' : '0';
     document.getElementById('modal_profissionais_referencia').value = aluno.profissionais_referencia || '';
     document.getElementById('modal_outras_observacoes').value = aluno.outras_observacoes || '';
+    var desistenteEl = document.getElementById('modal_desistente');
+    if (desistenteEl) desistenteEl.checked = (aluno.desistente == 1 || aluno.desistente === '1');
     if (document.getElementById('modal_identidade_genero')) {
         document.getElementById('modal_identidade_genero').value = aluno.identidade_genero || '';
     }

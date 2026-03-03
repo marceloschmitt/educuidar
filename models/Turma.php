@@ -177,6 +177,7 @@ class Turma {
                   FROM alunos a
                   INNER JOIN aluno_turmas at ON a.id = at.aluno_id
                   WHERE at.turma_id = :turma_id
+                    AND COALESCE(a.desistente, 0) = 0
                   ORDER BY a.nome";
 
         $stmt = $this->conn->prepare($query);

@@ -52,6 +52,7 @@ class Aluno {
     public $medicacao_uso_continuo;
     public $situacao_marcante_vida;
     public $auxilios_direitos_estudantis;
+    public $desistente;
     public $created_at;
 
     public function __construct($db) {
@@ -67,7 +68,7 @@ class Aluno {
                    meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia,
                    estabelecimento_ensino_fundamental, monitoria_atendimento_reprovacao_fundamental, deficiencia_necessidade_especifica, necessidade_adequacao_aprendizagem,
                    medidas_disciplinares, bullying, maiores_dificuldades, acesso_internet_casa, local_estudo, rotina_estudo_casa, habito_leitura, atividades_extracurriculares,
-                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida, auxilios_direitos_estudantis) 
+                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida, auxilios_direitos_estudantis, desistente) 
                   VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
                           :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
                           :indigena, :pei, :profissionais_referencia, :outras_observacoes,
@@ -75,7 +76,7 @@ class Aluno {
                           :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia,
                           :estabelecimento_ensino_fundamental, :monitoria_atendimento_reprovacao_fundamental, :deficiencia_necessidade_especifica, :necessidade_adequacao_aprendizagem,
                           :medidas_disciplinares, :bullying, :maiores_dificuldades, :acesso_internet_casa, :local_estudo, :rotina_estudo_casa, :habito_leitura, :atividades_extracurriculares,
-                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida, :auxilios_direitos_estudantis)";
+                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida, :auxilios_direitos_estudantis, :desistente)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -167,6 +168,8 @@ class Aluno {
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
         $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
         $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
+        $desistente = isset($this->desistente) ? ($this->desistente ? 1 : 0) : 0;
+        $stmt->bindParam(':desistente', $desistente, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();
@@ -175,8 +178,25 @@ class Aluno {
         return false;
     }
 
-    public function getAll() {
+    public function getAll($apenas_ativos = true) {
+        $query = "SELECT a.* FROM " . $this->table . " a";
+        if ($apenas_ativos) {
+            $query .= " WHERE COALESCE(a.desistente, 0) = 0";
+        }
+        $query .= " ORDER BY COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Retorna apenas alunos marcados como desistentes.
+     */
+    public function getDesistentes() {
         $query = "SELECT a.* FROM " . $this->table . " a
+                  WHERE a.desistente = 1
                   ORDER BY COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
 
         $stmt = $this->conn->prepare($query);
@@ -241,7 +261,8 @@ class Aluno {
                       alergias = :alergias,
                       medicacao_uso_continuo = :medicacao_uso_continuo,
                       situacao_marcante_vida = :situacao_marcante_vida,
-                      auxilios_direitos_estudantis = :auxilios_direitos_estudantis
+                      auxilios_direitos_estudantis = :auxilios_direitos_estudantis,
+                      desistente = :desistente
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -335,6 +356,8 @@ class Aluno {
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
         $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
         $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
+        $desistente = isset($this->desistente) ? ($this->desistente ? 1 : 0) : 0;
+        $stmt->bindParam(':desistente', $desistente, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             return true;
@@ -398,7 +421,8 @@ class Aluno {
                   INNER JOIN aluno_turmas at ON a.id = at.aluno_id
                   INNER JOIN turmas t ON at.turma_id = t.id
                   INNER JOIN cursos c ON t.curso_id = c.id
-                  WHERE t.ano_civil = :ano_corrente";
+                  WHERE t.ano_civil = :ano_corrente
+                    AND COALESCE(a.desistente, 0) = 0";
         
         $params = [':ano_corrente' => $ano_corrente];
         
