@@ -6,6 +6,7 @@ $db = $database->getConnection();
 $user = new User($db);
 $aluno = new Aluno($db);
 $turma = new Turma($db);
+$curso = new Curso($db);
 $configuracao = new Configuracao($db);
 
 // Only admin can manage turmas alunos
@@ -22,7 +23,11 @@ $todas_turmas = [];
 
 // Get all turmas
 $todas_turmas = $turma->getAll();
+$cursos = $curso->getAll();
 $ano_corrente = $configuracao->getAnoCorrente();
+
+// Filtros (mesmo padrão das outras páginas)
+$filtro_curso = $_GET['filtro_curso'] ?? '';
 
 // Process POST requests
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -122,6 +127,37 @@ if (!empty($turma_id_selecionada)) {
     }
 }
 
+// Lista de turmas para o select (filtrar por curso como nas outras páginas)
+$turmas_para_select = $todas_turmas;
+if ($filtro_curso !== '') {
+    $turmas_para_select = array_filter($todas_turmas, function($t) use ($filtro_curso) {
+        return isset($t['curso_id']) && (string)$t['curso_id'] === (string)$filtro_curso;
+    });
+}
+
+// Agrupamento por curso/ano para o select "Copiar turma" (manter optgroups)
+$turmas_agrupadas = [];
+foreach ($todas_turmas as $t) {
+    $curso_nome = $t['curso_nome'] ?? 'Sem Curso';
+    $ano_civil = $t['ano_civil'] ?? 'N/A';
+    $key = $curso_nome . '_' . $ano_civil;
+    if (!isset($turmas_agrupadas[$key])) {
+        $turmas_agrupadas[$key] = [
+            'curso' => $curso_nome,
+            'ano_civil' => $ano_civil,
+            'turmas' => []
+        ];
+    }
+    $turmas_agrupadas[$key]['turmas'][] = $t;
+}
+uksort($turmas_agrupadas, function($a, $b) use ($turmas_agrupadas) {
+    $comp = strcmp($turmas_agrupadas[$a]['curso'], $turmas_agrupadas[$b]['curso']);
+    if ($comp == 0) {
+        return $turmas_agrupadas[$b]['ano_civil'] - $turmas_agrupadas[$a]['ano_civil'];
+    }
+    return $comp;
+});
+
 $page_title = 'Gerenciar Alunos em Turmas';
 require_once 'includes/header.php';
 ?>
@@ -150,51 +186,42 @@ require_once 'includes/header.php';
                 </a>
             </div>
             <div class="card-body">
-                <!-- Seleção de Turma -->
+                <!-- Seleção de Turma (curso e turma no mesmo padrão dos filtros das outras páginas) -->
                 <div class="row mb-4">
-                    <div class="col-md-6">
-                        <form method="GET" action="" class="mb-3">
-                            <label for="turma_id" class="form-label">Selecionar Turma</label>
-                            <div class="input-group">
-                                <select class="form-select" id="turma_id" name="turma_id" onchange="this.form.submit();">
-                                    <option value="">Selecione uma turma...</option>
-                                    <?php 
-                                    // Group turmas by curso and ano_civil
-                                    $turmas_agrupadas = [];
-                                    foreach ($todas_turmas as $t) {
-                                        $curso_nome = $t['curso_nome'] ?? 'Sem Curso';
-                                        $ano_civil = $t['ano_civil'] ?? 'N/A';
-                                        $key = $curso_nome . '_' . $ano_civil;
-                                        if (!isset($turmas_agrupadas[$key])) {
-                                            $turmas_agrupadas[$key] = [
-                                                'curso' => $curso_nome,
-                                                'ano_civil' => $ano_civil,
-                                                'turmas' => []
-                                            ];
-                                        }
-                                        $turmas_agrupadas[$key]['turmas'][] = $t;
-                                    }
-                                    
-                                    uksort($turmas_agrupadas, function($a, $b) use ($turmas_agrupadas) {
-                                        $comp = strcmp($turmas_agrupadas[$a]['curso'], $turmas_agrupadas[$b]['curso']);
-                                        if ($comp == 0) {
-                                            return $turmas_agrupadas[$b]['ano_civil'] - $turmas_agrupadas[$a]['ano_civil'];
-                                        }
-                                        return $comp;
-                                    });
-                                    
-                                    foreach ($turmas_agrupadas as $grupo):
-                                        $is_ano_corrente = ($grupo['ano_civil'] == $ano_corrente);
-                                    ?>
-                                    <optgroup label="<?php echo htmlspecialchars($grupo['curso']); ?> - Ano <?php echo htmlspecialchars($grupo['ano_civil']); ?><?php echo $is_ano_corrente ? ' (Corrente)' : ''; ?>">
-                                        <?php foreach ($grupo['turmas'] as $t): ?>
-                                        <option value="<?php echo $t['id']; ?>" <?php echo ($turma_id_selecionada == $t['id']) ? 'selected' : ''; ?>>
-                                            <?php echo htmlspecialchars($t['curso_nome'] ?? $grupo['curso']); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
-                                        </option>
-                                        <?php endforeach; ?>
-                                    </optgroup>
+                    <div class="col-12">
+                        <form method="GET" action="" class="row g-3">
+                            <div class="col-md-4">
+                                <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
+                                <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso" onchange="this.form.submit();">
+                                    <option value="">Todos os cursos</option>
+                                    <?php foreach ($cursos as $c): ?>
+                                    <option value="<?php echo $c['id']; ?>" <?php echo ($filtro_curso == $c['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($c['nome']); ?>
+                                    </option>
                                     <?php endforeach; ?>
                                 </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="turma_id" class="form-label">Selecionar Turma</label>
+                                <select class="form-select form-select-sm" id="turma_id" name="turma_id" onchange="this.form.submit();">
+                                    <option value="">Selecione uma turma...</option>
+                                    <?php 
+                                    foreach ($turmas_para_select as $t): 
+                                    ?>
+                                    <option value="<?php echo $t['id']; ?>" <?php echo ($turma_id_selecionada == $t['id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($t['curso_nome'] ?? ''); ?> - 
+                                        <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano - 
+                                        Ano <?php echo htmlspecialchars($t['ano_civil']); ?>
+                                    </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <?php if ($filtro_curso || $turma_id_selecionada): ?>
+                                <a href="gerenciar_turmas_alunos.php" class="btn btn-secondary btn-sm w-100">
+                                    <i class="bi bi-x-circle"></i> Limpar Filtros
+                                </a>
+                                <?php endif; ?>
                             </div>
                         </form>
                     </div>
@@ -303,7 +330,7 @@ require_once 'includes/header.php';
                                             <?php foreach ($grupo['turmas'] as $t): ?>
                                                 <?php if ($t['id'] != $turma_selecionada['id']): ?>
                                                 <option value="<?php echo $t['id']; ?>">
-                                                    <?php echo htmlspecialchars($t['curso_nome'] ?? $grupo['curso']); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
+                                                    <?php echo htmlspecialchars($t['curso_nome'] ?? $grupo['curso']); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano - Ano <?php echo htmlspecialchars($t['ano_civil']); ?>
                                                 </option>
                                                 <?php endif; ?>
                                             <?php endforeach; ?>
