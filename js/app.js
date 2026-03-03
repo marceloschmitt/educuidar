@@ -71,9 +71,9 @@ function updateEditModalSizeForProntuario() {
     var selectedOption = selectEl.options[selectEl.selectedIndex];
     var prontuarioUserTypeId = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserTypeId || '') : '';
     if (shouldShowProntuarioForType(prontuarioUserTypeId)) {
-        dialog.classList.add('modal-fullscreen');
+        dialog.classList.add('modal-quase-fullscreen');
     } else {
-        dialog.classList.remove('modal-fullscreen');
+        dialog.classList.remove('modal-quase-fullscreen');
     }
 }
 
@@ -87,9 +87,9 @@ function updateRegistrarEventoModalSizeForProntuario() {
     var selectedOption = selectEl.options[selectEl.selectedIndex];
     var prontuarioUserTypeId = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserTypeId || '') : '';
     if (shouldShowProntuarioForType(prontuarioUserTypeId)) {
-        dialog.classList.add('modal-fullscreen');
+        dialog.classList.add('modal-quase-fullscreen');
     } else {
-        dialog.classList.remove('modal-fullscreen');
+        dialog.classList.remove('modal-quase-fullscreen');
     }
 }
 
@@ -870,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         modalRegistrarEventoEl.addEventListener('hidden.bs.modal', function() {
             var dialog = modalRegistrarEventoEl.querySelector('.modal-dialog');
-            if (dialog) dialog.classList.remove('modal-fullscreen');
+            if (dialog) dialog.classList.remove('modal-fullscreen', 'modal-quase-fullscreen');
         });
     }
     var editEventoModalEl = document.getElementById('editEventoModal');
@@ -1276,7 +1276,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editEventoModalEl) {
         editEventoModalEl.addEventListener('hidden.bs.modal', function() {
             var dialog = editEventoModalEl.querySelector('.modal-dialog');
-            if (dialog) dialog.classList.remove('modal-fullscreen');
+            if (dialog) dialog.classList.remove('modal-fullscreen', 'modal-quase-fullscreen');
         });
     }
     
