@@ -82,7 +82,7 @@ class Evento {
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
                   LEFT JOIN users u ON e.registrado_por = u.id";
 
-        $where = [];
+        $where = ["(a.id IS NULL OR COALESCE(a.desistente, 0) = 0)"];
         if ($registrado_por !== null) {
             $where[] = "e.registrado_por = :registrado_por";
         }
@@ -299,6 +299,8 @@ class Evento {
         $where = [];
         $params = [];
         
+        $where[] = "(a.id IS NULL OR COALESCE(a.desistente, 0) = 0)";
+        
         if ($aluno_id) {
             $where[] = "e.aluno_id = :aluno_id";
             $params[':aluno_id'] = $aluno_id;
@@ -324,10 +326,11 @@ class Evento {
             $params[':registrado_por'] = $registrado_por;
         }
         
-        $where_clause = !empty($where) ? "WHERE " . implode(" AND ", $where) : "";
+        $where_clause = "WHERE " . implode(" AND ", $where);
 
         $query = "SELECT te.id as tipo_evento_id, te.nome as tipo_evento_nome, te.cor as tipo_evento_cor, COUNT(*) as total 
                   FROM " . $this->table . " e
+                  LEFT JOIN alunos a ON e.aluno_id = a.id
                   LEFT JOIN tipos_eventos te ON e.tipo_evento_id = te.id
                   LEFT JOIN turmas t ON e.turma_id = t.id
                   LEFT JOIN cursos c ON t.curso_id = c.id

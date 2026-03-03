@@ -255,6 +255,6 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Atendimento no NAPNE', 'primary', 1),
 ('Ausência na aula estando no campus', 'danger', 1);
 
--- Migração: se o banco já existia antes do campo desistente, execute:
+-- Migração (banco já existente): execute no MySQL:
 -- ALTER TABLE alunos ADD COLUMN desistente TINYINT(1) DEFAULT 0 AFTER auxilios_direitos_estudantis;
 -- ALTER TABLE alunos ADD INDEX idx_desistente (desistente);
