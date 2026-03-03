@@ -40,7 +40,7 @@ window.ALUNOS_FILTROS = {
             </div>
             <div class="card-body">
                 <!-- Filters -->
-                <form method="POST" action="" class="row g-3 mb-4">
+                <form method="GET" action="" class="row g-3 mb-4">
                     <?php if (!empty($is_desistentes_page)): ?>
                     <input type="hidden" name="desistentes" value="1">
                     <?php endif; ?>
