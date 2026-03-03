@@ -4,6 +4,13 @@ function getCurrentUserType() {
     return document.body.getAttribute('data-user-type-id') || '';
 }
 
+function isValidEmail(str) {
+    if (!str || typeof str !== 'string') return false;
+    var trimmed = str.trim();
+    if (trimmed === '') return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+}
+
 function getAlunosFilterQuery() {
     var q = [];
     var curso, turma, nome;
@@ -51,6 +58,22 @@ function updateProntuarioVisibility(selectEl, containerEl, textareaEl) {
         if (textareaEl) {
             textareaEl.value = '';
         }
+    }
+}
+
+function updateEditModalSizeForProntuario() {
+    var modalEl = document.getElementById('editEventoModal');
+    if (!modalEl) return;
+    var dialog = modalEl.querySelector('.modal-dialog');
+    if (!dialog) return;
+    var selectEl = document.getElementById('edit_tipo_evento_id');
+    if (!selectEl) return;
+    var selectedOption = selectEl.options[selectEl.selectedIndex];
+    var prontuarioUserTypeId = selectedOption && selectedOption.dataset ? (selectedOption.dataset.prontuarioUserTypeId || '') : '';
+    if (shouldShowProntuarioForType(prontuarioUserTypeId)) {
+        dialog.classList.add('modal-fullscreen');
+    } else {
+        dialog.classList.remove('modal-fullscreen');
     }
 }
 
@@ -158,6 +181,8 @@ function editEvento(evento) {
     if (tipoEventoSelect && prontuarioContainer) {
         updateProntuarioVisibility(tipoEventoSelect, prontuarioContainer, document.getElementById('edit_prontuario'));
     }
+    
+    updateEditModalSizeForProntuario();
     
     // Abrir modal
     var modalElement = document.getElementById('editEventoModal');
@@ -328,7 +353,19 @@ function viewFichaAluno(aluno) {
     }
     
     // Preencher dados de identificação
-    document.getElementById('ficha_email').textContent = aluno.email || '-';
+    var emailVal = (aluno.email || '').trim();
+    var emailEl = document.getElementById('ficha_email');
+    emailEl.innerHTML = '';
+    if (!emailVal) {
+        emailEl.textContent = '-';
+    } else if (isValidEmail(emailVal)) {
+        var mailLink = document.createElement('a');
+        mailLink.href = 'mailto:' + emailVal.replace(/"/g, '&quot;');
+        mailLink.textContent = emailVal;
+        emailEl.appendChild(mailLink);
+    } else {
+        emailEl.textContent = emailVal;
+    }
     document.getElementById('ficha_telefone_celular').textContent = aluno.telefone_celular || '-';
     
     // Data de nascimento formatada
@@ -1208,16 +1245,102 @@ document.addEventListener('DOMContentLoaded', function() {
     if (editTipoEvento && editProntuarioContainer) {
         editTipoEvento.addEventListener('change', function() {
             updateProntuarioVisibility(this, editProntuarioContainer, document.getElementById('edit_prontuario'));
+            updateEditModalSizeForProntuario();
         });
     }
     
-    // Linhas clicáveis para mostrar observações (mantido para compatibilidade)
-    var observacoesRows = document.querySelectorAll('.row-observacoes');
-    observacoesRows.forEach(function(row) {
-        row.addEventListener('click', function() {
-            var eventoData = JSON.parse(this.getAttribute('data-evento'));
-            showEvento(eventoData);
+    // Ao fechar o modal de edição, remover classe de tamanho para próxima abertura
+    var editEventoModalEl = document.getElementById('editEventoModal');
+    if (editEventoModalEl) {
+        editEventoModalEl.addEventListener('hidden.bs.modal', function() {
+            var dialog = editEventoModalEl.querySelector('.modal-dialog');
+            if (dialog) dialog.classList.remove('modal-fullscreen');
         });
+    }
+    
+    // Dashboard: clique na linha de evento abre menu (igual a alunos – Ver Ficha ou Ver detalhes do evento)
+    var observacoesRows = document.querySelectorAll('.row-observacoes');
+    var dashboardEventoMenu = document.getElementById('dashboardEventoContextMenu');
+    
+    function hideDashboardEventoMenu() {
+        if (dashboardEventoMenu) {
+            dashboardEventoMenu.style.display = 'none';
+            dashboardEventoMenu.classList.remove('show');
+        }
+    }
+    
+    observacoesRows.forEach(function(row) {
+        row.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            
+            var eventoData = JSON.parse(this.getAttribute('data-evento'));
+            
+            if (!dashboardEventoMenu) return;
+            
+            var clickX = e.clientX;
+            var clickY = e.clientY;
+            dashboardEventoMenu.style.display = 'block';
+            dashboardEventoMenu.style.position = 'fixed';
+            dashboardEventoMenu.style.top = clickY + 'px';
+            dashboardEventoMenu.style.left = Math.min(clickX, window.innerWidth - 220) + 'px';
+            dashboardEventoMenu.style.zIndex = '1050';
+            dashboardEventoMenu.classList.add('show');
+            
+            var btnVerFicha = document.getElementById('dashboardMenuVerFicha');
+            var btnVerEvento = document.getElementById('dashboardMenuVerEvento');
+            
+            if (btnVerFicha) {
+                btnVerFicha.onclick = function() {
+                    hideDashboardEventoMenu();
+                    var alunoId = eventoData.aluno_id;
+                    if (!alunoId) {
+                        alert('Aluno não identificado.');
+                        return;
+                    }
+                    fetch('api/get_aluno_ficha.php?id=' + encodeURIComponent(alunoId))
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data.error) {
+                                alert(data.error);
+                                return;
+                            }
+                            viewFichaAluno(data);
+                        })
+                        .catch(function() {
+                            alert('Erro ao carregar dados do aluno.');
+                        });
+                };
+            }
+            
+            if (btnVerEvento) {
+                btnVerEvento.onclick = function() {
+                    hideDashboardEventoMenu();
+                    showEvento(eventoData);
+                };
+            }
+        });
+    });
+    
+    if (dashboardEventoMenu) {
+        dashboardEventoMenu.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+                setTimeout(hideDashboardEventoMenu, 100);
+            }
+        });
+    }
+    
+    document.addEventListener('click', function(e) {
+        if (dashboardEventoMenu && !dashboardEventoMenu.contains(e.target) && !e.target.closest('.row-observacoes')) {
+            hideDashboardEventoMenu();
+        }
+    });
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') hideDashboardEventoMenu();
     });
     
     // Menu contextual ao clicar na linha do evento
@@ -1260,6 +1383,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 btnVerEvento.onclick = function() {
                     showEvento(eventoData);
                     hideEventoContextMenu();
+                };
+            }
+            
+            var btnVerFichaAluno = document.getElementById('contextMenuVerFichaAluno');
+            if (btnVerFichaAluno) {
+                btnVerFichaAluno.style.display = '';
+                btnVerFichaAluno.onclick = function() {
+                    hideEventoContextMenu();
+                    var alunoId = eventoData.aluno_id;
+                    if (!alunoId) {
+                        alert('Aluno não identificado.');
+                        return;
+                    }
+                    fetch('api/get_aluno_ficha.php?id=' + encodeURIComponent(alunoId))
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data.error) {
+                                alert(data.error);
+                                return;
+                            }
+                            viewFichaAluno(data);
+                        })
+                        .catch(function() {
+                            alert('Erro ao carregar dados do aluno.');
+                        });
                 };
             }
             
@@ -1598,6 +1746,9 @@ function editUser(user) {
 
 // Função para mostrar evento
 function showEvento(evento) {
+    var modalElement = document.getElementById('eventoModal');
+    if (!modalElement) return;
+    
     document.getElementById('obs_data').textContent = evento.data || '-';
     document.getElementById('obs_hora').textContent = evento.hora || '-';
     document.getElementById('obs_aluno').textContent = evento.aluno || '-';
@@ -1651,7 +1802,7 @@ function showEvento(evento) {
         }
     }
     
-    var modal = new bootstrap.Modal(document.getElementById('eventoModal'));
+    var modal = new bootstrap.Modal(modalElement);
     modal.show();
 }
 

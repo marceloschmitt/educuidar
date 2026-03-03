@@ -617,6 +617,9 @@ require_once 'includes/header.php';
     <button class="dropdown-item" type="button" id="contextMenuVerEvento">
         <i class="bi bi-info-circle text-info"></i> Ver Evento
     </button>
+    <button class="dropdown-item" type="button" id="contextMenuVerFichaAluno">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha do Aluno
+    </button>
     <div id="contextMenuEventoActions" style="display: none;">
         <hr class="dropdown-divider">
         <button class="dropdown-item" type="button" id="contextMenuEditarEvento">
@@ -630,7 +633,7 @@ require_once 'includes/header.php';
 </div>
 
 <?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
-
+<?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
 <?php require_once __DIR__ . '/views/eventos/edit_modal.php'; ?>
 
 <?php require_once 'includes/footer.php'; ?>

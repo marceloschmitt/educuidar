@@ -273,6 +273,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                             <?php foreach ($eventos_recentes as $evt): ?>
                             <tr class="row-observacoes" style="cursor: pointer;" data-evento='<?php echo htmlspecialchars(json_encode([
                                 'id' => $evt['id'],
+                                'aluno_id' => $evt['aluno_id'] ?? null,
                                 'data' => date('d/m/Y', strtotime($evt['data_evento'])),
                                 'hora' => $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-',
                                 'aluno' => $evt['aluno_nome'] ?? 'N/A',
@@ -313,35 +314,18 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     </div>
 </div>
 
-<!-- Modal para Ver Observações -->
-<div class="modal fade" id="observacoesModal" tabindex="-1" aria-labelledby="observacoesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="observacoesModalLabel"><i class="bi bi-info-circle"></i> Observações do Evento</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <strong>Data:</strong> <span id="obs_data"></span><br>
-                    <strong>Hora:</strong> <span id="obs_hora"></span><br>
-                    <strong>Aluno:</strong> <span id="obs_aluno"></span><br>
-                    <strong>Tipo:</strong> <span id="obs_tipo"></span><br>
-                    <strong>Registrado por:</strong> <span id="obs_registrado_por"></span>
-                </div>
-                <hr>
-                <div>
-                    <strong>Observações:</strong>
-                    <p id="obs_texto" class="mt-2"></p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-            </div>
-        </div>
-    </div>
+<!-- Menu contextual da lista de eventos no dashboard (igual ao de alunos: clique na linha) -->
+<div class="dropdown-menu" id="dashboardEventoContextMenu" style="position: absolute; display: none;">
+    <button class="dropdown-item" type="button" id="dashboardMenuVerFicha">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha do Aluno
+    </button>
+    <button class="dropdown-item" type="button" id="dashboardMenuVerEvento">
+        <i class="bi bi-info-circle"></i> Ver Detalhes do Evento
+    </button>
 </div>
 
+<?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
+<?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
 
 <?php require_once 'includes/footer.php'; ?>
 
