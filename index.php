@@ -62,7 +62,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
             return !empty($evt['tipo_evento_id']) && $evt['tipo_evento_id'] == $filtro_tipo_evento;
         });
     }
-    $eventos_recentes = array_slice($eventos_recentes, 0, 10);
+    // Mostrar todos os eventos que passaram nos filtros (sem limite)
 } else {
     $estatisticas = $evento->getEstatisticas($user_id, null, null, $ano_corrente);
     $eventos_recentes = $evento->getByAluno($user_id);
@@ -72,7 +72,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
             return !empty($evt['tipo_evento_id']) && $evt['tipo_evento_id'] == $filtro_tipo_evento;
         });
     }
-    $eventos_recentes = array_slice($eventos_recentes, 0, 10);
+    // Mostrar todos os eventos do aluno que passaram nos filtros (sem limite)
 }
 ?>
 
@@ -223,7 +223,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">Eventos Recentes</h5>
+                <h5 class="mb-0">Eventos</h5>
                 <?php if ($filtro_tipo_evento): ?>
                     <?php 
                     $tipo_selecionado = null;
