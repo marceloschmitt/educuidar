@@ -226,6 +226,15 @@ window.ALUNOS_FILTROS = {
                     <input type="hidden" name="desistentes" id="formDesistentes" value="1">
                     <?php endif; ?>
                     
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="modal_desistente" name="desistente" value="1">
+                            <label class="form-check-label" for="modal_desistente">Desistente</label>
+                        </div>
+                        <small class="text-muted">Alunos desistentes aparecem apenas na tela específica de desistentes.</small>
+                    </div>
+                    <hr>
+                    
                     <div class="row">
                         <div class="col-md-8">
                             <div class="mb-3">
@@ -352,13 +361,6 @@ window.ALUNOS_FILTROS = {
                     <div class="mb-3">
                         <label for="modal_outras_observacoes" class="form-label">Outras Observações</label>
                         <textarea class="form-control" id="modal_outras_observacoes" name="outras_observacoes" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="modal_desistente" name="desistente" value="1">
-                            <label class="form-check-label" for="modal_desistente">Desistente</label>
-                        </div>
-                        <small class="text-muted">Alunos desistentes aparecem apenas na tela específica de desistentes.</small>
                     </div>
 
                     <?php if ($user->isNivel0()): ?>
