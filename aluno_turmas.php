@@ -117,7 +117,7 @@ $turmas_disponiveis = array_filter($todas_turmas, function($t) use ($turmas_alun
                             <option value="">Selecione uma turma...</option>
                             <?php foreach ($turmas_disponiveis as $t): ?>
                             <option value="<?php echo $t['id']; ?>">
-                                <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano - <?php echo htmlspecialchars($t['ano_civil']); ?>
+                                <?php echo htmlspecialchars($t['curso_nome'] ?? ''); ?> - <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano - Ano <?php echo htmlspecialchars($t['ano_civil']); ?>
                             </option>
                             <?php endforeach; ?>
                         </select>
