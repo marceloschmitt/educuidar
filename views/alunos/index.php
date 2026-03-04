@@ -399,6 +399,10 @@ window.ALUNOS_FILTROS = {
                         <label for="modal_conhecimento_curso_tecnico" class="form-label">Conhecimento sobre curso técnico</label>
                         <textarea class="form-control" id="modal_conhecimento_curso_tecnico" name="conhecimento_curso_tecnico" rows="2"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label for="modal_observacoes_assistencia_estudantil" class="form-label">Observações da assistência estudantil</label>
+                        <textarea class="form-control" id="modal_observacoes_assistencia_estudantil" name="observacoes_assistencia_estudantil" rows="3"></textarea>
+                    </div>
                     <hr>
                     <h6 class="mt-2 mb-3">Percurso Formativo</h6>
                     <div class="mb-3">
@@ -472,7 +476,7 @@ window.ALUNOS_FILTROS = {
                         <textarea class="form-control" id="modal_situacao_marcante_vida" name="situacao_marcante_vida" rows="2"></textarea>
                     </div>
                     <hr>
-                    <h6 class="mt-2 mb-3">Auxídio e direitos estudantis</h6>
+                    <h6 class="mt-2 mb-3">Auxílio e direitos estudantis</h6>
                     <div class="mb-3">
                         <label for="modal_meio_transporte" class="form-label">Meio de transporte</label>
                         <textarea class="form-control" id="modal_meio_transporte" name="meio_transporte" rows="2"></textarea>
@@ -480,10 +484,6 @@ window.ALUNOS_FILTROS = {
                     <div class="mb-3">
                         <label for="modal_auxilios_direitos_estudantis" class="form-label">Auxílios</label>
                         <textarea class="form-control" id="modal_auxilios_direitos_estudantis" name="auxilios_direitos_estudantis" rows="2"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label for="modal_observacoes_assistencia_estudantil" class="form-label">Observações da assistência estudantil</label>
-                        <textarea class="form-control" id="modal_observacoes_assistencia_estudantil" name="observacoes_assistencia_estudantil" rows="3"></textarea>
                     </div>
                     <?php endif; ?>
                 </div>

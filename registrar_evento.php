@@ -1057,7 +1057,7 @@ if ($aluno_id) {
                                     <div id="ficha_situacao_marcante_vida" class="text-muted mt-1 ficha-text">-</div>
                                 </div>
                                 <hr>
-                                <h6 class="mt-2 mb-3">Auxídio e direitos estudantis</h6>
+                                <h6 class="mt-2 mb-3">Auxílio e direitos estudantis</h6>
                                 <div class="mb-3">
                                     <strong>Meio de transporte:</strong>
                                     <div id="ficha_meio_transporte" class="text-muted mt-1 ficha-text">-</div>
