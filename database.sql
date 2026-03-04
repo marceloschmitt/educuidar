@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS alunos (
     medicacao_uso_continuo TEXT NULL,
     situacao_marcante_vida TEXT NULL,
     auxilios_direitos_estudantis TEXT NULL,
+    observacoes_assistencia_estudantil TEXT NULL,
     desistente TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -258,3 +259,4 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 -- Migração (banco já existente): execute no MySQL:
 -- ALTER TABLE alunos ADD COLUMN desistente TINYINT(1) DEFAULT 0 AFTER auxilios_direitos_estudantis;
 -- ALTER TABLE alunos ADD INDEX idx_desistente (desistente);
+-- ALTER TABLE alunos ADD COLUMN observacoes_assistencia_estudantil TEXT NULL AFTER auxilios_direitos_estudantis;

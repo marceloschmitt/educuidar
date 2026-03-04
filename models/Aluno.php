@@ -52,6 +52,7 @@ class Aluno {
     public $medicacao_uso_continuo;
     public $situacao_marcante_vida;
     public $auxilios_direitos_estudantis;
+    public $observacoes_assistencia_estudantil;
     public $desistente;
     public $created_at;
 
@@ -68,7 +69,7 @@ class Aluno {
                    meio_transporte, razao_escolha_ifrs, expectativa_estudante_familia, conhecimento_curso_tecnico, rede_atendimento_familia,
                    estabelecimento_ensino_fundamental, monitoria_atendimento_reprovacao_fundamental, deficiencia_necessidade_especifica, necessidade_adequacao_aprendizagem,
                    medidas_disciplinares, bullying, maiores_dificuldades, acesso_internet_casa, local_estudo, rotina_estudo_casa, habito_leitura, atividades_extracurriculares,
-                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida, auxilios_direitos_estudantis, desistente) 
+                   acompanhamento_tratamento_especializado, alergias, medicacao_uso_continuo, situacao_marcante_vida, auxilios_direitos_estudantis, observacoes_assistencia_estudantil, desistente) 
                   VALUES (:nome, :nome_social, :email, :telefone_celular, :data_nascimento, :numero_matricula, :endereco, :foto, 
                           :pessoa_referencia, :telefone_pessoa_referencia, :rede_atendimento, :auxilio_estudantil, :nee, 
                           :indigena, :pei, :profissionais_referencia, :outras_observacoes,
@@ -76,7 +77,7 @@ class Aluno {
                           :meio_transporte, :razao_escolha_ifrs, :expectativa_estudante_familia, :conhecimento_curso_tecnico, :rede_atendimento_familia,
                           :estabelecimento_ensino_fundamental, :monitoria_atendimento_reprovacao_fundamental, :deficiencia_necessidade_especifica, :necessidade_adequacao_aprendizagem,
                           :medidas_disciplinares, :bullying, :maiores_dificuldades, :acesso_internet_casa, :local_estudo, :rotina_estudo_casa, :habito_leitura, :atividades_extracurriculares,
-                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida, :auxilios_direitos_estudantis, :desistente)";
+                          :acompanhamento_tratamento_especializado, :alergias, :medicacao_uso_continuo, :situacao_marcante_vida, :auxilios_direitos_estudantis, :observacoes_assistencia_estudantil, :desistente)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -168,6 +169,8 @@ class Aluno {
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
         $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
         $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
+        $observacoes_assistencia_estudantil = !empty($this->observacoes_assistencia_estudantil) ? $this->observacoes_assistencia_estudantil : null;
+        $stmt->bindParam(':observacoes_assistencia_estudantil', $observacoes_assistencia_estudantil);
         $desistente = isset($this->desistente) ? ($this->desistente ? 1 : 0) : 0;
         $stmt->bindParam(':desistente', $desistente, PDO::PARAM_INT);
 
@@ -262,6 +265,7 @@ class Aluno {
                       medicacao_uso_continuo = :medicacao_uso_continuo,
                       situacao_marcante_vida = :situacao_marcante_vida,
                       auxilios_direitos_estudantis = :auxilios_direitos_estudantis,
+                      observacoes_assistencia_estudantil = :observacoes_assistencia_estudantil,
                       desistente = :desistente
                   WHERE id = :id";
 
@@ -356,6 +360,8 @@ class Aluno {
         $stmt->bindParam(':situacao_marcante_vida', $situacao_marcante_vida);
         $auxilios_direitos_estudantis = !empty($this->auxilios_direitos_estudantis) ? $this->auxilios_direitos_estudantis : null;
         $stmt->bindParam(':auxilios_direitos_estudantis', $auxilios_direitos_estudantis);
+        $observacoes_assistencia_estudantil = !empty($this->observacoes_assistencia_estudantil) ? $this->observacoes_assistencia_estudantil : null;
+        $stmt->bindParam(':observacoes_assistencia_estudantil', $observacoes_assistencia_estudantil);
         $desistente = isset($this->desistente) ? ($this->desistente ? 1 : 0) : 0;
         $stmt->bindParam(':desistente', $desistente, PDO::PARAM_INT);
 

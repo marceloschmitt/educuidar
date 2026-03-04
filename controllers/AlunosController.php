@@ -323,6 +323,7 @@ class AlunosController extends Controller {
             $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
             $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
             $this->aluno->auxilios_direitos_estudantis = $_POST['auxilios_direitos_estudantis'] ?? '';
+            $this->aluno->observacoes_assistencia_estudantil = $_POST['observacoes_assistencia_estudantil'] ?? '';
         } else {
             $this->aluno->identidade_genero = null;
             $this->aluno->grupo_familiar = null;
@@ -351,6 +352,7 @@ class AlunosController extends Controller {
             $this->aluno->medicacao_uso_continuo = null;
             $this->aluno->situacao_marcante_vida = null;
             $this->aluno->auxilios_direitos_estudantis = null;
+            $this->aluno->observacoes_assistencia_estudantil = null;
         }
         $this->aluno->desistente = isset($_POST['desistente']) && $_POST['desistente'] == '1';
         
@@ -487,6 +489,7 @@ class AlunosController extends Controller {
             $this->aluno->medicacao_uso_continuo = $_POST['medicacao_uso_continuo'] ?? '';
             $this->aluno->situacao_marcante_vida = $_POST['situacao_marcante_vida'] ?? '';
             $this->aluno->auxilios_direitos_estudantis = $_POST['auxilios_direitos_estudantis'] ?? '';
+            $this->aluno->observacoes_assistencia_estudantil = $_POST['observacoes_assistencia_estudantil'] ?? '';
         } else {
             $this->aluno->identidade_genero = $aluno_atual['identidade_genero'] ?? null;
             $this->aluno->grupo_familiar = $aluno_atual['grupo_familiar'] ?? null;
@@ -515,6 +518,7 @@ class AlunosController extends Controller {
             $this->aluno->medicacao_uso_continuo = $aluno_atual['medicacao_uso_continuo'] ?? null;
             $this->aluno->situacao_marcante_vida = $aluno_atual['situacao_marcante_vida'] ?? null;
             $this->aluno->auxilios_direitos_estudantis = $aluno_atual['auxilios_direitos_estudantis'] ?? null;
+            $this->aluno->observacoes_assistencia_estudantil = $aluno_atual['observacoes_assistencia_estudantil'] ?? null;
         }
         
         // Handle photo upload

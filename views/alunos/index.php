@@ -481,6 +481,10 @@ window.ALUNOS_FILTROS = {
                         <label for="modal_auxilios_direitos_estudantis" class="form-label">Auxílios</label>
                         <textarea class="form-control" id="modal_auxilios_direitos_estudantis" name="auxilios_direitos_estudantis" rows="2"></textarea>
                     </div>
+                    <div class="mb-3">
+                        <label for="modal_observacoes_assistencia_estudantil" class="form-label">Observações da assistência estudantil</label>
+                        <textarea class="form-control" id="modal_observacoes_assistencia_estudantil" name="observacoes_assistencia_estudantil" rows="3"></textarea>
+                    </div>
                     <?php endif; ?>
                 </div>
                 <div class="modal-footer">

@@ -238,6 +238,10 @@
                             <strong>Auxílios:</strong>
                             <div id="ficha_auxilios_direitos_estudantis" class="text-muted mt-1 ficha-text">-</div>
                         </div>
+                        <div class="mb-3">
+                            <strong>Observações da assistência estudantil:</strong>
+                            <div id="ficha_observacoes_assistencia_estudantil" class="text-muted mt-1 ficha-text">-</div>
+                        </div>
                     </div>
                 </div>
                 <?php endif; ?>
