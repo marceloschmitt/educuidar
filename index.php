@@ -264,6 +264,8 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 <th>Hora</th>
                                 <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <th>Aluno</th>
+                                <th>Curso</th>
+                                <th>Turma</th>
                                 <?php endif; ?>
                                 <th>Tipo</th>
                                 <th>Registrado por</th>
@@ -285,6 +287,8 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
                                 <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
+                                <td><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></td>
+                                <td><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></td>
                                 <?php endif; ?>
                                 <td>
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
