@@ -525,8 +525,7 @@ require_once 'includes/header.php';
             <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Data</th>
-                                <th>Hora</th>
+                                <th>Data / Hora</th>
                                 <th>Aluno</th>
                                 <th>Curso / Turma</th>
                                 <th style="max-width: 140px;">Tipo</th>
@@ -586,8 +585,7 @@ require_once 'includes/header.php';
                                     return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id);
                                 })()
                             ])); ?>'>
-                                <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
-                                <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
+                                <td><div><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></div><div class="small text-muted"><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></div></td>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
                                 <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
                                 <td style="max-width: 140px; overflow-wrap: break-word;">

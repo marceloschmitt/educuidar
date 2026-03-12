@@ -260,8 +260,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Data</th>
-                                <th>Hora</th>
+                                <th>Data / Hora</th>
                                 <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <th>Aluno</th>
                                 <th>Curso / Turma</th>
@@ -282,8 +281,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
                                 'observacoes' => $evt['observacoes'] ?? ''
                             ])); ?>'>
-                                <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
-                                <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
+                                <td><div><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></div><div class="small text-muted"><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></div></td>
                                 <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
                                 <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>

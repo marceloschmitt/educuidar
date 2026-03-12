@@ -625,8 +625,7 @@ if ($aluno_id) {
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Data</th>
-                                <th>Hora</th>
+                                <th>Data / Hora</th>
                                 <th style="max-width: 280px;">Tipo</th>
                                 <th>Observações</th>
                                 <th>Registrado por</th>
@@ -687,8 +686,7 @@ if ($aluno_id) {
                                     return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id);
                                 })()
                             ])); ?>'>
-                                <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
-                                <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
+                                <td><div><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></div><div class="small text-muted"><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></div></td>
                                 <td style="max-width: 280px; overflow-wrap: break-word;">
                                     <?php if (!empty($ev['tipo_evento_nome'])): ?>
                                         <?php 
