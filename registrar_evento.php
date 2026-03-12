@@ -627,7 +627,7 @@ if ($aluno_id) {
                             <tr>
                                 <th>Data</th>
                                 <th>Hora</th>
-                                <th>Tipo</th>
+                                <th style="max-width: 140px;">Tipo</th>
                                 <th>Observações</th>
                                 <th>Registrado por</th>
                             </tr>
@@ -689,15 +689,15 @@ if ($aluno_id) {
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
-                                <td>
+                                <td style="max-width: 140px; overflow-wrap: break-word;">
                                     <?php if (!empty($ev['tipo_evento_nome'])): ?>
                                         <?php 
                                         $cor = $ev['tipo_evento_cor'] ?? 'secondary';
                                         // Se a cor começa com #, usar style, senão usar classe Bootstrap
                                         if (strpos($cor, '#') === 0) {
-                                            echo '<span class="badge" style="background-color: ' . htmlspecialchars($cor) . ';">';
+                                            echo '<span class="badge" style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;">';
                                         } else {
-                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '">';
+                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '" style="white-space: normal;">';
                                         }
                                         ?>
                                             <?php echo htmlspecialchars($ev['tipo_evento_nome']); ?>
