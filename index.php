@@ -266,7 +266,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 <th>Aluno</th>
                                 <th>Curso / Turma</th>
                                 <?php endif; ?>
-                                <th>Tipo</th>
+                                <th style="max-width: 140px;">Tipo</th>
                                 <th>Registrado por</th>
                             </tr>
                         </thead>
@@ -288,14 +288,14 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
                                 <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
                                 <?php endif; ?>
-                                <td>
+                                <td style="max-width: 140px; overflow-wrap: break-word;">
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
                                         <?php 
                                         $cor = $evt['tipo_evento_cor'] ?? 'secondary';
                                         if (strpos($cor, '#') === 0) {
-                                            echo '<span class="badge" style="background-color: ' . htmlspecialchars($cor) . ';">';
+                                            echo '<span class="badge" style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;">';
                                         } else {
-                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '">';
+                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '" style="white-space: normal;">';
                                         }
                                         ?>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>

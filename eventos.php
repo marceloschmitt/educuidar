@@ -529,7 +529,7 @@ require_once 'includes/header.php';
                                 <th>Hora</th>
                                 <th>Aluno</th>
                                 <th>Curso / Turma</th>
-                                <th>Tipo</th>
+                                <th style="max-width: 140px;">Tipo</th>
                                 <th>Registrado por</th>
                             </tr>
                         </thead>
@@ -590,9 +590,9 @@ require_once 'includes/header.php';
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
                                 <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
-                                <td>
+                                <td style="max-width: 140px; overflow-wrap: break-word;">
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
-                                        <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>">
+                                        <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>" style="white-space: normal;">
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>
                                         </span>
                                         <?php if (!empty($anexos_por_evento[$evt['id']])): ?>
