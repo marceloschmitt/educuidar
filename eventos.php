@@ -528,8 +528,7 @@ require_once 'includes/header.php';
                                 <th>Data</th>
                                 <th>Hora</th>
                                 <th>Aluno</th>
-                                <th>Curso</th>
-                                <th>Turma</th>
+                                <th>Curso / Turma</th>
                                 <th>Tipo</th>
                                 <th>Registrado por</th>
                             </tr>
@@ -590,8 +589,7 @@ require_once 'includes/header.php';
                                 <td><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></td>
                                 <td><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></td>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
-                                <td><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></td>
-                                <td><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></td>
+                                <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
                                 <td>
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
                                         <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>">
