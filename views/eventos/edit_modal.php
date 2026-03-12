@@ -22,13 +22,8 @@ $turma_corrente_id = isset($turma_corrente['id']) ? $turma_corrente['id'] : '';
                             <label for="edit_tipo_evento_id" class="form-label">Tipo de Evento <span class="text-danger">*</span></label>
                             <select class="form-select" id="edit_tipo_evento_id" name="tipo_evento_id" required>
                                 <option value="">Selecione o tipo...</option>
-                                <?php foreach ($tipos_eventos as $te): ?>
-                                <?php
-                                $prontuario_tipo = $te['prontuario_user_type_id'] ?? '';
-                                if (empty($prontuario_tipo) && !empty($te['gera_prontuario'])) {
-                                    $prontuario_tipo = 'assistencia_estudantil';
-                                }
-                                ?>
+                                <?php foreach (isset($tipos_eventos_para_edicao) ? $tipos_eventos_para_edicao : $tipos_eventos as $te): ?>
+                                <?php $prontuario_tipo = $te['prontuario_user_type_id'] ?? ''; ?>
                                 <option value="<?php echo $te['id']; ?>" data-prontuario-user-type-id="<?php echo htmlspecialchars($prontuario_tipo); ?>">
                                     <?php echo htmlspecialchars($te['nome']); ?>
                                 </option>

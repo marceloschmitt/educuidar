@@ -363,6 +363,13 @@ if (empty($anos_disponiveis)) {
 }
 $tipo_evento_model = new TipoEvento($db);
 $tipos_eventos = $tipo_evento_model->getAll(true); // Apenas ativos
+// Tipos disponíveis no modal de edição: admin vê todos; demais veem só tipos sem categoria ou da sua categoria
+$tipos_eventos_para_edicao = $user->isAdmin()
+    ? $tipos_eventos
+    : array_values(array_filter($tipos_eventos, function($te) use ($current_user_type_id) {
+        $pid = $te['prontuario_user_type_id'] ?? '';
+        return $pid === '' || (string)$pid === (string)$current_user_type_id;
+    }));
 
 // Get curso info if filtered
 $curso_filtrado = null;

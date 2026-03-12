@@ -736,6 +736,7 @@ if ($aluno_id) {
             </div>
         </div>
 
+        <?php $tipos_eventos_para_edicao = $tipos_eventos_criacao; ?>
         <?php require_once __DIR__ . '/views/eventos/edit_modal.php'; ?>
         <?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
 
@@ -760,12 +761,7 @@ if ($aluno_id) {
                                     <select class="form-select" id="modal_tipo_evento_id" name="tipo_evento_id" required>
                                         <option value="">Selecione o tipo...</option>
                                         <?php foreach ($tipos_eventos_criacao as $te): ?>
-                                        <?php
-                                        $prontuario_tipo = $te['prontuario_user_type_id'] ?? '';
-                                        if (empty($prontuario_tipo) && !empty($te['gera_prontuario'])) {
-                                            $prontuario_tipo = 'assistencia_estudantil';
-                                        }
-                                        ?>
+                                        <?php $prontuario_tipo = $te['prontuario_user_type_id'] ?? ''; ?>
                                         <option value="<?php echo $te['id']; ?>" data-prontuario-user-type-id="<?php echo htmlspecialchars($prontuario_tipo); ?>">
                                             <?php echo htmlspecialchars($te['nome']); ?>
                                         </option>
@@ -803,7 +799,6 @@ if ($aluno_id) {
                                 <small class="text-muted d-block mt-1">PDF, imagens, DOC/DOCX, XLS/XLSX ou TXT (até 10MB cada).</small>
                             </div>
                             
-                            <?php if ($user->isNivel0()): ?>
                             <div class="mb-3" id="prontuario_container" style="display: none;">
                                 <label for="modal_prontuario" class="form-label">
                                     <i class="bi bi-file-text"></i> Prontuário (uso exclusivo)
@@ -812,7 +807,6 @@ if ($aluno_id) {
                                           placeholder="Descrição do atendimento para o prontuário (visível apenas para o tipo de usuário definido no tipo de evento)"></textarea>
                                 <small class="text-muted">Este campo é visível apenas para o tipo de usuário definido no tipo de evento.</small>
                             </div>
-                            <?php endif; ?>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
