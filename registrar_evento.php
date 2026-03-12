@@ -627,7 +627,7 @@ if ($aluno_id) {
                             <tr>
                                 <th>Data</th>
                                 <th>Hora</th>
-                                <th style="max-width: 140px;">Tipo</th>
+                                <th style="max-width: 280px;">Tipo</th>
                                 <th>Observações</th>
                                 <th>Registrado por</th>
                             </tr>
@@ -689,7 +689,7 @@ if ($aluno_id) {
                             ])); ?>'>
                                 <td><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></td>
                                 <td><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></td>
-                                <td style="max-width: 140px; overflow-wrap: break-word;">
+                                <td style="max-width: 280px; overflow-wrap: break-word;">
                                     <?php if (!empty($ev['tipo_evento_nome'])): ?>
                                         <?php 
                                         $cor = $ev['tipo_evento_cor'] ?? 'secondary';
