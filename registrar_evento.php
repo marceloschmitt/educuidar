@@ -1087,8 +1087,8 @@ if ($aluno_id) {
     foreach ($alunos_raw as $a) {
         // Apply nome filter if set
         if ($filtro_nome) {
-            $filtro_nome_lower = mb_strtolower($filtro_nome, 'UTF-8');
-            $nome_lower = mb_strtolower($a['nome'] ?? '', 'UTF-8');
+            $filtro_nome_lower = normalizeSearchText($filtro_nome);
+            $nome_lower = normalizeSearchText($a['nome'] ?? '');
             if (mb_strpos($nome_lower, $filtro_nome_lower) === false) {
                 continue;
             }

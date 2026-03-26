@@ -18,7 +18,7 @@ class AlunosController extends Controller {
         $this->evento = new Evento($this->db);
         $this->configuracao = new Configuracao($this->db);
     }
-    
+
     /**
      * Lista de alunos
      */
@@ -116,14 +116,14 @@ class AlunosController extends Controller {
         }
         
         if ($filtro_nome) {
-            $filtro_nome_lower = mb_strtolower($filtro_nome, 'UTF-8');
-            $alunos = array_filter($alunos, function($a) use ($filtro_nome_lower) {
-                $nome_lower = mb_strtolower($a['nome'] ?? '', 'UTF-8');
-                $nome_social_lower = mb_strtolower($a['nome_social'] ?? '', 'UTF-8');
+            $filtro_nome_normalizado = normalizeSearchText($filtro_nome);
+            $alunos = array_filter($alunos, function($a) use ($filtro_nome_normalizado) {
+                $nome_lower = normalizeSearchText($a['nome'] ?? '');
+                $nome_social_lower = normalizeSearchText($a['nome_social'] ?? '');
                 $nome_exibicao_lower = !empty($a['nome_social']) ? $nome_social_lower : $nome_lower;
-                return mb_strpos($nome_lower, $filtro_nome_lower) !== false || 
-                       mb_strpos($nome_social_lower, $filtro_nome_lower) !== false ||
-                       mb_strpos($nome_exibicao_lower, $filtro_nome_lower) !== false;
+                return mb_strpos($nome_lower, $filtro_nome_normalizado) !== false ||
+                       mb_strpos($nome_social_lower, $filtro_nome_normalizado) !== false ||
+                       mb_strpos($nome_exibicao_lower, $filtro_nome_normalizado) !== false;
             });
         }
         

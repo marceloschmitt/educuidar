@@ -397,10 +397,10 @@ if ($filtro_turma) {
 }
 
 if ($filtro_nome) {
-    $filtro_nome_lower = mb_strtolower($filtro_nome, 'UTF-8');
-    $eventos = array_filter($eventos, function($evt) use ($filtro_nome_lower) {
-        $nome_lower = mb_strtolower($evt['aluno_nome'] ?? '', 'UTF-8');
-        return mb_strpos($nome_lower, $filtro_nome_lower) !== false;
+    $filtro_nome_normalizado = normalizeSearchText($filtro_nome);
+    $eventos = array_filter($eventos, function($evt) use ($filtro_nome_normalizado) {
+        $nome_lower = normalizeSearchText($evt['aluno_nome'] ?? '');
+        return mb_strpos($nome_lower, $filtro_nome_normalizado) !== false;
     });
 }
 
