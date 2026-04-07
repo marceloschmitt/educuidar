@@ -38,6 +38,8 @@ $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($curren
 $selected_turma_id = $_GET['turma_id'] ?? ($_POST['turma_id'] ?? '');
 $selected_tipo_evento_id = $_GET['tipo_evento_id'] ?? ($_POST['tipo_evento_id'] ?? '');
 $observacoes_preservar = $_POST['observacoes'] ?? '';
+$data_evento_preservar = $_POST['data_evento'] ?? date('Y-m-d');
+$hora_evento_preservar = $_POST['hora_evento'] ?? date('H:i');
 $alunos_turma = [];
 
 if (!empty($selected_turma_id) && !empty($selected_tipo_evento_id)) {
@@ -48,6 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $selected_turma_id = $_POST['turma_id'] ?? '';
     $selected_tipo_evento_id = $_POST['tipo_evento_id'] ?? '';
     $selected_alunos = $_POST['alunos'] ?? [];
+    $data_evento = $_POST['data_evento'] ?? '';
+    $hora_evento = $_POST['hora_evento'] ?? '';
+
+    $data_valida = DateTime::createFromFormat('Y-m-d', $data_evento);
+    $hora_informada = trim((string)$hora_evento) !== '';
+    $hora_valida = !$hora_informada || DateTime::createFromFormat('H:i', $hora_evento);
 
     $allowed_tipo_ids = array_map(function($te) {
         return (string)($te['id'] ?? '');
@@ -55,6 +63,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 
     if (empty($selected_turma_id) || empty($selected_tipo_evento_id)) {
         $error = 'Selecione a turma e o tipo de evento.';
+    } elseif (!$data_valida || $data_valida->format('Y-m-d') !== $data_evento) {
+        $error = 'Informe uma data válida para o evento.';
+    } elseif ($hora_informada && (!$hora_valida || $hora_valida->format('H:i') !== $hora_evento)) {
+        $error = 'Informe um horário válido para o evento.';
     } elseif (!in_array((string)$selected_tipo_evento_id, $allowed_tipo_ids, true)) {
         $error = 'Tipo de evento inválido para o seu usuário.';
     } elseif (empty($selected_alunos) || !is_array($selected_alunos)) {
@@ -83,8 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $evento->aluno_id = $aluno_id;
                     $evento->turma_id = $selected_turma_id;
                     $evento->tipo_evento_id = $selected_tipo_evento_id;
-                    $evento->data_evento = date('Y-m-d');
-                    $evento->hora_evento = date('H:i');
+                    $evento->data_evento = $data_evento;
+                    $evento->hora_evento = $hora_informada ? $hora_evento : null;
                     $evento->observacoes = $_POST['observacoes'] ?? '';
                     $evento->prontuario = '';
                     $evento->registrado_por = $user_id;
@@ -163,6 +175,17 @@ require_once 'includes/header.php';
                             <input type="hidden" name="action" value="create_group">
                             <input type="hidden" name="turma_id" value="<?php echo htmlspecialchars($selected_turma_id); ?>">
                             <input type="hidden" name="tipo_evento_id" value="<?php echo htmlspecialchars($selected_tipo_evento_id); ?>">
+
+                            <div class="row">
+                                <div class="col-12 col-md-3 mb-3">
+                                    <label for="data_evento" class="form-label">Data <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="data_evento" name="data_evento" value="<?php echo htmlspecialchars($data_evento_preservar); ?>" required>
+                                </div>
+                                <div class="col-12 col-md-3 mb-3">
+                                    <label for="hora_evento" class="form-label">Hora</label>
+                                    <input type="time" class="form-control" id="hora_evento" name="hora_evento" value="<?php echo htmlspecialchars($hora_evento_preservar); ?>">
+                                </div>
+                            </div>
 
                             <div class="mb-3">
                                 <label for="observacoes" class="form-label">Observações</label>
