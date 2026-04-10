@@ -51,11 +51,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     $selected_tipo_evento_id = $_POST['tipo_evento_id'] ?? '';
     $selected_alunos = $_POST['alunos'] ?? [];
     $data_evento = $_POST['data_evento'] ?? '';
-    $hora_evento = $_POST['hora_evento'] ?? '';
+    $hora_evento = trim((string)($_POST['hora_evento'] ?? ''));
 
     $data_valida = DateTime::createFromFormat('Y-m-d', $data_evento);
-    $hora_informada = trim((string)$hora_evento) !== '';
-    $hora_valida = !$hora_informada || DateTime::createFromFormat('H:i', $hora_evento);
+    $hora_informada = $hora_evento !== '';
+    $hora_valida_obj = null;
+    if ($hora_informada) {
+        $hora_valida_obj = DateTime::createFromFormat('H:i', $hora_evento);
+        if ($hora_valida_obj && $hora_valida_obj->format('H:i') !== $hora_evento) {
+            $hora_valida_obj = false;
+        }
+    }
 
     $allowed_tipo_ids = array_map(function($te) {
         return (string)($te['id'] ?? '');
@@ -65,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         $error = 'Selecione a turma e o tipo de evento.';
     } elseif (!$data_valida || $data_valida->format('Y-m-d') !== $data_evento) {
         $error = 'Informe uma data válida para o evento.';
-    } elseif ($hora_informada && (!$hora_valida || $hora_valida->format('H:i') !== $hora_evento)) {
+    } elseif ($hora_informada && !$hora_valida_obj) {
         $error = 'Informe um horário válido para o evento.';
     } elseif (!in_array((string)$selected_tipo_evento_id, $allowed_tipo_ids, true)) {
         $error = 'Tipo de evento inválido para o seu usuário.';
