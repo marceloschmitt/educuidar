@@ -478,8 +478,8 @@ require_once 'includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
+            <div class="col-6 col-md-1">
+                <label for="filtro_ano" class="form-label">Ano</label>
                 <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
                     <?php foreach ($anos_disponiveis as $ano): ?>
                     <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
@@ -500,17 +500,15 @@ require_once 'includes/header.php';
                     </button>
                 </div>
             </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <div class="form-check mb-2">
+            <div class="col-md-2 d-flex align-items-end gap-2 pb-1">
+                <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
                            onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
-                    <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
+                    <label class="form-check-label" for="incluir_sabados_cb">Incluir sábado</label>
                 </div>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
                 <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente) || !$incluir_sabados): ?>
-                <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm w-100">
-                    <i class="bi bi-x-circle"></i> Limpar Filtros
+                <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm text-nowrap" title="Limpar filtros">
+                    <i class="bi bi-x-circle"></i>
                 </a>
                 <?php endif; ?>
             </div>
