@@ -68,12 +68,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     // Mostrar todos os eventos que passaram nos filtros (sem limite)
 } else {
     $estatisticas = $evento->getEstatisticas($user_id, null, null, $ano_corrente, null, $incluir_sabados);
-    $eventos_recentes = $evento->getByAluno($user_id);
-    if (!$incluir_sabados) {
-        $eventos_recentes = array_filter($eventos_recentes, function($evt) {
-            return (int)date('w', strtotime($evt['data_evento'])) !== 6;
-        });
-    }
+    $eventos_recentes = filterEventosPorSabado($evento->getByAluno($user_id), $incluir_sabados);
     // Filter by tipo_evento if selected
     if ($filtro_tipo_evento) {
         $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($filtro_tipo_evento) {
@@ -255,7 +250,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     <?php if (!$incluir_sabados): ?>
                     <span class="badge bg-secondary">Sábados ocultos</span>
                     <?php endif; ?>
-                <?php if ($filtro_tipo_evento): ?>
+                    <?php if ($filtro_tipo_evento): ?>
                     <?php 
                     $tipo_selecionado = null;
                     foreach ($todos_tipos as $t) {
@@ -271,7 +266,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                         Filtrando por: <?php echo htmlspecialchars($tipo_selecionado['nome']); ?>
                     </span>
                     <?php endif; ?>
-                <?php endif; ?>
+                </div>
             </div>
             <div class="card-body">
                 <?php if (empty($eventos_recentes)): ?>
