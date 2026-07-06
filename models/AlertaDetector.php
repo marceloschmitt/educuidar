@@ -298,7 +298,7 @@ class AlertaDetector {
             'data_fim' => $melhor_dia,
             'quantidade_contada' => $melhor_qtd,
             'datas' => [$melhor_dia],
-            'periodo_label' => date('d/m/Y', strtotime($melhor_dia)) . ' (' . $melhor_qtd . ' ocorrências)',
+            'periodo_label' => formatAlertaPeriodoLabel($melhor_dia, $melhor_dia),
         ];
     }
 
