@@ -67,7 +67,7 @@ class Evento {
         return false;
     }
 
-    public function getAll($registrado_por = null, $ano_civil = null) {
+    public function getAll($registrado_por = null, $ano_civil = null, $incluir_sabados = true) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -88,6 +88,9 @@ class Evento {
         }
         if ($ano_civil !== null) {
             $where[] = "t.ano_civil = :ano_civil";
+        }
+        if ($incluir_sabados === false) {
+            $where[] = "DAYOFWEEK(e.data_evento) != 7";
         }
         if (!empty($where)) {
             $query .= " WHERE " . implode(" AND ", $where);
@@ -295,7 +298,7 @@ class Evento {
         return false;
     }
 
-    public function getEstatisticas($aluno_id = null, $turma_id = null, $curso_id = null, $ano_corrente = null, $registrado_por = null) {
+    public function getEstatisticas($aluno_id = null, $turma_id = null, $curso_id = null, $ano_corrente = null, $registrado_por = null, $incluir_sabados = true) {
         $where = [];
         $params = [];
         
@@ -324,6 +327,10 @@ class Evento {
         if ($registrado_por !== null) {
             $where[] = "e.registrado_por = :registrado_por";
             $params[':registrado_por'] = $registrado_por;
+        }
+
+        if ($incluir_sabados === false) {
+            $where[] = "DAYOFWEEK(e.data_evento) != 7";
         }
         
         $where_clause = "WHERE " . implode(" AND ", $where);
