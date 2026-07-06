@@ -204,6 +204,7 @@ $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
 $filtro_nome = $_GET['filtro_nome'] ?? '';
 $ano_corrente = $configuracao->getAnoCorrente();
+$apenas_meus_eventos = ($_GET['apenas_meus_eventos'] ?? '') === '1';
 $filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
 if (!is_numeric($filtro_ano)) {
     $filtro_ano = $ano_corrente;
@@ -285,6 +286,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
     if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
     if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
     if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
+    if (!$incluir_sabados) $params['incluir_sabados'] = '0';
+    if ($apenas_meus_eventos) $params['apenas_meus_eventos'] = '1';
     $redirect_url = 'eventos.php?' . http_build_query($params);
     header('Location: ' . $redirect_url);
     exit;
@@ -305,6 +308,8 @@ if (isset($_GET['delete'])) {
             if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
             if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
             if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
+            if (!$incluir_sabados) $params['incluir_sabados'] = '0';
+            if ($apenas_meus_eventos) $params['apenas_meus_eventos'] = '1';
             $params['success'] = 'deleted';
             $redirect_url = 'eventos.php?' . http_build_query($params);
             header('Location: ' . $redirect_url);
@@ -320,6 +325,8 @@ if (isset($_GET['delete'])) {
             if ($filtro_turma) $params['filtro_turma'] = $filtro_turma;
             if ($filtro_nome) $params['filtro_nome'] = $filtro_nome;
             if ($filtro_ano) $params['filtro_ano'] = $filtro_ano;
+            if (!$incluir_sabados) $params['incluir_sabados'] = '0';
+            if ($apenas_meus_eventos) $params['apenas_meus_eventos'] = '1';
             $params['success'] = 'deleted';
             $redirect_url = 'eventos.php?' . http_build_query($params);
             header('Location: ' . $redirect_url);
@@ -330,9 +337,9 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Nivel2 só vê eventos que ele mesmo registrou
+// Nivel2 só vê seus eventos; demais usuários podem ativar esse filtro.
 $user_id = $_SESSION['user_id'] ?? null;
-$registrado_por = ($user->isNivel2()) ? $user_id : null;
+$registrado_por = ($user->isNivel2() || $apenas_meus_eventos) ? $user_id : null;
 $current_user_type_id = $_SESSION['user_type_id'] ?? '';
 if (empty($current_user_type_id)) {
     $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
@@ -447,6 +454,7 @@ require_once 'includes/header.php';
         <!-- Filters -->
         <form method="GET" action="" class="row g-3 mb-4">
             <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
+            <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
             <div class="col-md-3">
                 <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
                 <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
@@ -501,12 +509,20 @@ require_once 'includes/header.php';
                 </div>
             </div>
             <div class="col-md-2 d-flex align-items-end gap-2 pb-1">
-                <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
-                           onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
-                    <label class="form-check-label" for="incluir_sabados_cb">Incluir sábado</label>
+                <div class="small">
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                               onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                        <label class="form-check-label text-nowrap" for="incluir_sabados_cb">Incluir sábado</label>
+                    </div>
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
+                               <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                               onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                        <label class="form-check-label text-nowrap" for="apenas_meus_eventos_cb">Só meus</label>
+                    </div>
                 </div>
-                <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente) || !$incluir_sabados): ?>
+                <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente) || !$incluir_sabados || $apenas_meus_eventos): ?>
                 <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm text-nowrap" title="Limpar filtros">
                     <i class="bi bi-x-circle"></i>
                 </a>

@@ -17,6 +17,7 @@ $incluir_sabados = resolveIncluirSabadosSession();
 $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
 $filtro_tipo_evento = $_GET['filtro_tipo_evento'] ?? '';
+$apenas_meus_eventos = ($_GET['apenas_meus_eventos'] ?? '') === '1';
 
 // Get ano corrente
 $ano_corrente = $configuracao->getAnoCorrente();
@@ -37,8 +38,8 @@ $todos_tipos = $tipo_evento_model->getAll(true); // Apenas ativos
 
 // Get statistics
 if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()) {
-    // Nivel2 só vê eventos que ele mesmo registrou
-    $registrado_por = ($user->isNivel2()) ? $user_id : null;
+    // Nivel2 só vê seus eventos; demais usuários podem ativar esse filtro.
+    $registrado_por = ($user->isNivel2() || $apenas_meus_eventos) ? $user_id : null;
     $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por, $incluir_sabados);
     $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados);
     // Filter eventos recentes by ano corrente
@@ -85,6 +86,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
             <div class="card-body">
                 <form method="GET" action="" class="row g-3">
                     <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
+                    <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
                     <div class="col-md-3">
                         <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
                         <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
@@ -116,15 +118,23 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
+                    <div class="col-md-2 d-flex align-items-end">
                         <div class="form-check mb-2">
                             <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
                                    onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
                             <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                         </div>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <?php if ($filtro_curso || $filtro_turma || $filtro_tipo_evento || !$incluir_sabados): ?>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
+                                   <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                                   onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                            <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <?php if ($filtro_curso || $filtro_turma || $filtro_tipo_evento || !$incluir_sabados || $apenas_meus_eventos): ?>
                         <a href="index.php?limpar_filtros=1" class="btn btn-secondary btn-sm w-100">
                             <i class="bi bi-x-circle"></i> Limpar Filtros
                         </a>
@@ -159,6 +169,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
         if ($filtro_curso) $url_params['filtro_curso'] = $filtro_curso;
         if ($filtro_turma) $url_params['filtro_turma'] = $filtro_turma;
         if (!$incluir_sabados) $url_params['incluir_sabados'] = '0';
+        if ($apenas_meus_eventos) $url_params['apenas_meus_eventos'] = '1';
         $url_params['filtro_tipo_evento'] = $tipo['id'];
         $card_url = 'index.php?' . http_build_query($url_params);
         
@@ -244,6 +255,9 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     <?php endif; ?>
                     <?php if (!$incluir_sabados): ?>
                     <span class="badge bg-secondary">Sábados ocultos</span>
+                    <?php endif; ?>
+                    <?php if ($user->isNivel2() || $apenas_meus_eventos): ?>
+                    <span class="badge bg-primary">Apenas meus eventos</span>
                     <?php endif; ?>
                 <?php if ($filtro_tipo_evento): ?>
                     <?php 
