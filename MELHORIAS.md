@@ -72,7 +72,7 @@ Permitir ao usuário escolher se eventos ocorridos em **sábados** aparecem ou n
 - [x] Parâmetro `incluir_sabados` na query (atualiza sessão)
 - [x] Filtro SQL em `getAll()` e `getEstatisticas()`
 - [x] Checkbox “Incluir eventos de sábado”
-- [x] “Limpar filtros” restaura padrão (mostrar sábados)
+- [x] Botão “Filtros padrão” restaura padrão (mostrar sábados, ano corrente)
 - [x] Testar com eventos em dias úteis e sábados
 
 ---

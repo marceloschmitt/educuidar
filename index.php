@@ -132,7 +132,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                         </div>
                         <?php if ($filtro_curso || $filtro_turma || $filtro_tipo_evento || !$incluir_sabados || $apenas_meus_eventos): ?>
                         <a href="index.php?limpar_filtros=1" class="btn btn-secondary btn-sm">
-                            <i class="bi bi-x-circle"></i> Limpar Filtros
+                            <i class="bi bi-x-circle"></i> Filtros padrão
                         </a>
                         <?php endif; ?>
                     </div>

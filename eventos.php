@@ -522,7 +522,7 @@ require_once 'includes/header.php';
                 </div>
                 <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente) || !$incluir_sabados || $apenas_meus_eventos): ?>
                 <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm">
-                    <i class="bi bi-x-circle"></i> Limpar Filtros
+                    <i class="bi bi-x-circle"></i> Filtros padrão
                 </a>
                 <?php endif; ?>
             </div>
