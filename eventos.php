@@ -210,7 +210,7 @@ if (!is_numeric($filtro_ano)) {
 } else {
     $filtro_ano = (int)$filtro_ano;
 }
-$incluir_sabados = resolveIncluirSabadosFilter();
+$incluir_sabados = resolveIncluirSabadosSession();
 
 // Handle update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['action'] == 'update') {
@@ -445,11 +445,11 @@ require_once 'includes/header.php';
     </div>
     <div class="card-body">
         <!-- Filters -->
-        <form method="GET" action="" class="row g-3 mb-4" onsubmit="var cb=document.getElementById('incluir_sabados_cb');var h=document.getElementById('incluir_sabados_value');if(cb&&h){h.value=cb.checked?'1':'0';}">
+        <form method="GET" action="" class="row g-3 mb-4">
             <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
             <div class="col-md-3">
                 <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
-                <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso" onchange="this.form.submit()">
+                <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
                     <option value="">Todos os cursos</option>
                     <?php foreach ($cursos as $c): ?>
                     <option value="<?php echo $c['id']; ?>" <?php echo ($filtro_curso == $c['id']) ? 'selected' : ''; ?>>
@@ -460,7 +460,7 @@ require_once 'includes/header.php';
             </div>
             <div class="col-md-3">
                 <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $filtro_ano; ?>)</label>
-                <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma" onchange="this.form.submit()">
+                <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma">
                     <option value="">Todas as turmas</option>
                     <?php 
                     $turmas_filtradas = $turmas_ano_corrente_lista;
@@ -480,7 +480,7 @@ require_once 'includes/header.php';
             </div>
             <div class="col-md-3">
                 <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
-                <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano" onchange="this.form.submit()">
+                <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
                     <?php foreach ($anos_disponiveis as $ano): ?>
                     <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
                         <?php echo htmlspecialchars($ano); ?>
@@ -502,7 +502,8 @@ require_once 'includes/header.php';
             </div>
             <div class="col-md-3 d-flex align-items-end">
                 <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?> onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                    <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                           onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
                     <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                 </div>
             </div>

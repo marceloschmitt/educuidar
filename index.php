@@ -11,9 +11,7 @@ $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 
 $user_id = $_SESSION['user_id'];
-
-// Filtro de sábados (sessão; padrão: mostrar)
-$incluir_sabados = resolveIncluirSabadosFilter();
+$incluir_sabados = resolveIncluirSabadosSession();
 
 // Get filters
 $filtro_curso = $_GET['filtro_curso'] ?? '';
@@ -85,11 +83,11 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form method="GET" action="" class="row g-3" onsubmit="var cb=document.getElementById('incluir_sabados_cb');var h=document.getElementById('incluir_sabados_value');if(cb&&h){h.value=cb.checked?'1':'0';}">
+                <form method="GET" action="" class="row g-3">
                     <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
                     <div class="col-md-3">
                         <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
-                        <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso" onchange="this.form.submit()">
+                        <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
                             <option value="">Todos os cursos</option>
                             <?php foreach ($cursos as $c): ?>
                             <option value="<?php echo $c['id']; ?>" <?php echo ($filtro_curso == $c['id']) ? 'selected' : ''; ?>>
@@ -100,7 +98,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     </div>
                     <div class="col-md-3">
                         <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $ano_corrente; ?>)</label>
-                        <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma" onchange="this.form.submit()">
+                        <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma">
                             <option value="">Todas as turmas</option>
                             <?php 
                             $turmas_filtradas = $turmas_ano_corrente_lista;
@@ -120,7 +118,8 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     </div>
                     <div class="col-md-3 d-flex align-items-end">
                         <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?> onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                            <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                                   onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
                             <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                         </div>
                     </div>
@@ -237,11 +236,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                 <h5 class="mb-0">Eventos</h5>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <?php if (!($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2())): ?>
-                    <?php
-                    $sabado_toggle_params = [];
-                    if ($filtro_tipo_evento) $sabado_toggle_params['filtro_tipo_evento'] = $filtro_tipo_evento;
-                    ?>
-                    <a href="<?php echo htmlspecialchars(sabadoFilterToggleHref('index.php', $sabado_toggle_params, $incluir_sabados)); ?>"
+                    <a href="<?php echo htmlspecialchars(sabadoFilterToggleHref('index.php', $filtro_tipo_evento ? ['filtro_tipo_evento' => $filtro_tipo_evento] : [], $incluir_sabados)); ?>"
                        class="btn btn-sm <?php echo $incluir_sabados ? 'btn-outline-secondary' : 'btn-secondary'; ?>">
                         <i class="bi bi-calendar-week"></i>
                         <?php echo $incluir_sabados ? 'Ocultar sábados' : 'Mostrar sábados'; ?>
@@ -250,7 +245,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     <?php if (!$incluir_sabados): ?>
                     <span class="badge bg-secondary">Sábados ocultos</span>
                     <?php endif; ?>
-                    <?php if ($filtro_tipo_evento): ?>
+                <?php if ($filtro_tipo_evento): ?>
                     <?php 
                     $tipo_selecionado = null;
                     foreach ($todos_tipos as $t) {
@@ -266,7 +261,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                         Filtrando por: <?php echo htmlspecialchars($tipo_selecionado['nome']); ?>
                     </span>
                     <?php endif; ?>
-                    <?php endif; ?>
+                <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">

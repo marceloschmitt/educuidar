@@ -16,12 +16,12 @@ if (!function_exists('normalizeSearchText')) {
     }
 }
 
-if (!function_exists('resolveIncluirSabadosFilter')) {
+if (!function_exists('resolveIncluirSabadosSession')) {
     /**
      * Preferência de exibir eventos em sábado (persistida na sessão).
      * Padrão: true (mostrar). Baseado apenas em data_evento.
      */
-    function resolveIncluirSabadosFilter() {
+    function resolveIncluirSabadosSession() {
         if (!isset($_SESSION['incluir_sabados'])) {
             $_SESSION['incluir_sabados'] = true;
         }
@@ -62,7 +62,7 @@ if (!function_exists('filterEventosPorSabado')) {
 if (!function_exists('sabadoFilterToggleHref')) {
     function sabadoFilterToggleHref($script, array $preserve_params = [], $incluir_sabados = null) {
         if ($incluir_sabados === null) {
-            $incluir_sabados = resolveIncluirSabadosFilter();
+            $incluir_sabados = resolveIncluirSabadosSession();
         }
         $params = array_filter($preserve_params, function ($value) {
             return $value !== '' && $value !== null;

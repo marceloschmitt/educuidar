@@ -89,7 +89,7 @@ class Evento {
         if ($ano_civil !== null) {
             $where[] = "t.ano_civil = :ano_civil";
         }
-        if ($incluir_sabados === false) {
+        if (!$incluir_sabados) {
             $where[] = "DAYOFWEEK(e.data_evento) != 7";
         }
         if (!empty($where)) {
@@ -329,7 +329,7 @@ class Evento {
             $params[':registrado_por'] = $registrado_por;
         }
 
-        if ($incluir_sabados === false) {
+        if (!$incluir_sabados) {
             $where[] = "DAYOFWEEK(e.data_evento) != 7";
         }
         

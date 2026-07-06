@@ -1,31 +1,98 @@
 # Planejamento de Melhorias — EduCuidar
 
 Documento de anotações e planejamento para as próximas evoluções do sistema.  
-Atualizado em: 06/07/2026
+Atualizado em: 01/07/2026
 
 ---
 
-## Visão geral
+## Visão geral e ordem sugerida
 
-| # | Melhoria | Prioridade | Dependências |
-|---|----------|------------|--------------|
+| # | Melhoria | Prioridade sugerida | Dependências |
+|---|----------|---------------------|--------------|
+| 6 | Professores veem só seus eventos | Alta (rápida) | Nenhuma |
 | 1 | Filtro de eventos de sábado | Alta (rápida) | Nenhuma |
-| 2 | Relatório de alertas | Média | Item 3 (escopo por curso) |
 | 3 | Coordenadores de curso | Alta | Nenhuma |
+| 2 | Relatório de alertas | Média | Item 3 (para escopo por curso) |
 | 4 | E-mail de alertas aos coordenadores | Média | Itens 2 e 3 |
 | 5 | Módulo de responsáveis (pais) | Baixa (fase posterior) | Planejamento de campos |
-| 6 | Professores veem só seus eventos | Alta (rápida) | Nenhuma |
 
-### Ordem sugerida de implementação
+A ordem acima permite entregar valor incremental: primeiro filtros e coordenação, depois alertas, depois notificações e, por fim, o portal dos responsáveis.
 
-Não precisa seguir a numeração acima — esta é a sequência recomendada para entregar valor incremental:
+---
 
-1. **Item 6** — Professores veem só seus eventos (rápido, independente)
-2. **Item 1** — Filtro de sábados (rápido, independente)
-3. **Item 3** — Coordenadores de curso (base para alertas)
-4. **Item 2** — Relatório de alertas
-5. **Item 4** — E-mail de alertas aos coordenadores
-6. **Item 5** — Módulo de responsáveis (fase posterior)
+## 6. Professores veem apenas eventos criados por eles
+
+### Objetivo
+Usuários do tipo **Professor** devem visualizar **somente os eventos que eles mesmos registraram** (`eventos.registrado_por`), em todas as telas relevantes — da mesma forma que já ocorre hoje com usuários **Nível 2**.
+
+### Situação atual no código
+- **Nível 2** (`user_types.nivel = 'nivel2'`): já filtra por `registrado_por = user_id` em dashboard, listagem de eventos, ficha do aluno e contagem de eventos.
+- **Professor** (`user_types.nome = 'Professor'`, `nivel = 'nivel0'`): hoje vê **todos** os eventos, como admin e demais níveis.
+- **Assistência Estudantil** e **NAPNE** (também `nivel0`, nomes diferentes): continuam vendo todos os eventos — a restrição é **apenas para Professor**, não para todo `nivel0`.
+
+Padrão repetido no código hoje:
+```php
+$registrado_por = ($user->isNivel2()) ? $user_id : null;
+```
+
+### Comportamento esperado
+| Tela / recurso | Professor | Assistência / NAPNE | Nível 2 | Admin / Nível 1 |
+|----------------|-----------|----------------------|---------|-----------------|
+| Dashboard — lista e estatísticas | Só os seus | Todos | Só os seus | Todos |
+| `eventos.php` — listagem | Só os seus | Todos | Só os seus | Todos |
+| Ficha do aluno — histórico e total | Só os seus | Todos | Só os seus | Todos |
+| `registrar_evento.php` — eventos do aluno | Só os seus | Todos | Só os seus | Todos |
+| Editar/excluir evento | Só os seus (já parcialmente implementado) | Só os seus* | Só os seus | Conforme regra atual |
+
+\* Edição/exclusão por criador já vale para nivel0/nivel1/nivel2 em `eventos.php` e `registrar_evento.php`.
+
+### Implementação proposta
+
+#### 1. Métodos em `classes/User.php`
+```php
+public function isProfessor() {
+    return $this->getUserType() === 'Professor';
+}
+
+/** Usuário vê apenas eventos que ele mesmo registrou */
+public function seesOnlyOwnEvents() {
+    return $this->isNivel2() || $this->isProfessor();
+}
+```
+
+#### 2. Centralizar o filtro
+Substituir todas as ocorrências de:
+```php
+$registrado_por = ($user->isNivel2()) ? $user_id : null;
+```
+por:
+```php
+$registrado_por = $user->seesOnlyOwnEvents() ? $user_id : null;
+```
+
+#### 3. Arquivos a alterar
+- `classes/User.php` — novos métodos
+- `index.php` — dashboard
+- `eventos.php` — listagem
+- `registrar_evento.php` — histórico na ficha do aluno
+- `controllers/AlunosController.php` — contagem na lista de alunos
+- `api/get_aluno_ficha.php` — total de eventos na ficha (modal)
+- `prontuario.php` — revisar se `countByAluno` e listagem devem respeitar o filtro para professor
+
+#### 4. UI opcional
+- Mensagem informativa no dashboard/eventos para professores: *“Exibindo apenas eventos registrados por você.”*
+- Avaliar se a coluna “Registrado por” ainda faz sentido quando o professor só vê os próprios registros (pode manter para consistência).
+
+### Decisões pendentes
+- [ ] Confirmar que **apenas** o tipo “Professor” é restrito (e não todo `nivel0`).
+- [ ] Professor deve ver na lista de alunos o `total_eventos` só dos seus registros ou o total geral do aluno? → **recomendação: só os seus**, alinhado ao restante.
+- [ ] Eventos de grupo (`evento_grupo.php`): professor que participou do registro em grupo já fica como `registrado_por` — sem mudança necessária.
+
+### Tarefas
+- [ ] Adicionar `isProfessor()` e `seesOnlyOwnEvents()` em `User.php`
+- [ ] Atualizar todos os pontos que definem `$registrado_por`
+- [ ] Revisar `prontuario.php` (hoje não aplica filtro por criador)
+- [ ] Testar login como Professor, Nível 2, Assistência Estudantil e Admin
 
 ---
 
@@ -35,29 +102,27 @@ Não precisa seguir a numeração acima — esta é a sequência recomendada par
 Permitir ao usuário escolher se eventos ocorridos em **sábados** aparecem ou não nas listagens e estatísticas do **Dashboard** (`index.php`) e da tela **Eventos** (`eventos.php`).
 
 ### Comportamento esperado
-- Botão ou toggle visível na área de filtros (ao lado dos filtros de curso/turma/tipo).
-- Estado padrão: **ocultar sábados** (a confirmar com o usuário).
-- A preferência deve persistir entre sessões (cookie ou `localStorage` no navegador; ou configuração por usuário no banco — ver decisão abaixo).
-- O filtro deve afetar:
-  - Lista de eventos recentes no dashboard
-  - Estatísticas do dashboard (`Evento::getEstatisticas`)
-  - Lista completa em `eventos.php`
+- Checkbox **“Incluir eventos de sábado”** na área de filtros do Dashboard e Eventos.
+- Estado padrão: **mostrar** sábados.
+- Preferência persistida na **sessão PHP** (`$_SESSION['incluir_sabados']`).
+- Critério: apenas `data_evento` (`DAYOFWEEK(e.data_evento) = 7` no MySQL).
+- O filtro afeta lista de eventos, estatísticas do dashboard e listagem em `eventos.php`.
 
 ### Arquivos impactados
+- `config/helpers.php` — `resolveIncluirSabadosSession()`, helpers de filtro
 - `index.php` — formulário de filtros e lógica de filtragem
 - `eventos.php` — formulário de filtros e lógica de filtragem
-- `models/Evento.php` — opcional: centralizar filtro em SQL (`DAYOFWEEK(e.data_evento) != 7` no MySQL; sábado = 7)
-- `js/app.js` — opcional: persistir preferência no cliente
+- `models/Evento.php` — parâmetro `$incluir_sabados` em `getAll()` e `getEstatisticas()`
 
-### Decisões pendentes
+### Decisões
 - [x] Padrão: **mostrar** sábados
 - [x] Persistência: **sessão PHP**
-- [x] Sábado considera apenas `data_evento` (`DAYOFWEEK` / `date('N') === 6`)
+- [x] Sábado considera apenas `data_evento`
 
 ### Tarefas
-- [x] Adicionar parâmetro `incluir_sabados` nos filtros GET
-- [x] Aplicar filtro na query (`Evento::getAll`, `getEstatisticas`) e pós-processamento quando necessário
-- [x] UI: checkbox “Incluir eventos de sábado” no Dashboard e Eventos
+- [x] Parâmetro `incluir_sabados` na query (atualiza sessão)
+- [x] Filtro SQL em `getAll()` e `getEstatisticas()`
+- [x] Checkbox “Incluir eventos de sábado”
 - [x] “Limpar filtros” restaura padrão (mostrar sábados)
 - [ ] Testar com eventos em dias úteis e sábados
 
@@ -283,82 +348,6 @@ CREATE TABLE autorizacoes_responsavel (
 
 ---
 
-## 6. Professores veem apenas eventos criados por eles
-
-### Objetivo
-Usuários do tipo **Professor** devem visualizar **somente os eventos que eles mesmos registraram** (`eventos.registrado_por`), em todas as telas relevantes — da mesma forma que já ocorre hoje com usuários **Nível 2**.
-
-### Situação atual no código
-- **Nível 2** (`user_types.nivel = 'nivel2'`): já filtra por `registrado_por = user_id` em dashboard, listagem de eventos, ficha do aluno e contagem de eventos.
-- **Professor** (`user_types.nome = 'Professor'`, `nivel = 'nivel0'`): hoje vê **todos** os eventos, como admin e demais níveis.
-- **Assistência Estudantil** e **NAPNE** (também `nivel0`, nomes diferentes): continuam vendo todos os eventos — a restrição é **apenas para Professor**, não para todo `nivel0`.
-
-Padrão repetido no código hoje:
-```php
-$registrado_por = ($user->isNivel2()) ? $user_id : null;
-```
-
-### Comportamento esperado
-| Tela / recurso | Professor | Assistência / NAPNE | Nível 2 | Admin / Nível 1 |
-|----------------|-----------|----------------------|---------|-----------------|
-| Dashboard — lista e estatísticas | Só os seus | Todos | Só os seus | Todos |
-| `eventos.php` — listagem | Só os seus | Todos | Só os seus | Todos |
-| Ficha do aluno — histórico e total | Só os seus | Todos | Só os seus | Todos |
-| `registrar_evento.php` — eventos do aluno | Só os seus | Todos | Só os seus | Todos |
-| Editar/excluir evento | Só os seus (já parcialmente implementado) | Só os seus* | Só os seus | Conforme regra atual |
-
-\* Edição/exclusão por criador já vale para nivel0/nivel1/nivel2 em `eventos.php` e `registrar_evento.php`.
-
-### Implementação proposta
-
-#### 1. Métodos em `classes/User.php`
-```php
-public function isProfessor() {
-    return $this->getUserType() === 'Professor';
-}
-
-/** Usuário vê apenas eventos que ele mesmo registrou */
-public function seesOnlyOwnEvents() {
-    return $this->isNivel2() || $this->isProfessor();
-}
-```
-
-#### 2. Centralizar o filtro
-Substituir todas as ocorrências de:
-```php
-$registrado_por = ($user->isNivel2()) ? $user_id : null;
-```
-por:
-```php
-$registrado_por = $user->seesOnlyOwnEvents() ? $user_id : null;
-```
-
-#### 3. Arquivos a alterar
-- `classes/User.php` — novos métodos
-- `index.php` — dashboard
-- `eventos.php` — listagem
-- `registrar_evento.php` — histórico na ficha do aluno
-- `controllers/AlunosController.php` — contagem na lista de alunos
-- `api/get_aluno_ficha.php` — total de eventos na ficha (modal)
-- `prontuario.php` — revisar se `countByAluno` e listagem devem respeitar o filtro para professor
-
-#### 4. UI opcional
-- Mensagem informativa no dashboard/eventos para professores: *“Exibindo apenas eventos registrados por você.”*
-- Avaliar se a coluna “Registrado por” ainda faz sentido quando o professor só vê os próprios registros (pode manter para consistência).
-
-### Decisões pendentes
-- [ ] Confirmar que **apenas** o tipo “Professor” é restrito (e não todo `nivel0`).
-- [ ] Professor deve ver na lista de alunos o `total_eventos` só dos seus registros ou o total geral do aluno? → **recomendação: só os seus**, alinhado ao restante.
-- [ ] Eventos de grupo (`evento_grupo.php`): professor que participou do registro em grupo já fica como `registrado_por` — sem mudança necessária.
-
-### Tarefas
-- [ ] Adicionar `isProfessor()` e `seesOnlyOwnEvents()` em `User.php`
-- [ ] Atualizar todos os pontos que definem `$registrado_por`
-- [ ] Revisar `prontuario.php` (hoje não aplica filtro por criador)
-- [ ] Testar login como Professor, Nível 2, Assistência Estudantil e Admin
-
----
-
 ## Notas técnicas do código atual (referência)
 
 | Área | Onde está |
@@ -379,17 +368,17 @@ $registrado_por = $user->seesOnlyOwnEvents() ? $user_id : null;
 
 ## Registro de progresso
 
-| Item | Melhoria | Status | Observações |
-|------|----------|--------|-------------|
-| 1 | Filtro sábados | Concluído | Padrão: mostrar; sessão PHP |
-| 2 | Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
-| 3 | Coordenadores | Não iniciado | |
-| 4 | E-mail alertas | Não iniciado | Depende de 2 e 3 |
-| 5 | Módulo responsáveis | Planejamento | Campos a definir |
-| 6 | Professores — só seus eventos | Não iniciado | Nível 2 já tem comportamento similar |
+| Item | Status | Observações |
+|------|--------|-------------|
+| 6. Professores — só seus eventos | Não iniciado | Nível 2 já tem comportamento similar |
+| 1. Filtro sábados | Concluído | Padrão: mostrar; sessão PHP |
+| 2. Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
+| 3. Coordenadores | Não iniciado | |
+| 4. E-mail alertas | Não iniciado | Depende de 2 e 3 |
+| 5. Módulo responsáveis | Planejamento | Campos a definir |
 
 ---
 
 ## Próximo passo
 
-Seguir a **ordem sugerida de implementação** no topo do documento: começar pelo item **6** ou **1** (ambos rápidos e independentes), depois **3** → **2** → **4** → **5**.
+Começar pela **melhoria 6** (professores veem só seus eventos) ou pela **melhoria 1** (filtro de sábados) — ambas são rápidas e independentes. Em seguida, **melhoria 3** (coordenadores) para preparar alertas e e-mails.
