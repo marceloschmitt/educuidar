@@ -269,6 +269,49 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Atendimento no NAPNE', 'primary', 1),
 ('Ausência na aula estando no campus', 'danger', 1);
 
+-- Regras de alerta (configuráveis)
+CREATE TABLE IF NOT EXISTS alertas_regras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    descricao TEXT NULL,
+    tipo_criterio ENUM('dias_consecutivos', 'intervalo_dias', 'mesmo_dia') NOT NULL,
+    quantidade INT NOT NULL,
+    intervalo_dias INT NULL,
+    ignorar_domingos TINYINT(1) DEFAULT 1,
+    ignorar_sabados TINYINT(1) DEFAULT 0,
+    ativo TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ativo (ativo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS alertas_regras_tipos_evento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    regra_id INT NOT NULL,
+    tipo_evento_id INT NOT NULL,
+    UNIQUE KEY unique_regra_tipo (regra_id, tipo_evento_id),
+    INDEX idx_regra (regra_id),
+    INDEX idx_tipo (tipo_evento_id),
+    FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_evento_id) REFERENCES tipos_eventos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS alertas_gerados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    aluno_id INT NOT NULL,
+    regra_id INT NOT NULL,
+    data_inicio DATE NULL,
+    data_fim DATE NULL,
+    quantidade_contada INT NOT NULL,
+    detalhe JSON NULL,
+    notificado_em TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+    FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+    INDEX idx_aluno_regra (aluno_id, regra_id),
+    INDEX idx_notificado (notificado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Migração (banco já existente): execute no MySQL:
 -- ALTER TABLE alunos ADD COLUMN desistente TINYINT(1) DEFAULT 0 AFTER auxilios_direitos_estudantis;
 -- ALTER TABLE alunos ADD INDEX idx_desistente (desistente);
@@ -283,4 +326,43 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 --     INDEX idx_curso (curso_id),
 --     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
 --     FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- CREATE TABLE IF NOT EXISTS alertas_regras (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     nome VARCHAR(150) NOT NULL,
+--     descricao TEXT NULL,
+--     tipo_criterio ENUM('dias_consecutivos', 'intervalo_dias', 'mesmo_dia') NOT NULL,
+--     quantidade INT NOT NULL,
+--     intervalo_dias INT NULL,
+--     ignorar_domingos TINYINT(1) DEFAULT 1,
+--     ignorar_sabados TINYINT(1) DEFAULT 0,
+--     ativo TINYINT(1) DEFAULT 1,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+--     INDEX idx_ativo (ativo)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- CREATE TABLE IF NOT EXISTS alertas_regras_tipos_evento (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     regra_id INT NOT NULL,
+--     tipo_evento_id INT NOT NULL,
+--     UNIQUE KEY unique_regra_tipo (regra_id, tipo_evento_id),
+--     INDEX idx_regra (regra_id),
+--     INDEX idx_tipo (tipo_evento_id),
+--     FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+--     FOREIGN KEY (tipo_evento_id) REFERENCES tipos_eventos(id) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- CREATE TABLE IF NOT EXISTS alertas_gerados (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     aluno_id INT NOT NULL,
+--     regra_id INT NOT NULL,
+--     data_inicio DATE NULL,
+--     data_fim DATE NULL,
+--     quantidade_contada INT NOT NULL,
+--     detalhe JSON NULL,
+--     notificado_em TIMESTAMP NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+--     FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+--     INDEX idx_aluno_regra (aluno_id, regra_id),
+--     INDEX idx_notificado (notificado_em)
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

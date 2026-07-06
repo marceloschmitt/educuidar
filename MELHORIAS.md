@@ -80,50 +80,258 @@ Permitir ao usuário escolher se eventos ocorridos em **sábados** aparecem ou n
 ## 2. Relatório de alertas
 
 ### Objetivo
-Nova área do sistema para exibir **alertas** sobre situações que exigem atenção da equipe. Os critérios serão expandidos ao longo do tempo; o primeiro critério implementado é:
+Nova área do sistema para **detectar e exibir situações que exigem atenção** da equipe, com critérios **configuráveis** pelo administrador — sem depender de regras fixas no código.
 
-> **Alerta:** aluno com **3 dias seguidos de falta**.
+O item se divide em **duas partes**:
+1. **Configuração de alertas** — interface administrativa para definir regras.
+2. **Relatório de alertas** — tela que aplica as regras ativas e lista os alunos em alerta.
 
-### Primeiro critério — 3 faltas consecutivas
+> Exemplo histórico (agora virará uma regra cadastrável): aluno com **3 dias seguidos** de eventos do tipo “Ausência da aula”.
 
-#### Definição de “falta”
-Usar tipos de evento configuráveis como “ausência”. Candidatos iniciais na base atual (`tipos_eventos`):
-- `Ausência da aula`
-- `Ausência de atendimento no NAPNE`
-- `Ausência na aula estando no campus`
+---
 
-**Decisão pendente:** criar flag `conta_como_falta` em `tipos_eventos` ou manter lista fixa de IDs no código/configuração.
+### Parte A — Interface de configuração de alertas
 
-#### Definição de “dia seguido”
-- Contar **dias de calendário consecutivos** em que o aluno teve ao menos um evento de falta.
-- Ignorar domingos? Ignorar sábados? Ignorar recesso/feriado? → **a definir** (recomendação: ignorar apenas domingos; respeitar filtro de sábado do item 1 se aplicável ao relatório).
-- Considerar apenas o **ano civil corrente** (`configuracoes.ano_corrente`).
-- Alunos marcados como `desistente = 1` devem ser excluídos.
+#### Acesso
+- **Somente administrador** (`user_types.nivel = 'administrador'`).
+- Nova entrada no menu admin: **Regras de alerta** (`alertas_regras.php`).
+- Padrão de UI semelhante a `tipos_eventos.php`: listagem + modal criar/editar.
 
-#### Saída do relatório
+#### O que cada regra define
+
+| Campo | Descrição |
+|-------|-----------|
+| Nome | Ex.: “Faltas em dias consecutivos” |
+| Descrição | Texto livre para a equipe pedagógica |
+| Ativo | Regra participa ou não do motor de detecção |
+| Tipos de evento | Multi-select de `tipos_eventos` (apenas ativos) |
+| Tipo de critério | Um dos três modos abaixo |
+| Parâmetros | Valores numéricos conforme o tipo |
+| Opções de calendário | Ignorar domingos / ignorar sábados (checkboxes) |
+
+#### 1) Tipos de evento que podem gerar alerta
+- Relação **many-to-many** entre regra e `tipos_eventos`.
+- Somente eventos cujo `tipo_evento_id` estiver vinculado à regra entram na contagem.
+- **Não** usar flag fixa `conta_como_falta` em `tipos_eventos` — a configuração fica nas regras de alerta (mais flexível).
+- Uma regra pode agrupar vários tipos (ex.: todas as ausências).
+- O mesmo tipo de evento pode participar de **várias regras** (ex.: regra de 3 dias seguidos e regra de 5 em 7 dias).
+
+#### 2) Parâmetros de disparo — três modos
+
+Cada regra escolhe **um** tipo de critério (radio na interface):
+
+| Modo (`tipo`) | Parâmetros na UI | Significado |
+|---------------|------------------|-------------|
+| `dias_consecutivos` | **N** dias | Aluno tem ao menos **1** evento (de um dos tipos vinculados) em cada um de **N dias de calendário consecutivos**. Ex.: N=3 → alerta no 3º dia seguido com ocorrência. |
+| `intervalo_dias` | **N** ocorrências em **D** dias | Aluno acumula **N** ou mais eventos (tipos vinculados) em uma janela móvel de **D** dias de calendário. Ex.: 5 ocorrências em 7 dias. |
+| `mesmo_dia` | **N** ocorrências | Aluno tem **N** ou mais eventos (tipos vinculados) na **mesma** `data_evento`. Ex.: 2 ausências no mesmo dia. |
+
+**Validações na interface:**
+- `quantidade` ≥ 1 em todos os modos.
+- `intervalo_dias` ≥ 1 e obrigatório apenas no modo `intervalo_dias`.
+- Pelo menos **1** tipo de evento selecionado.
+- Nome obrigatório.
+
+**Wireframe do formulário (criar/editar):**
+```
+Nome: [________________________]
+Descrição: [__________________]
+
+Tipos de evento que contam:
+  [x] Ausência da aula
+  [x] Ausência na aula estando no campus
+  [ ] Entrada atrasada (1º período)
+  ...
+
+Critério de disparo:
+  ( ) Dias consecutivos     →  [ 3 ] dias seguidos
+  ( ) Intervalo de dias     →  [ 5 ] ocorrências em [ 7 ] dias
+  ( ) Mesmo dia             →  [ 2 ] ocorrências no mesmo dia
+
+Calendário:
+  [x] Ignorar domingos
+  [ ] Ignorar sábados
+
+[ ] Regra ativa
+```
+
+#### Listagem de regras (admin)
 Colunas sugeridas:
-- Nome do aluno
-- Curso / turma (ano corrente)
-- Datas das 3 faltas (ou período: de … até …)
-- Quantidade total de dias consecutivos (se > 3, destacar)
-- Link para ficha / prontuário do aluno
+- Nome
+- Tipos de evento (badges)
+- Critério resumido (ex.: “3 dias consecutivos”, “5 em 7 dias”)
+- Ativo
+- Ações (editar / excluir)
+
+---
+
+### Parte B — Motor de detecção
+
+#### Escopo da avaliação (por aluno)
+- Considerar eventos do **ano civil corrente** (`configuracoes.ano_corrente`), via turma do aluno ou `data_evento`.
+- Excluir alunos com `desistente = 1`.
+- Agrupar por `aluno_id`.
+- Usar apenas `data_evento` (não `hora_evento`) para critérios de calendário.
+
+#### Algoritmos (por modo)
+
+**`dias_consecutivos`**
+1. Obter datas distintas com eventos qualificados, ordenadas.
+2. Aplicar filtro de calendário (pular domingos/sábados se configurado).
+3. Encontrar a maior sequência consecutiva de dias com ocorrência.
+4. Disparar se sequência ≥ `quantidade`.
+5. Retornar período (`data_inicio`, `data_fim`) e lista de datas.
+
+**`intervalo_dias`**
+1. Para cada data com evento (ou para cada janela deslizante de `intervalo_dias` dias):
+2. Contar eventos qualificados na janela `[data − D + 1, data]`.
+3. Disparar se contagem ≥ `quantidade`.
+4. Retornar janela que disparou e eventos envolvidos.
+
+**`mesmo_dia`**
+1. Agrupar eventos qualificados por `data_evento`.
+2. Disparar se algum dia tem contagem ≥ `quantidade`.
+3. Retornar a(s) data(s) e quantidade.
+
+#### Classe sugerida
+`models/AlertaDetector.php` (ou métodos em `models/Alerta.php`):
+- `avaliarRegra($regra_id, $filtros)` → lista de ocorrências
+- `avaliarTodasRegrasAtivas($filtros)` → agrega por aluno/regra
+- Um método privado por modo: `avaliarDiasConsecutivos()`, `avaliarIntervaloDias()`, `avaliarMesmoDia()`
+
+---
+
+### Parte C — Relatório de alertas (`alertas.php`)
+
+#### Acesso
+- Admin, nivel0, nivel1 (a confirmar com a equipe).
+- **Coordenador de curso** (item 3): vê alertas **apenas dos cursos que coordena**.
+- Nível 2: sem acesso (recomendação inicial).
+
+#### Filtros do relatório
+- Curso, turma (ano corrente)
+- Regra de alerta (todas ou uma específica)
+- Somente alertas novos / todos (quando existir `alertas_gerados`)
+
+#### Colunas sugeridas
+- Aluno
+- Curso / turma
+- Regra que disparou
+- Critério (texto legível)
+- Período ou data(s) envolvidas
+- Quantidade contada
+- Link para ficha / prontuário
+
+#### Momento da avaliação
+- **Fase 1:** sob demanda ao abrir o relatório (query + processamento em PHP).
+- **Fase 2 (item 4):** job agendado ou trigger ao registrar evento + gravação em `alertas_gerados`.
+
+---
+
+### Modelo de dados proposto
+
+```sql
+-- Regra de alerta (configurável)
+CREATE TABLE alertas_regras (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(150) NOT NULL,
+    descricao TEXT NULL,
+    tipo_criterio ENUM('dias_consecutivos', 'intervalo_dias', 'mesmo_dia') NOT NULL,
+    quantidade INT NOT NULL,
+    intervalo_dias INT NULL,
+    ignorar_domingos TINYINT(1) DEFAULT 1,
+    ignorar_sabados TINYINT(1) DEFAULT 0,
+    ativo TINYINT(1) DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_ativo (ativo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Tipos de evento vinculados à regra
+CREATE TABLE alertas_regras_tipos_evento (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    regra_id INT NOT NULL,
+    tipo_evento_id INT NOT NULL,
+    UNIQUE KEY unique_regra_tipo (regra_id, tipo_evento_id),
+    FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_evento_id) REFERENCES tipos_eventos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Histórico de alertas detectados (item 4 — notificação)
+CREATE TABLE alertas_gerados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    aluno_id INT NOT NULL,
+    regra_id INT NOT NULL,
+    data_inicio DATE NULL,
+    data_fim DATE NULL,
+    quantidade_contada INT NOT NULL,
+    detalhe JSON NULL,
+    notificado_em TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+    FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
+    INDEX idx_aluno_regra (aluno_id, regra_id),
+    INDEX idx_notificado (notificado_em)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+**Regra de exemplo (seed opcional):**
+```sql
+INSERT INTO alertas_regras (nome, tipo_criterio, quantidade, ignorar_domingos, ativo)
+VALUES ('Faltas em 3 dias seguidos', 'dias_consecutivos', 3, 1, 1);
+-- + vínculos com tipos de evento de ausência
+```
+
+---
 
 ### Arquivos novos / impactados
-- `alertas.php` (ou `relatorio_alertas.php`) — página do relatório
-- `models/Alerta.php` — lógica de detecção de critérios
-- `includes/header_menu_items.php` — item de menu
-- `database.sql` — possível tabela `alertas_gerados` para histórico e evitar duplicidade de notificação (item 4)
-- `models/TipoEvento.php` — flag `conta_como_falta` (se adotada)
 
-### Critérios futuros (placeholder)
-- [ ] A definir em conjunto com a equipe pedagógica
-- [ ] Arquitetura: cada critério como método/classe separada (`CriterioFaltasConsecutivas`, etc.)
+| Arquivo | Função |
+|---------|--------|
+| `alertas_regras.php` | CRUD de regras (admin) |
+| `alertas.php` | Relatório de alertas |
+| `models/AlertaRegra.php` | CRUD + vínculo com tipos de evento |
+| `models/AlertaDetector.php` | Motor de avaliação dos três modos |
+| `models/Alerta.php` | Facade: relatório + histórico (`alertas_gerados`) |
+| `includes/header_menu_items.php` | “Regras de alerta” (admin) + “Alertas” |
+| `database.sql` | Tabelas acima |
 
-### Tarefas — fase 1
-- [ ] Definir quais tipos de evento contam como falta
-- [ ] Implementar algoritmo de dias consecutivos
-- [ ] Criar página de relatório com filtros (curso, turma)
-- [ ] Restringir acesso (admin, nivel0, nivel1? coordenadores do curso?)
+---
+
+### Decisões pendentes
+- [ ] Nivel0 e nivel1 têm acesso ao relatório ou só admin + coordenadores?
+- [ ] Ignorar feriados/recesso (tabela de calendário escolar futura)?
+- [ ] Uma regra pode ter **mais de um** critério ativo no futuro (ex.: 3 dias seguidos **ou** 5 em 7 dias na mesma regra)? → **v1: um critério por regra**; criar regras separadas.
+- [ ] Excluir sábados por padrão nas regras (alinhar com item 1)?
+
+---
+
+### Fases de implementação
+
+#### Fase 2a — Configuração (prioridade)
+- [x] Migration: `alertas_regras`, `alertas_regras_tipos_evento`
+- [x] Model `AlertaRegra.php`
+- [x] Página `alertas_regras.php` (listagem + criar/editar/excluir)
+- [x] Validações de formulário
+- [x] Item de menu (admin)
+
+#### Fase 2b — Relatório
+- [x] Model `AlertaDetector.php` com os 3 modos
+- [x] Página `alertas.php` com filtros
+- [x] Escopo por coordenador de curso (item 3)
+- [ ] Testes com dados reais (ausências, múltiplos tipos, mesmo dia)
+
+#### Fase 2c — Histórico (prepara item 4)
+- [ ] Migration: `alertas_gerados`
+- [ ] Gravar alerta ao detectar (evitar duplicidade)
+- [ ] Indicador “novo” / “já notificado” no relatório
+
+---
+
+### Critérios futuros (além dos três modos)
+- [ ] Combinação de tipos com operador AND (ex.: falta + saída antecipada no mesmo dia)
+- [ ] Limiar por turma ou curso (regra com escopo)
+- [ ] Regras sazonais (válidas só em determinado período letivo)
 
 ---
 
@@ -321,7 +529,7 @@ CREATE TABLE autorizacoes_responsavel (
 |------|--------|-------------|
 | 6. Apenas meus eventos | Testado | Filtro opcional; Nível 2 segue limitado aos próprios eventos |
 | 1. Filtro sábados | Testado | Padrão: mostrar; sessão PHP |
-| 2. Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
+| 2. Relatório de alertas | Implementado | Config + relatório; falta testar com dados reais |
 | 3. Coordenadores | Implementado | UI em usuários e cursos; migration em `database.sql` |
 | 4. E-mail alertas | Não iniciado | Depende de 2 e 3 |
 | 5. Módulo responsáveis | Planejamento | Campos a definir |
@@ -330,6 +538,6 @@ CREATE TABLE autorizacoes_responsavel (
 
 ## Próximo passo
 
-1. Executar a migration da tabela `user_cursos_coordenacao` no banco existente (SQL comentado no final de `database.sql`).
-2. Testar cadastro de coordenadores em **Usuários**.
-3. Seguir com a **melhoria 2** (relatório de alertas), que usará a coordenação para filtrar cursos.
+1. Executar migration das tabelas de alertas no banco existente (SQL comentado no final de `database.sql`).
+2. Cadastrar regras em **Regras de Alerta** e testar o relatório em **Alertas**.
+3. Ajustar critérios conforme feedback da equipe pedagógica.

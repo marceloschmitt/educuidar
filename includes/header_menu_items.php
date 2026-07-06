@@ -16,6 +16,16 @@
         </a>
     </li>
     <?php endif; ?>
+    <?php
+    $pode_ver_alertas = $user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isCoordenador();
+    if ($pode_ver_alertas && !$user->isNivel2()):
+    ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
+            <i class="bi bi-exclamation-triangle"></i> Alertas
+        </a>
+    </li>
+    <?php endif; ?>
     <?php if ($user->isAdmin()): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'cursos.php' ? 'active' : ''; ?>" href="cursos.php">
@@ -30,6 +40,11 @@
     <li class="nav-item">
         <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'tipos_eventos.php' ? 'active' : ''; ?>" href="tipos_eventos.php">
             <i class="bi bi-tags"></i> Tipos de Eventos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['alertas.php', 'alertas_regras.php'], true) ? 'active' : ''; ?>" href="alertas_regras.php">
+            <i class="bi bi-bell"></i> Regras de Alerta
         </a>
     </li>
     <li class="nav-item">
