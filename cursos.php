@@ -112,7 +112,6 @@ $ano_corrente = $configuracao->getAnoCorrente();
                         <thead>
                             <tr>
                                 <th>Nome</th>
-                                <th>Coordenadores</th>
                                 <th>Total de Turmas</th>
                                 <th>Turmas do Ano Corrente (<?php echo $ano_corrente; ?>)</th>
                                 <th>Ações</th>
@@ -121,21 +120,19 @@ $ano_corrente = $configuracao->getAnoCorrente();
                         <tbody>
                             <?php foreach ($cursos as $c): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($c['nome']); ?></td>
                                 <td>
+                                    <div><?php echo htmlspecialchars($c['nome']); ?></div>
                                     <?php
                                     $coordenadores = $coordenadores_por_curso[(int)$c['id']] ?? [];
                                     if (!empty($coordenadores)):
-                                        foreach ($coordenadores as $coord):
                                     ?>
-                                        <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
-                                            <?php echo htmlspecialchars($coord['full_name']); ?>
-                                        </span>
-                                    <?php
-                                        endforeach;
-                                    else:
-                                    ?>
-                                        <span class="text-muted">Nenhum</span>
+                                    <div class="mt-1">
+                                        <?php foreach ($coordenadores as $coord): ?>
+                                            <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
+                                                <?php echo htmlspecialchars($coord['full_name']); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
                                     <?php endif; ?>
                                 </td>
                                 <td>
