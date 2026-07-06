@@ -486,8 +486,8 @@ require_once 'includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-6 col-md-1">
-                <label for="filtro_ano" class="form-label">Ano</label>
+            <div class="col-6 col-md-2">
+                <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
                 <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
                     <?php foreach ($anos_disponiveis as $ano): ?>
                     <option value="<?php echo htmlspecialchars($ano); ?>" <?php echo ((string)$filtro_ano === (string)$ano) ? 'selected' : ''; ?>>
@@ -496,7 +496,7 @@ require_once 'includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label for="filtro_nome" class="form-label">Filtrar por Nome do Aluno</label>
                 <div class="input-group input-group-sm">
                     <input type="text" class="form-control" id="filtro_nome" name="filtro_nome" 
@@ -508,23 +508,21 @@ require_once 'includes/header.php';
                     </button>
                 </div>
             </div>
-            <div class="col-md-2 d-flex align-items-end gap-2 pb-1">
-                <div class="small">
-                    <div class="form-check mb-1">
-                        <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
-                               onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
-                        <label class="form-check-label text-nowrap" for="incluir_sabados_cb">Incluir sábado</label>
-                    </div>
-                    <div class="form-check mb-0">
-                        <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
-                               <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
-                               onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
-                        <label class="form-check-label text-nowrap" for="apenas_meus_eventos_cb">Só meus</label>
-                    </div>
+            <div class="col-12 d-flex align-items-center flex-wrap gap-4">
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                           onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                    <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
+                </div>
+                <div class="form-check mb-0">
+                    <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
+                           <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                           onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                    <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
                 </div>
                 <?php if ($filtro_curso || $filtro_turma || $filtro_nome || ($filtro_ano != $ano_corrente) || !$incluir_sabados || $apenas_meus_eventos): ?>
-                <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm text-nowrap" title="Limpar filtros">
-                    <i class="bi bi-x-circle"></i>
+                <a href="eventos.php?limpar_filtros=1" class="btn btn-secondary btn-sm">
+                    <i class="bi bi-x-circle"></i> Limpar Filtros
                 </a>
                 <?php endif; ?>
             </div>

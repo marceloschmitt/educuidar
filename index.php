@@ -118,24 +118,20 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="form-check mb-2">
+                    <div class="col-12 d-flex align-items-center flex-wrap gap-4">
+                        <div class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
                                    onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
                             <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                         </div>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
                                    <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
                                    onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
                             <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
                         </div>
-                    </div>
-                    <div class="col-md-2 d-flex align-items-end">
                         <?php if ($filtro_curso || $filtro_turma || $filtro_tipo_evento || !$incluir_sabados || $apenas_meus_eventos): ?>
-                        <a href="index.php?limpar_filtros=1" class="btn btn-secondary btn-sm w-100">
+                        <a href="index.php?limpar_filtros=1" class="btn btn-secondary btn-sm">
                             <i class="bi bi-x-circle"></i> Limpar Filtros
                         </a>
                         <?php endif; ?>

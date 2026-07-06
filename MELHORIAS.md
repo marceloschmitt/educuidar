@@ -1,7 +1,7 @@
 # Planejamento de Melhorias — EduCuidar
 
 Documento de anotações e planejamento para as próximas evoluções do sistema.  
-Atualizado em: 01/07/2026
+Atualizado em: 06/07/2026
 
 ---
 
@@ -41,7 +41,7 @@ Permitir que o usuário marque nos filtros que deseja visualizar **apenas os eve
 - [x] Atualizar `$registrado_por` no Dashboard e Eventos
 - [x] Preservar filtro ao clicar nos cards do Dashboard
 - [x] Preservar filtro após edição/exclusão em Eventos
-- [ ] Testar com usuários de diferentes níveis
+- [x] Testar com usuários de diferentes níveis
 
 ---
 
@@ -73,7 +73,7 @@ Permitir ao usuário escolher se eventos ocorridos em **sábados** aparecem ou n
 - [x] Filtro SQL em `getAll()` e `getEstatisticas()`
 - [x] Checkbox “Incluir eventos de sábado”
 - [x] “Limpar filtros” restaura padrão (mostrar sábados)
-- [ ] Testar com eventos em dias úteis e sábados
+- [x] Testar com eventos em dias úteis e sábados
 
 ---
 
@@ -319,8 +319,8 @@ CREATE TABLE autorizacoes_responsavel (
 
 | Item | Status | Observações |
 |------|--------|-------------|
-| 6. Apenas meus eventos | Concluído | Filtro opcional; Nível 2 segue limitado aos próprios eventos |
-| 1. Filtro sábados | Concluído | Padrão: mostrar; sessão PHP |
+| 6. Apenas meus eventos | Testado | Filtro opcional; Nível 2 segue limitado aos próprios eventos |
+| 1. Filtro sábados | Testado | Padrão: mostrar; sessão PHP |
 | 2. Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
 | 3. Coordenadores | Não iniciado | |
 | 4. E-mail alertas | Não iniciado | Depende de 2 e 3 |
@@ -330,4 +330,4 @@ CREATE TABLE autorizacoes_responsavel (
 
 ## Próximo passo
 
-Começar pela **melhoria 6** (professores veem só seus eventos) ou pela **melhoria 1** (filtro de sábados) — ambas são rápidas e independentes. Em seguida, **melhoria 3** (coordenadores) para preparar alertas e e-mails.
+Seguir com a **melhoria 3** (coordenadores de curso), base para o relatório de alertas (item 2) e e-mails aos coordenadores (item 4).
