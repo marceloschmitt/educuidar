@@ -35,9 +35,10 @@ foreach ($regras as $regra_item) {
     $regras_map[(int) $regra_item['id']] = $regra_item;
 }
 
-$cursos_permitidos = null;
-if (!$user->isAdmin() && !$user->isNivel0() && !$user->isNivel1() && $user->isCoordenador($user_id)) {
-    $cursos_permitidos = array_column($user->getCursosCoordenados($user_id), 'id');
+$cursos_coordenados = [];
+$cursos_permitidos = getCursosCoordenadosPermitidos($user, $user_id);
+if ($cursos_permitidos !== null) {
+    $cursos_coordenados = $user->getCursosCoordenados($user_id);
     if ($filtro_curso && !in_array((int) $filtro_curso, $cursos_permitidos, true)) {
         $filtro_curso = '';
     }
@@ -77,6 +78,15 @@ require_once 'includes/header.php';
                 <?php endif; ?>
             </div>
             <div class="card-body">
+                <?php if (!empty($cursos_coordenados)): ?>
+                <div class="alert alert-info py-2 mb-3">
+                    <i class="bi bi-funnel"></i>
+                    Exibindo alertas dos cursos que você coordena:
+                    <?php foreach ($cursos_coordenados as $cc): ?>
+                        <span class="badge bg-warning text-dark ms-1"><?php echo htmlspecialchars($cc['nome']); ?></span>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
                 <form method="GET" action="" class="row g-2 align-items-end">
                     <div class="col-md-3">
                         <label for="filtro_curso" class="form-label">Curso</label>

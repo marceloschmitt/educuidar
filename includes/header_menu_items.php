@@ -1,104 +1,135 @@
+<?php
+$home_page = getHomePageForUser($user);
+$uses_alertas_home = ($home_page === 'alertas.php');
+$current_page = basename($_SERVER['PHP_SELF']);
+
+$user_level_session = $_SESSION['user_level'] ?? null;
+$is_admin = $user->isAdmin();
+$is_nivel0 = $user->isNivel0();
+$is_nivel1 = $user->isNivel1();
+$is_nivel2 = $user->isNivel2();
+
+$can_view_eventos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2;
+$pode_ver_alertas = $is_admin || $is_nivel0 || $is_nivel1 || $user->isCoordenador();
+$can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
+    || $user_level_session === 'nivel0' || $user_level_session === 'nivel1'
+    || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
+?>
+
 <ul class="nav flex-column">
+    <?php if ($uses_alertas_home): ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : ''; ?>" href="index.php">
+        <a class="nav-link <?php echo $current_page === 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
+            <i class="bi bi-exclamation-triangle"></i> Alertas
+        </a>
+    </li>
+    <?php if ($can_view_eventos): ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'index.php' ? 'active' : ''; ?>" href="index.php">
             <i class="bi bi-house-door"></i> Dashboard
         </a>
     </li>
-    <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
+    <?php endif; ?>
+    <?php else: ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'eventos.php' ? 'active' : ''; ?>" href="eventos.php">
+        <a class="nav-link <?php echo $current_page === 'index.php' ? 'active' : ''; ?>" href="index.php">
+            <i class="bi bi-house-door"></i> Dashboard
+        </a>
+    </li>
+    <?php endif; ?>
+
+    <?php if ($can_view_eventos): ?>
+    <li class="nav-item mt-2">
+        <small class="sidebar-section-label">Operação</small>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'eventos.php' ? 'active' : ''; ?>" href="eventos.php">
             <i class="bi bi-calendar-event"></i> Eventos
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'evento_grupo.php' ? 'active' : ''; ?>" href="evento_grupo.php">
+        <a class="nav-link <?php echo $current_page === 'evento_grupo.php' ? 'active' : ''; ?>" href="evento_grupo.php">
             <i class="bi bi-people"></i> Evento de grupo
         </a>
     </li>
-    <?php endif; ?>
-    <?php
-    $pode_ver_alertas = $user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isCoordenador();
-    if ($pode_ver_alertas && !$user->isNivel2()):
-    ?>
+    <?php if ($pode_ver_alertas && !$is_nivel2 && !$uses_alertas_home): ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
+        <a class="nav-link <?php echo $current_page === 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
             <i class="bi bi-exclamation-triangle"></i> Alertas
         </a>
     </li>
     <?php endif; ?>
-    <?php if ($user->isAdmin()): ?>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'cursos.php' ? 'active' : ''; ?>" href="cursos.php">
-            <i class="bi bi-book"></i> Cursos
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'turmas.php' ? 'active' : ''; ?>" href="turmas.php">
-            <i class="bi bi-collection"></i> Turmas
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'tipos_eventos.php' ? 'active' : ''; ?>" href="tipos_eventos.php">
-            <i class="bi bi-tags"></i> Tipos de Eventos
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo in_array(basename($_SERVER['PHP_SELF']), ['alertas.php', 'alertas_regras.php'], true) ? 'active' : ''; ?>" href="alertas_regras.php">
-            <i class="bi bi-bell"></i> Regras de Alerta
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'configuracoes.php' ? 'active' : ''; ?>" href="configuracoes.php">
-            <i class="bi bi-gear"></i> Configurações
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'usuarios.php' ? 'active' : ''; ?>" href="usuarios.php">
-            <i class="bi bi-people"></i> Usuários
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'user_types.php' ? 'active' : ''; ?>" href="user_types.php">
-            <i class="bi bi-person-badge"></i> Tipos de Usuário
-        </a>
-    </li>
     <?php endif; ?>
-    <?php 
-    // Verificar permissão para ver alunos (admin, nivel1, nivel2)
-    $user_level_session = $_SESSION['user_level'] ?? null;
-    $is_admin = $user->isAdmin();
-    $is_nivel0 = $user->isNivel0();
-    $is_nivel1 = $user->isNivel1();
-    $is_nivel2 = $user->isNivel2();
-    
-    $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2 || $user_level_session === 'nivel0' || $user_level_session === 'nivel1' || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
-    
-    if ($can_view_alunos): 
-    ?>
+
+    <?php if ($can_view_alunos): ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alunos.php' && empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php">
+        <a class="nav-link <?php echo $current_page === 'alunos.php' && empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php">
             <i class="bi bi-person"></i> Alunos
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alunos.php' && !empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php?desistentes=1">
+        <a class="nav-link <?php echo $current_page === 'alunos.php' && !empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php?desistentes=1">
             <i class="bi bi-person-x"></i> Alunos desistentes
         </a>
     </li>
     <?php endif; ?>
+
+    <?php if ($is_admin): ?>
+    <li class="nav-item mt-3">
+        <small class="sidebar-section-label">Configuração</small>
+    </li>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'meus_dados.php' ? 'active' : ''; ?>" href="meus_dados.php">
+        <a class="nav-link <?php echo $current_page === 'cursos.php' ? 'active' : ''; ?>" href="cursos.php">
+            <i class="bi bi-book"></i> Cursos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'turmas.php' ? 'active' : ''; ?>" href="turmas.php">
+            <i class="bi bi-collection"></i> Turmas
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'tipos_eventos.php' ? 'active' : ''; ?>" href="tipos_eventos.php">
+            <i class="bi bi-tags"></i> Tipos de Eventos
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'alertas_regras.php' ? 'active' : ''; ?>" href="alertas_regras.php">
+            <i class="bi bi-bell"></i> Regras de Alerta
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'configuracoes.php' ? 'active' : ''; ?>" href="configuracoes.php">
+            <i class="bi bi-gear"></i> Configurações
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'usuarios.php' ? 'active' : ''; ?>" href="usuarios.php">
+            <i class="bi bi-people"></i> Usuários
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'user_types.php' ? 'active' : ''; ?>" href="user_types.php">
+            <i class="bi bi-person-badge"></i> Tipos de Usuário
+        </a>
+    </li>
+    <?php endif; ?>
+
+    <li class="nav-item mt-3">
+        <small class="sidebar-section-label">Conta</small>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'meus_dados.php' ? 'active' : ''; ?>" href="meus_dados.php">
             <i class="bi bi-person"></i> Meus Dados
         </a>
     </li>
-    <?php 
-    // Only show "Alterar Senha" for users with local authentication
+    <?php
     $user_data = $user->getById($_SESSION['user_id']);
     $can_change_password = $user_data && ($user_data['auth_type'] ?? 'local') === 'local';
-    if ($can_change_password): 
+    if ($can_change_password):
     ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo basename($_SERVER['PHP_SELF']) == 'alterar_senha.php' ? 'active' : ''; ?>" href="alterar_senha.php">
+        <a class="nav-link <?php echo $current_page === 'alterar_senha.php' ? 'active' : ''; ?>" href="alterar_senha.php">
             <i class="bi bi-key"></i> Alterar Senha
         </a>
     </li>
@@ -109,4 +140,3 @@
         </a>
     </li>
 </ul>
-

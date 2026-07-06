@@ -72,6 +72,37 @@ if (!function_exists('sabadoFilterToggleHref')) {
     }
 }
 
+if (!function_exists('getHomePageForUser')) {
+    function getHomePageForUser($user) {
+        if (!$user || !$user->isLoggedIn()) {
+            return 'login.php';
+        }
+        if ($user->isAdmin()) {
+            return 'index.php';
+        }
+        if ($user->isNivel1() || $user->isCoordenador()) {
+            return 'alertas.php';
+        }
+        return 'index.php';
+    }
+}
+
+if (!function_exists('userUsesAlertasAsHome')) {
+    function userUsesAlertasAsHome($user) {
+        return getHomePageForUser($user) === 'alertas.php';
+    }
+}
+
+if (!function_exists('getCursosCoordenadosPermitidos')) {
+    function getCursosCoordenadosPermitidos($user, $user_id = null) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if (!$user || !$user_id || !$user->isCoordenador($user_id) || $user->isAdmin()) {
+            return null;
+        }
+        return array_column($user->getCursosCoordenados($user_id), 'id');
+    }
+}
+
 if (!function_exists('formatAlertaCriterioResumo')) {
     function formatAlertaCriterioResumo(array $regra) {
         $qtd = (int) ($regra['quantidade'] ?? 0);
