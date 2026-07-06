@@ -141,7 +141,9 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                                        id="tipo_evento_<?php echo (int) $te['id']; ?>"
                                        <?php echo in_array((int) $te['id'], $tipos_selecionados, true) ? 'checked' : ''; ?>>
                                 <label class="form-check-label" for="tipo_evento_<?php echo (int) $te['id']; ?>">
-                                    <?php echo htmlspecialchars($te['nome']); ?>
+                                    <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1">
+                                        <?php echo htmlspecialchars($te['nome']); ?>
+                                    </span>
                                 </label>
                             </div>
                             <?php endforeach; ?>
