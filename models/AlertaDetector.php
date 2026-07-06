@@ -26,11 +26,13 @@ class AlertaDetector {
         }
 
         usort($resultados, function ($a, $b) {
-            $cmp = strcmp($a['aluno_nome'], $b['aluno_nome']);
+            $date_a = $a['data_fim'] ?? $a['data_inicio'] ?? '';
+            $date_b = $b['data_fim'] ?? $b['data_inicio'] ?? '';
+            $cmp = strcmp($date_b, $date_a);
             if ($cmp !== 0) {
                 return $cmp;
             }
-            return strcmp($a['regra_nome'], $b['regra_nome']);
+            return strcmp($a['aluno_nome'], $b['aluno_nome']);
         });
 
         return $resultados;
