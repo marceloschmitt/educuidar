@@ -30,14 +30,24 @@
                                 <th>Usuário</th>
                                 <th>E-mail</th>
                                 <th>Tipo</th>
-                                <th>Coordenação</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($usuarios as $usr): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($usr['full_name']); ?></td>
+                                <td>
+                                    <div><?php echo htmlspecialchars($usr['full_name']); ?></div>
+                                    <?php if (!empty($usr['cursos_coordenados'])): ?>
+                                    <div class="mt-1">
+                                        <?php foreach ($usr['cursos_coordenados'] as $cc): ?>
+                                            <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
+                                                <?php echo htmlspecialchars($cc['nome']); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($usr['username']); ?></td>
                                 <td><?php echo htmlspecialchars($usr['email']); ?></td>
                                 <td>
@@ -53,17 +63,6 @@
                                     ?>">
                                         <?php echo htmlspecialchars($user_type_nome); ?>
                                     </span>
-                                </td>
-                                <td>
-                                    <?php if (!empty($usr['cursos_coordenados'])): ?>
-                                        <?php foreach ($usr['cursos_coordenados'] as $cc): ?>
-                                            <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
-                                                <?php echo htmlspecialchars($cc['nome']); ?>
-                                            </span>
-                                        <?php endforeach; ?>
-                                    <?php else: ?>
-                                        <span class="text-muted">—</span>
-                                    <?php endif; ?>
                                 </td>
                                 <td class="d-flex gap-2">
                                     <button type="button" class="btn btn-primary btn-sm btn-edit-user" 
