@@ -1771,6 +1771,14 @@ function editUser(user) {
     document.getElementById('edit_auth_type').value = user.auth_type || 'local';
     document.getElementById('edit_new_password').value = '';
     toggleEditPasswordField();
+
+    var editCursosCheckboxes = document.querySelectorAll('.edit-curso-coordenacao-cb');
+    var cursosCoordenadosIds = (user.cursos_coordenados || []).map(function(c) {
+        return String(c.id);
+    });
+    editCursosCheckboxes.forEach(function(cb) {
+        cb.checked = cursosCoordenadosIds.indexOf(cb.value) !== -1;
+    });
     
     var modalElement = document.getElementById('editUserModal');
     var modal = new bootstrap.Modal(modalElement);

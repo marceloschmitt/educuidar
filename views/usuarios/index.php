@@ -31,6 +31,7 @@
                                 <th>E-mail</th>
                                 <th>Tipo</th>
                                 <th>Autenticação</th>
+                                <th>Coordenação</th>
                                 <th>Cadastrado em</th>
                                 <th>Ações</th>
                             </tr>
@@ -63,6 +64,17 @@
                                         echo ($usr['auth_type'] ?? 'local') === 'ldap' ? 'LDAP' : 'Local'; 
                                         ?>
                                     </span>
+                                </td>
+                                <td>
+                                    <?php if (!empty($usr['cursos_coordenados'])): ?>
+                                        <?php foreach ($usr['cursos_coordenados'] as $cc): ?>
+                                            <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
+                                                <?php echo htmlspecialchars($cc['nome']); ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?php echo date('d/m/Y H:i', strtotime($usr['created_at'])); ?></td>
                                 <td class="d-flex gap-2">
@@ -146,6 +158,25 @@
                         <label for="full_name" class="form-label">Nome Completo <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="full_name" name="full_name" required autocomplete="off" value="">
                     </div>
+
+                    <?php if (!empty($cursos)): ?>
+                    <div class="mb-3">
+                        <label class="form-label">Coordenador de cursos</label>
+                        <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
+                            <?php foreach ($cursos as $c): ?>
+                            <div class="form-check">
+                                <input class="form-check-input create-curso-coordenacao-cb" type="checkbox"
+                                       name="cursos_coordenacao[]" value="<?php echo (int)$c['id']; ?>"
+                                       id="create_curso_coord_<?php echo (int)$c['id']; ?>">
+                                <label class="form-check-label" for="create_curso_coord_<?php echo (int)$c['id']; ?>">
+                                    <?php echo htmlspecialchars($c['nome']); ?>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <small class="text-muted">Opcional. Marque os cursos que este usuário coordena.</small>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -211,6 +242,25 @@
                         <input type="password" class="form-control" id="edit_new_password" name="new_password">
                         <small class="text-muted" id="edit_password_help">Deixe em branco para manter a senha atual.</small>
                     </div>
+
+                    <?php if (!empty($cursos)): ?>
+                    <div class="mb-3">
+                        <label class="form-label">Coordenador de cursos</label>
+                        <div class="border rounded p-2" style="max-height: 160px; overflow-y: auto;">
+                            <?php foreach ($cursos as $c): ?>
+                            <div class="form-check">
+                                <input class="form-check-input edit-curso-coordenacao-cb" type="checkbox"
+                                       name="cursos_coordenacao[]" value="<?php echo (int)$c['id']; ?>"
+                                       id="edit_curso_coord_<?php echo (int)$c['id']; ?>">
+                                <label class="form-check-label" for="edit_curso_coord_<?php echo (int)$c['id']; ?>">
+                                    <?php echo htmlspecialchars($c['nome']); ?>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <small class="text-muted">Opcional. Marque os cursos que este usuário coordena.</small>
+                    </div>
+                    <?php endif; ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

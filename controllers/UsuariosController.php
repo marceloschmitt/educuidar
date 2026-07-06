@@ -26,7 +26,14 @@ class UsuariosController extends Controller {
         
         // Get all users
         $usuarios = $this->user->getAll();
+        $cursos_coordenacao_map = $this->user->getCursosCoordenadosPorUsuarios();
+        foreach ($usuarios as &$usr) {
+            $usr['cursos_coordenados'] = $cursos_coordenacao_map[(int)$usr['id']] ?? [];
+        }
+        unset($usr);
+
         $user_types = $this->user->getUserTypes();
+        $cursos = (new Curso($this->db))->getAll();
         
         // Include header
         $page_title = 'Usuários';
@@ -38,6 +45,7 @@ class UsuariosController extends Controller {
             'error' => $error,
             'usuarios' => $usuarios,
             'user_types' => $user_types,
+            'cursos' => $cursos,
             'user' => $this->user
         ]);
         
@@ -83,6 +91,7 @@ class UsuariosController extends Controller {
         }
         
         if ($this->user->create()) {
+            $this->user->setCursosCoordenados($this->user->id, $this->parseCursosCoordenadosFromPost());
             $this->setSuccess('Usuário criado com sucesso!');
         } else {
             $this->setError('Erro ao criar usuário. Tente novamente.');
@@ -116,6 +125,7 @@ class UsuariosController extends Controller {
         }
         
         if ($this->user->update()) {
+            $this->user->setCursosCoordenados($this->user->id, $this->parseCursosCoordenadosFromPost());
             // Update password if provided and using local auth
             if (!empty($new_password) && $this->user->auth_type === 'local') {
                 if ($this->user->updatePassword($this->user->id, $new_password)) {
@@ -159,6 +169,17 @@ class UsuariosController extends Controller {
         }
 
         $this->redirect('usuarios.php');
+    }
+
+    private function parseCursosCoordenadosFromPost() {
+        $ids = $_POST['cursos_coordenacao'] ?? [];
+        if (!is_array($ids)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(array_map('intval', $ids), function ($id) {
+            return $id > 0;
+        })));
     }
 }
 

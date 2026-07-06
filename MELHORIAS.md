@@ -164,11 +164,11 @@ CREATE TABLE user_cursos_coordenacao (
   - `setCursosCoordenados($user_id, array $curso_ids)`
 
 ### Tarefas
-- [ ] Migration / atualizar `database.sql`
-- [ ] Model `User` ou novo `CoordenacaoCurso.php`
-- [ ] Formulário criar/editar usuário
-- [ ] Exibição na listagem de usuários
-- [ ] Usar coordenação no filtro do relatório de alertas (coordenador vê só seus cursos)
+- [x] Migration / atualizar `database.sql`
+- [x] Model `User` ou novo `CoordenacaoCurso.php`
+- [x] Formulário criar/editar usuário
+- [x] Exibição na listagem de usuários
+- [ ] Usar coordenação no filtro do relatório de alertas (coordenador vê só seus cursos) — item 2
 
 ---
 
@@ -322,7 +322,7 @@ CREATE TABLE autorizacoes_responsavel (
 | 6. Apenas meus eventos | Testado | Filtro opcional; Nível 2 segue limitado aos próprios eventos |
 | 1. Filtro sábados | Testado | Padrão: mostrar; sessão PHP |
 | 2. Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
-| 3. Coordenadores | Não iniciado | |
+| 3. Coordenadores | Implementado | UI em usuários e cursos; migration em `database.sql` |
 | 4. E-mail alertas | Não iniciado | Depende de 2 e 3 |
 | 5. Módulo responsáveis | Planejamento | Campos a definir |
 
@@ -330,4 +330,6 @@ CREATE TABLE autorizacoes_responsavel (
 
 ## Próximo passo
 
-Seguir com a **melhoria 3** (coordenadores de curso), base para o relatório de alertas (item 2) e e-mails aos coordenadores (item 4).
+1. Executar a migration da tabela `user_cursos_coordenacao` no banco existente (SQL comentado no final de `database.sql`).
+2. Testar cadastro de coordenadores em **Usuários**.
+3. Seguir com a **melhoria 2** (relatório de alertas), que usará a coordenação para filtrar cursos.

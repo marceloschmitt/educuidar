@@ -150,6 +150,19 @@ CREATE TABLE IF NOT EXISTS user_user_types (
     FOREIGN KEY (user_type_id) REFERENCES user_types(id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Coordenadores de curso (many-to-many users x cursos)
+CREATE TABLE IF NOT EXISTS user_cursos_coordenacao (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    curso_id INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_user_curso (user_id, curso_id),
+    INDEX idx_user (user_id),
+    INDEX idx_curso (curso_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO user_types (nome, nivel) VALUES
 ('Administrador', 'administrador'),
 ('Professor', 'nivel0'),
@@ -260,3 +273,14 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 -- ALTER TABLE alunos ADD COLUMN desistente TINYINT(1) DEFAULT 0 AFTER auxilios_direitos_estudantis;
 -- ALTER TABLE alunos ADD INDEX idx_desistente (desistente);
 -- ALTER TABLE alunos ADD COLUMN observacoes_assistencia_estudantil TEXT NULL AFTER auxilios_direitos_estudantis;
+-- CREATE TABLE IF NOT EXISTS user_cursos_coordenacao (
+--     id INT AUTO_INCREMENT PRIMARY KEY,
+--     user_id INT NOT NULL,
+--     curso_id INT NOT NULL,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+--     UNIQUE KEY unique_user_curso (user_id, curso_id),
+--     INDEX idx_user (user_id),
+--     INDEX idx_curso (curso_id),
+--     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+--     FOREIGN KEY (curso_id) REFERENCES cursos(id) ON DELETE CASCADE
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

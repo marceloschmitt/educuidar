@@ -515,6 +515,140 @@ class User {
         
         return ['success' => false, 'message' => 'Usuário não encontrado.'];
     }
+
+    public function isCoordenador($user_id = null) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if (!$user_id) {
+            return false;
+        }
+
+        $stmt = $this->conn->prepare("SELECT 1 FROM user_cursos_coordenacao WHERE user_id = :user_id LIMIT 1");
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function getCursosCoordenados($user_id) {
+        if (!$user_id) {
+            return [];
+        }
+
+        $query = "SELECT c.id, c.nome
+                  FROM user_cursos_coordenacao ucc
+                  INNER JOIN cursos c ON c.id = ucc.curso_id
+                  WHERE ucc.user_id = :user_id
+                  ORDER BY c.nome ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function getCursosCoordenadosPorUsuarios() {
+        $query = "SELECT ucc.user_id, c.id as curso_id, c.nome as curso_nome
+                  FROM user_cursos_coordenacao ucc
+                  INNER JOIN cursos c ON c.id = ucc.curso_id
+                  ORDER BY c.nome ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $uid = (int)$row['user_id'];
+            if (!isset($map[$uid])) {
+                $map[$uid] = [];
+            }
+            $map[$uid][] = [
+                'id' => (int)$row['curso_id'],
+                'nome' => $row['curso_nome']
+            ];
+        }
+
+        return $map;
+    }
+
+    public function getCoordenadoresPorCurso($curso_id) {
+        if (!$curso_id) {
+            return [];
+        }
+
+        $query = "SELECT u.id, u.full_name, u.email
+                  FROM user_cursos_coordenacao ucc
+                  INNER JOIN users u ON u.id = ucc.user_id
+                  WHERE ucc.curso_id = :curso_id
+                  ORDER BY u.full_name ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':curso_id', $curso_id);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function getCoordenadoresPorCursos() {
+        $query = "SELECT ucc.curso_id, u.id, u.full_name
+                  FROM user_cursos_coordenacao ucc
+                  INNER JOIN users u ON u.id = ucc.user_id
+                  ORDER BY u.full_name ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $rows = $stmt->fetchAll();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $cid = (int)$row['curso_id'];
+            if (!isset($map[$cid])) {
+                $map[$cid] = [];
+            }
+            $map[$cid][] = [
+                'id' => (int)$row['id'],
+                'full_name' => $row['full_name']
+            ];
+        }
+
+        return $map;
+    }
+
+    public function setCursosCoordenados($user_id, array $curso_ids) {
+        if (!$user_id) {
+            return false;
+        }
+
+        $curso_ids = array_values(array_unique(array_filter(array_map('intval', $curso_ids), function ($id) {
+            return $id > 0;
+        })));
+
+        try {
+            $this->conn->beginTransaction();
+
+            $delete = $this->conn->prepare("DELETE FROM user_cursos_coordenacao WHERE user_id = :user_id");
+            $delete->bindParam(':user_id', $user_id);
+            $delete->execute();
+
+            if (!empty($curso_ids)) {
+                $insert = $this->conn->prepare("INSERT INTO user_cursos_coordenacao (user_id, curso_id) VALUES (:user_id, :curso_id)");
+                foreach ($curso_ids as $curso_id) {
+                    $insert->bindParam(':user_id', $user_id);
+                    $insert->bindParam(':curso_id', $curso_id);
+                    $insert->execute();
+                }
+            }
+
+            $this->conn->commit();
+            return true;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            return false;
+        }
+    }
 }
 ?>
 

@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $cursos = $curso->getAll();
+$coordenadores_por_curso = $user->getCoordenadoresPorCursos();
 $ano_corrente = $configuracao->getAnoCorrente();
 ?>
 
@@ -111,6 +112,7 @@ $ano_corrente = $configuracao->getAnoCorrente();
                         <thead>
                             <tr>
                                 <th>Nome</th>
+                                <th>Coordenadores</th>
                                 <th>Total de Turmas</th>
                                 <th>Turmas do Ano Corrente (<?php echo $ano_corrente; ?>)</th>
                                 <th>Ações</th>
@@ -120,6 +122,22 @@ $ano_corrente = $configuracao->getAnoCorrente();
                             <?php foreach ($cursos as $c): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($c['nome']); ?></td>
+                                <td>
+                                    <?php
+                                    $coordenadores = $coordenadores_por_curso[(int)$c['id']] ?? [];
+                                    if (!empty($coordenadores)):
+                                        foreach ($coordenadores as $coord):
+                                    ?>
+                                        <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
+                                            <?php echo htmlspecialchars($coord['full_name']); ?>
+                                        </span>
+                                    <?php
+                                        endforeach;
+                                    else:
+                                    ?>
+                                        <span class="text-muted">Nenhum</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td>
                                     <span class="badge bg-info"><?php echo htmlspecialchars($c['total_turmas'] ?? 0); ?></span>
                                 </td>
@@ -141,8 +159,8 @@ $ano_corrente = $configuracao->getAnoCorrente();
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-primary btn-sm" 
-                                            class="btn-edit-curso" data-curso='<?php echo htmlspecialchars(json_encode($c)); ?>'>
+                                    <button type="button" class="btn btn-primary btn-sm btn-edit-curso"
+                                            data-curso='<?php echo htmlspecialchars(json_encode($c)); ?>'>
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form method="POST" action="" style="display: inline;" 
