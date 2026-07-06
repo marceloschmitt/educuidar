@@ -1,6 +1,4 @@
 <?php
-$home_page = getHomePageForUser($user);
-$uses_alertas_home = ($home_page === 'alertas.php');
 $current_page = basename($_SERVER['PHP_SELF']);
 
 $user_level_session = $_SESSION['user_level'] ?? null;
@@ -17,26 +15,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
 ?>
 
 <ul class="nav flex-column">
-    <?php if ($uses_alertas_home): ?>
-    <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
-            <i class="bi bi-exclamation-triangle"></i> Alertas
-        </a>
-    </li>
-    <?php if ($can_view_eventos): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'index.php' ? 'active' : ''; ?>" href="index.php">
             <i class="bi bi-house-door"></i> Dashboard
         </a>
     </li>
-    <?php endif; ?>
-    <?php else: ?>
-    <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'index.php' ? 'active' : ''; ?>" href="index.php">
-            <i class="bi bi-house-door"></i> Dashboard
-        </a>
-    </li>
-    <?php endif; ?>
 
     <?php if ($can_view_eventos): ?>
     <li class="nav-item mt-2">
@@ -52,7 +35,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
             <i class="bi bi-people"></i> Evento de grupo
         </a>
     </li>
-    <?php if ($pode_ver_alertas && !$is_nivel2 && !$uses_alertas_home): ?>
+    <?php if ($pode_ver_alertas && !$is_nivel2): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
             <i class="bi bi-exclamation-triangle"></i> Alertas

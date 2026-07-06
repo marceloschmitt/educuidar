@@ -72,27 +72,6 @@ if (!function_exists('sabadoFilterToggleHref')) {
     }
 }
 
-if (!function_exists('getHomePageForUser')) {
-    function getHomePageForUser($user) {
-        if (!$user || !$user->isLoggedIn()) {
-            return 'login.php';
-        }
-        if ($user->isAdmin()) {
-            return 'index.php';
-        }
-        if ($user->isNivel1() || $user->isCoordenador()) {
-            return 'alertas.php';
-        }
-        return 'index.php';
-    }
-}
-
-if (!function_exists('userUsesAlertasAsHome')) {
-    function userUsesAlertasAsHome($user) {
-        return getHomePageForUser($user) === 'alertas.php';
-    }
-}
-
 if (!function_exists('getCursosCoordenadosPermitidos')) {
     function getCursosCoordenadosPermitidos($user, $user_id = null) {
         $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);

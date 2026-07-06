@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 header('Location: definir_senha_admin.php');
                 exit;
             } elseif ($login_result === true) {
-            header('Location: ' . getHomePageForUser($user));
+            header('Location: index.php');
             exit;
             } else {
                 // Check if there's a specific LDAP error
