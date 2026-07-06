@@ -30,6 +30,10 @@ $filtro_regra = $_GET['filtro_regra'] ?? '';
 $cursos = $curso->getAll();
 $turmas_ano_corrente = $turma->getTurmasPorAnoCorrente($ano_corrente);
 $regras = $alerta_regra->getAll(true);
+$regras_map = [];
+foreach ($regras as $regra_item) {
+    $regras_map[(int) $regra_item['id']] = $regra_item;
+}
 
 $cursos_permitidos = null;
 if (!$user->isAdmin() && !$user->isNivel0() && !$user->isNivel1() && $user->isCoordenador($user_id)) {
@@ -156,7 +160,22 @@ require_once 'includes/header.php';
                             <tr>
                                 <td><?php echo htmlspecialchars($alerta['aluno_nome']); ?></td>
                                 <td><?php echo htmlspecialchars($alerta['turma_label'] ?? '—'); ?></td>
-                                <td><?php echo htmlspecialchars($alerta['regra_nome']); ?></td>
+                                <td>
+                                    <div><?php echo htmlspecialchars($alerta['regra_nome']); ?></div>
+                                    <?php
+                                    $regra_atual = $regras_map[(int) $alerta['regra_id']] ?? null;
+                                    $tipos_evento_regra = $regra_atual['tipos_evento_nomes'] ?? [];
+                                    ?>
+                                    <?php if (!empty($tipos_evento_regra)): ?>
+                                    <div class="mt-1">
+                                        <?php foreach ($tipos_evento_regra as $tipo_evento): ?>
+                                        <span class="badge bg-<?php echo htmlspecialchars($tipo_evento['cor'] ?? 'secondary'); ?> me-1 mb-1">
+                                            <?php echo htmlspecialchars($tipo_evento['nome'] ?? ''); ?>
+                                        </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($alerta['criterio_resumo']); ?></td>
                                 <td><?php echo htmlspecialchars($alerta['periodo_label'] ?? ''); ?></td>
                                 <td><span class="badge bg-danger"><?php echo (int) $alerta['quantidade_contada']; ?></span></td>
