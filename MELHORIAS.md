@@ -50,15 +50,15 @@ Permitir ao usuário escolher se eventos ocorridos em **sábados** aparecem ou n
 - `js/app.js` — opcional: persistir preferência no cliente
 
 ### Decisões pendentes
-- [ ] Padrão: mostrar ou ocultar sábados?
-- [ ] Persistência: só na sessão atual, `localStorage`, ou preferência salva por usuário em `configuracoes` / nova tabela `user_preferences`?
-- [ ] Sábado considera apenas `data_evento` ou também feriados/recesso (fora do escopo inicial)?
+- [x] Padrão: **mostrar** sábados
+- [x] Persistência: **sessão PHP**
+- [x] Sábado considera apenas `data_evento` (`DAYOFWEEK` / `date('N') === 6`)
 
 ### Tarefas
-- [ ] Adicionar parâmetro `incluir_sabados` (ou `ocultar_sabados`) nos filtros GET
-- [ ] Aplicar filtro na query ou no pós-processamento PHP (preferir SQL para performance)
-- [ ] UI: botão toggle ou checkbox com rótulo claro (“Incluir eventos de sábado”)
-- [ ] Garantir que “Limpar filtros” respeite o padrão definido
+- [x] Adicionar parâmetro `incluir_sabados` nos filtros GET
+- [x] Aplicar filtro na query (`Evento::getAll`, `getEstatisticas`) e pós-processamento quando necessário
+- [x] UI: checkbox “Incluir eventos de sábado” no Dashboard e Eventos
+- [x] “Limpar filtros” restaura padrão (mostrar sábados)
 - [ ] Testar com eventos em dias úteis e sábados
 
 ---
@@ -381,7 +381,7 @@ $registrado_por = $user->seesOnlyOwnEvents() ? $user_id : null;
 
 | Item | Melhoria | Status | Observações |
 |------|----------|--------|-------------|
-| 1 | Filtro sábados | Não iniciado | |
+| 1 | Filtro sábados | Concluído | Padrão: mostrar; sessão PHP |
 | 2 | Relatório de alertas | Não iniciado | Critério 1: 3 faltas seguidas |
 | 3 | Coordenadores | Não iniciado | |
 | 4 | E-mail alertas | Não iniciado | Depende de 2 e 3 |

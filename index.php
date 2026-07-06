@@ -266,6 +266,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                         Filtrando por: <?php echo htmlspecialchars($tipo_selecionado['nome']); ?>
                     </span>
                     <?php endif; ?>
+                    <?php endif; ?>
                 </div>
             </div>
             <div class="card-body">
