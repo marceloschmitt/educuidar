@@ -30,9 +30,7 @@
                                 <th>Usuário</th>
                                 <th>E-mail</th>
                                 <th>Tipo</th>
-                                <th>Autenticação</th>
                                 <th>Coordenação</th>
-                                <th>Cadastrado em</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -57,15 +55,6 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-<?php 
-                                        echo ($usr['auth_type'] ?? 'local') === 'ldap' ? 'success' : 'secondary'; 
-                                    ?>">
-                                        <?php 
-                                        echo ($usr['auth_type'] ?? 'local') === 'ldap' ? 'LDAP' : 'Local'; 
-                                        ?>
-                                    </span>
-                                </td>
-                                <td>
                                     <?php if (!empty($usr['cursos_coordenados'])): ?>
                                         <?php foreach ($usr['cursos_coordenados'] as $cc): ?>
                                             <span class="badge bg-warning text-dark me-1 mb-1" title="Coordenador">
@@ -76,7 +65,6 @@
                                         <span class="text-muted">—</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo date('d/m/Y H:i', strtotime($usr['created_at'])); ?></td>
                                 <td class="d-flex gap-2">
                                     <button type="button" class="btn btn-primary btn-sm btn-edit-user" 
                                             data-user='<?php echo htmlspecialchars(json_encode($usr)); ?>'>
