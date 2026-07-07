@@ -1099,8 +1099,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Menu contextual ao clicar na linha do aluno
-    var alunoRows = document.querySelectorAll('.aluno-row');
+    // Menu contextual ao clicar na linha do aluno (ou no nome na tela de alertas)
+    var alunoRows = document.querySelectorAll('.aluno-row, .alerta-aluno-nome');
     var contextMenu = document.getElementById('alunoContextMenu');
     var isAdmin = document.body.getAttribute('data-is-admin') === '1' || 
                   document.body.getAttribute('data-is-admin') === 'true';
@@ -1142,14 +1142,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 linkProntuario.href = 'prontuario.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();
             }
             
-            // Mostrar ações de admin se for admin
+            // Mostrar ações de admin se for admin (apenas na listagem de alunos)
             var adminActions = document.getElementById('contextMenuAdminActions');
-            if (isAdmin) {
+            var isAlunosPage = window.location.pathname.indexOf('alunos.php') !== -1;
+            if (isAdmin && isAlunosPage) {
                 adminActions.style.display = 'block';
                 var linkGerenciarTurmas = document.getElementById('contextMenuGerenciarTurmas');
                 linkGerenciarTurmas.href = 'aluno_turmas.php?id=' + alunoData.id;
                 document.getElementById('contextMenuDeleteId').value = alunoData.id;
-            } else {
+            } else if (adminActions) {
                 adminActions.style.display = 'none';
             }
         });
@@ -1174,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     document.addEventListener('click', function(e) {
-        if (contextMenu && !contextMenu.contains(e.target) && !e.target.closest('.aluno-row')) {
+        if (contextMenu && !contextMenu.contains(e.target) && !e.target.closest('.aluno-row') && !e.target.closest('.alerta-aluno-nome')) {
             hideContextMenu();
         }
     });

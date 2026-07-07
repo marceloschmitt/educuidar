@@ -267,6 +267,15 @@ body {
     transition: background-color 0.2s;
 }
 
+.alerta-aluno-nome {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.alerta-aluno-nome:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
 .aluno-row:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }

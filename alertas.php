@@ -9,6 +9,7 @@ $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 $alerta_regra = new AlertaRegra($db);
 $detector = new AlertaDetector($db);
+$aluno_model = new Aluno($db);
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
@@ -60,6 +61,17 @@ if ($filtro_regra) {
     $alertas = array_values(array_filter($alertas, function ($a) use ($filtro_regra) {
         return (int) $a['regra_id'] === (int) $filtro_regra;
     }));
+}
+
+$alunos_map = [];
+foreach ($alertas as $alerta_item) {
+    $aluno_id = (int) ($alerta_item['aluno_id'] ?? 0);
+    if ($aluno_id > 0 && !isset($alunos_map[$aluno_id])) {
+        $aluno = $aluno_model->getById($aluno_id);
+        if ($aluno) {
+            $alunos_map[$aluno_id] = $aluno;
+        }
+    }
 }
 
 $page_title = 'Alertas';
@@ -166,11 +178,16 @@ require_once 'includes/header.php';
                         </thead>
                         <tbody>
                             <?php foreach ($alertas as $alerta): ?>
+                            <?php
+                            $aluno_id = (int) ($alerta['aluno_id'] ?? 0);
+                            $aluno_data = $alunos_map[$aluno_id] ?? [
+                                'id' => $aluno_id,
+                                'nome' => $alerta['aluno_nome'] ?? '',
+                            ];
+                            ?>
                             <tr>
-                                <td>
-                                    <a href="eventos.php?filtro_nome=<?php echo urlencode($alerta['aluno_nome']); ?>">
-                                        <?php echo htmlspecialchars($alerta['aluno_nome']); ?>
-                                    </a>
+                                <td class="alerta-aluno-nome" data-aluno='<?php echo htmlspecialchars(json_encode($aluno_data)); ?>'>
+                                    <?php echo htmlspecialchars($alerta['aluno_nome']); ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($alerta['turma_label'] ?? '—'); ?></td>
                                 <td>
@@ -202,5 +219,32 @@ require_once 'includes/header.php';
         </div>
     </div>
 </div>
+
+<div class="dropdown-menu" id="alunoContextMenu" style="position: absolute; display: none;">
+    <button class="dropdown-item btn-view-ficha" type="button">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha
+    </button>
+    <a class="dropdown-item" href="#" id="contextMenuVerEventos">
+        <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
+    </a>
+    <a class="dropdown-item" href="#" id="contextMenuProntuario">
+        <i class="bi bi-file-text text-info"></i> Ver Prontuário
+    </a>
+    <div id="contextMenuAdminActions" style="display: none;">
+        <a class="dropdown-item" href="#" id="contextMenuGerenciarTurmas">
+            <i class="bi bi-collection text-info"></i> Gerenciar Turmas
+        </a>
+        <hr class="dropdown-divider">
+        <form method="POST" action="" class="form-confirm" data-confirm="Tem certeza que deseja excluir este aluno?">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="id" id="contextMenuDeleteId">
+            <button type="submit" class="dropdown-item text-danger">
+                <i class="bi bi-trash"></i> Excluir
+            </button>
+        </form>
+    </div>
+</div>
+
+<?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
 
 <?php require_once 'includes/footer.php'; ?>
