@@ -162,13 +162,16 @@ require_once 'includes/header.php';
                                 <th>Critério</th>
                                 <th>Período / datas</th>
                                 <th>Qtd.</th>
-                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($alertas as $alerta): ?>
                             <tr>
-                                <td><?php echo htmlspecialchars($alerta['aluno_nome']); ?></td>
+                                <td>
+                                    <a href="eventos.php?filtro_nome=<?php echo urlencode($alerta['aluno_nome']); ?>">
+                                        <?php echo htmlspecialchars($alerta['aluno_nome']); ?>
+                                    </a>
+                                </td>
                                 <td><?php echo htmlspecialchars($alerta['turma_label'] ?? '—'); ?></td>
                                 <td>
                                     <div><?php echo htmlspecialchars($alerta['regra_nome']); ?></div>
@@ -189,12 +192,6 @@ require_once 'includes/header.php';
                                 <td><?php echo htmlspecialchars($alerta['criterio_resumo']); ?></td>
                                 <td><?php echo htmlspecialchars($alerta['periodo_label'] ?? ''); ?></td>
                                 <td><span class="badge bg-danger"><?php echo (int) $alerta['quantidade_contada']; ?></span></td>
-                                <td>
-                                    <button type="button" class="btn btn-outline-primary btn-sm btn-ver-ficha-alerta"
-                                            data-aluno-id="<?php echo (int) $alerta['aluno_id']; ?>">
-                                        <i class="bi bi-person-lines-fill"></i> Ficha
-                                    </button>
-                                </td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -205,32 +202,5 @@ require_once 'includes/header.php';
         </div>
     </div>
 </div>
-
-<?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
-
-<script>
-document.querySelectorAll('.btn-ver-ficha-alerta').forEach(function(btn) {
-    btn.addEventListener('click', function() {
-        var alunoId = this.getAttribute('data-aluno-id');
-        if (!alunoId) return;
-        fetch('api/get_aluno_ficha.php?id=' + encodeURIComponent(alunoId))
-            .then(function(res) { return res.json(); })
-            .then(function(data) {
-                if (data.error) {
-                    alert(data.error);
-                    return;
-                }
-                if (typeof viewFichaAluno === 'function') {
-                    viewFichaAluno(data);
-                } else {
-                    alert('Não foi possível abrir a ficha do aluno.');
-                }
-            })
-            .catch(function() {
-                alert('Erro ao carregar a ficha do aluno.');
-            });
-    });
-});
-</script>
 
 <?php require_once 'includes/footer.php'; ?>
