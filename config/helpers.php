@@ -82,6 +82,48 @@ if (!function_exists('getCursosCoordenadosPermitidos')) {
     }
 }
 
+if (!function_exists('usuarioPodeVerPopupAlertas')) {
+    function usuarioPodeVerPopupAlertas($user, $user_id = null) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if (!$user || !$user_id || $user->isNivel2()) {
+            return false;
+        }
+        return $user->isAdmin() || $user->isNivel0() || $user->isCoordenador($user_id);
+    }
+}
+
+if (!function_exists('processarAlertasAluno')) {
+    function processarAlertasAluno($db, $aluno_id) {
+        $aluno_id = (int) $aluno_id;
+        if ($aluno_id <= 0) {
+            return;
+        }
+
+        $configuracao = new Configuracao($db);
+        $detector = new AlertaDetector($db);
+        $alerta_gerado = new AlertaGerado($db);
+
+        $alertas = $detector->avaliarTodasRegrasAtivas([
+            'ano_corrente' => $configuracao->getAnoCorrente(),
+            'aluno_id' => $aluno_id,
+        ]);
+
+        $alerta_gerado->sincronizarAlertasAluno($aluno_id, $alertas);
+    }
+}
+
+if (!function_exists('obterAlertasLoginPopup')) {
+    function obterAlertasLoginPopup($db, $user, $user_id = null, $horas = 24) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if (!usuarioPodeVerPopupAlertas($user, $user_id)) {
+            return [];
+        }
+
+        $alerta_gerado = new AlertaGerado($db);
+        return $alerta_gerado->getRecentes($horas, getCursosCoordenadosPermitidos($user, $user_id));
+    }
+}
+
 if (!function_exists('formatAlertaCriterioResumo')) {
     function formatAlertaCriterioResumo(array $regra) {
         $qtd = (int) ($regra['quantidade'] ?? 0);

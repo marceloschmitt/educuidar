@@ -108,6 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     $evento->registrado_por = $user_id;
 
                     if ($evento->create()) {
+                        processarAlertasAluno($db, $aluno_id);
                         $created++;
                     } else {
                         $errors[] = "Falha ao criar evento para o aluno ID {$aluno_id}.";

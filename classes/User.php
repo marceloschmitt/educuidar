@@ -54,6 +54,7 @@ class User {
                     $_SESSION['user_level'] = $resolved['level'];
                     $_SESSION['user_type_nome'] = $resolved['nome'];
                     $_SESSION['full_name'] = $row['full_name'];
+                    $_SESSION['verificar_alertas_login'] = true;
                     return true;
                 } else {
                     // Store LDAP error in session for display
@@ -80,6 +81,7 @@ class User {
                     $_SESSION['user_level'] = $resolved['level'];
                     $_SESSION['user_type_nome'] = $resolved['nome'];
                     $_SESSION['full_name'] = $row['full_name'];
+                    $_SESSION['verificar_alertas_login'] = true;
                     return true;
                 }
             }

@@ -1232,6 +1232,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Erro ao processar aluno_edit:', e);
         }
     }
+
+    var modalAlertasLogin = document.getElementById('modalAlertasLogin');
+    if (modalAlertasLogin && typeof bootstrap !== 'undefined') {
+        var alertasLoginModal = new bootstrap.Modal(modalAlertasLogin);
+        alertasLoginModal.show();
+    }
     
     // Botões de editar turma
     var editTurmaButtons = document.querySelectorAll('.btn-edit-turma');

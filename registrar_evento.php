@@ -220,6 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         if ($user->isAdmin()) {
             // Admin pode editar qualquer evento
             if ($evento->update()) {
+                processarAlertasAluno($db, $evento->aluno_id);
                 $upload_errors = [];
                 if (!empty($_FILES['anexos'])) {
                     saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
@@ -241,6 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && $_POST['a
         } elseif (($user->isNivel0() || $user->isNivel1() || $user->isNivel2()) && $user_id) {
             // Nivel1 e Nivel2 podem editar apenas seus próprios eventos criados há menos de 1 hora
             if ($evento->update($user_id, true)) {
+                processarAlertasAluno($db, $evento->aluno_id);
                 $upload_errors = [];
                 if (!empty($_FILES['anexos'])) {
                     saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);
@@ -292,11 +294,14 @@ if (isset($_GET['delete'])) {
     $evento->id = $_GET['delete'];
     $user_id = $_SESSION['user_id'] ?? null;
     $delete_aluno_id = $_GET['aluno_id'] ?? $aluno_id;
+    $evento_existente = $evento->getById($evento->id);
+    $aluno_reprocessar = $evento_existente['aluno_id'] ?? $delete_aluno_id;
     
     if ($user->isAdmin()) {
         // Admin pode deletar qualquer evento
         if ($evento->delete()) {
             deleteEventAttachments($db, $evento->id);
+            processarAlertasAluno($db, $aluno_reprocessar);
             $_SESSION['success'] = 'Evento excluído com sucesso!';
             header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id) . $preserve_query);
             exit;
@@ -305,6 +310,7 @@ if (isset($_GET['delete'])) {
                             // Níveis não-admin só podem deletar seus próprios eventos criados há menos de 1 hora
         if ($evento->delete($user_id, true)) {
             deleteEventAttachments($db, $evento->id);
+            processarAlertasAluno($db, $aluno_reprocessar);
             $_SESSION['success'] = 'Evento excluído com sucesso!';
             header('Location: registrar_evento.php?aluno_id=' . urlencode($delete_aluno_id) . $preserve_query);
             exit;
@@ -338,6 +344,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['error'] = 'Por favor, preencha todos os campos obrigatórios!';
     } else {
         if ($evento->create()) {
+            processarAlertasAluno($db, $evento->aluno_id);
             $upload_errors = [];
             if (!empty($_FILES['anexos'])) {
                 saveEventAttachments($db, $evento->id, $_FILES['anexos'], $upload_errors);

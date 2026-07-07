@@ -78,6 +78,7 @@ class AlertaDetector {
         $ano_corrente = (int) ($filtros['ano_corrente'] ?? date('Y'));
         $filtro_curso = $filtros['curso_id'] ?? null;
         $filtro_turma = $filtros['turma_id'] ?? null;
+        $filtro_aluno = $filtros['aluno_id'] ?? null;
         $cursos_permitidos = $filtros['cursos_permitidos'] ?? null;
 
         $tipo_ids = array_map('intval', $regra['tipos_evento'] ?? []);
@@ -108,6 +109,11 @@ class AlertaDetector {
         if ($filtro_turma) {
             $query .= " AND t.id = ?";
             $params[] = (int) $filtro_turma;
+        }
+
+        if ($filtro_aluno) {
+            $query .= " AND e.aluno_id = ?";
+            $params[] = (int) $filtro_aluno;
         }
 
         if (is_array($cursos_permitidos)) {

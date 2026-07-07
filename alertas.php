@@ -8,7 +8,7 @@ $curso = new Curso($db);
 $turma = new Turma($db);
 $configuracao = new Configuracao($db);
 $alerta_regra = new AlertaRegra($db);
-$detector = new AlertaDetector($db);
+$alerta_gerado = new AlertaGerado($db);
 $aluno_model = new Aluno($db);
 
 if (!$user->isLoggedIn()) {
@@ -48,20 +48,12 @@ if ($cursos_permitidos !== null) {
     }));
 }
 
-$filtros_detector = [
-    'ano_corrente' => $ano_corrente,
+$alertas = $alerta_gerado->getAll([
     'curso_id' => $filtro_curso ?: null,
     'turma_id' => $filtro_turma ?: null,
+    'regra_id' => $filtro_regra ?: null,
     'cursos_permitidos' => $cursos_permitidos,
-];
-
-$alertas = $detector->avaliarTodasRegrasAtivas($filtros_detector);
-
-if ($filtro_regra) {
-    $alertas = array_values(array_filter($alertas, function ($a) use ($filtro_regra) {
-        return (int) $a['regra_id'] === (int) $filtro_regra;
-    }));
-}
+]);
 
 $alunos_map = [];
 foreach ($alertas as $alerta_item) {

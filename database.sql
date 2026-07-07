@@ -309,7 +309,8 @@ CREATE TABLE IF NOT EXISTS alertas_gerados (
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
     FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
     INDEX idx_aluno_regra (aluno_id, regra_id),
-    INDEX idx_notificado (notificado_em)
+    INDEX idx_notificado (notificado_em),
+    INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Migração (banco já existente): execute no MySQL:
