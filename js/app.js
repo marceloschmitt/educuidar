@@ -1100,7 +1100,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Menu contextual ao clicar na linha do aluno (ou no nome na tela de alertas)
-    var alunoRows = document.querySelectorAll('.aluno-row, .alerta-aluno-nome');
+    var alunoRows = document.querySelectorAll('.aluno-row, .alerta-aluno-nome, .alerta-aluno-foto');
     var contextMenu = document.getElementById('alunoContextMenu');
     var isAdmin = document.body.getAttribute('data-is-admin') === '1' || 
                   document.body.getAttribute('data-is-admin') === 'true';
@@ -1175,7 +1175,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     document.addEventListener('click', function(e) {
-        if (contextMenu && !contextMenu.contains(e.target) && !e.target.closest('.aluno-row') && !e.target.closest('.alerta-aluno-nome')) {
+        if (contextMenu && !contextMenu.contains(e.target) && !e.target.closest('.aluno-row') && !e.target.closest('.alerta-aluno-nome') && !e.target.closest('.alerta-aluno-foto')) {
             hideContextMenu();
         }
     });

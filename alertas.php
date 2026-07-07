@@ -168,7 +168,8 @@ require_once 'includes/header.php';
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>Aluno</th>
+                                <th class="alertas-col-foto">Foto</th>
+                                <th class="alertas-col-nome">Nome</th>
                                 <th>Curso / Turma</th>
                                 <th>Regra</th>
                                 <th>Critério</th>
@@ -184,10 +185,27 @@ require_once 'includes/header.php';
                                 'id' => $aluno_id,
                                 'nome' => $alerta['aluno_nome'] ?? '',
                             ];
+                            $nome_exibicao = !empty($aluno_data['nome_social'])
+                                ? $aluno_data['nome_social']
+                                : ($alerta['aluno_nome'] ?? $aluno_data['nome'] ?? '');
+                            $aluno_json = htmlspecialchars(json_encode($aluno_data));
                             ?>
                             <tr>
-                                <td class="alerta-aluno-nome" data-aluno='<?php echo htmlspecialchars(json_encode($aluno_data)); ?>'>
-                                    <?php echo htmlspecialchars($alerta['aluno_nome']); ?>
+                                <td class="alerta-aluno-foto" data-aluno='<?php echo $aluno_json; ?>'>
+                                    <?php if (!empty($aluno_data['foto'])): ?>
+                                        <img src="<?php echo htmlspecialchars($aluno_data['foto']); ?>"
+                                             alt="Foto de <?php echo htmlspecialchars($nome_exibicao); ?>"
+                                             class="img-thumbnail"
+                                             style="width: 50px; height: 50px; object-fit: cover;">
+                                    <?php else: ?>
+                                        <div class="bg-secondary text-white rounded d-flex align-items-center justify-content-center"
+                                             style="width: 50px; height: 50px;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="alerta-aluno-nome" data-aluno='<?php echo $aluno_json; ?>'>
+                                    <?php echo htmlspecialchars($nome_exibicao); ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($alerta['turma_label'] ?? '—'); ?></td>
                                 <td>
@@ -213,6 +231,7 @@ require_once 'includes/header.php';
                             <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <div style="height: 150px;"></div>
                 </div>
                 <?php endif; ?>
             </div>

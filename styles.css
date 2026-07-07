@@ -270,8 +270,30 @@ body {
 .alerta-aluno-nome {
     cursor: pointer;
     transition: background-color 0.2s;
+    min-width: 220px;
+    width: 22%;
+    font-size: 1.05rem;
+    font-weight: 500;
+    vertical-align: middle;
 }
 
+.alerta-aluno-foto {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 60px;
+    vertical-align: middle;
+}
+
+.alertas-col-foto {
+    width: 60px;
+}
+
+.alertas-col-nome {
+    min-width: 220px;
+    width: 22%;
+}
+
+.alerta-aluno-foto:hover,
 .alerta-aluno-nome:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
