@@ -270,8 +270,8 @@ body {
 .alerta-aluno-nome {
     cursor: pointer;
     transition: background-color 0.2s;
-    min-width: 220px;
-    width: 22%;
+    min-width: 320px;
+    width: 32%;
     font-size: 1.05rem;
     font-weight: 500;
     vertical-align: middle;
@@ -289,8 +289,8 @@ body {
 }
 
 .alertas-col-nome {
-    min-width: 220px;
-    width: 22%;
+    min-width: 320px;
+    width: 32%;
 }
 
 .alerta-aluno-foto:hover,

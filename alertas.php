@@ -172,7 +172,6 @@ require_once 'includes/header.php';
                                 <th class="alertas-col-nome">Nome</th>
                                 <th>Curso / Turma</th>
                                 <th>Regra</th>
-                                <th>Critério</th>
                                 <th>Período / datas</th>
                                 <th>Qtd.</th>
                             </tr>
@@ -224,7 +223,6 @@ require_once 'includes/header.php';
                                     </div>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo htmlspecialchars($alerta['criterio_resumo']); ?></td>
                                 <td><?php echo htmlspecialchars($alerta['periodo_label'] ?? ''); ?></td>
                                 <td><span class="badge bg-danger"><?php echo (int) $alerta['quantidade_contada']; ?></span></td>
                             </tr>
