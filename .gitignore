@@ -1,0 +1,30 @@
+# Configuration files with sensitive data
+config/database.local.php
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+
+# Python
+python/.venv/
+python/__pycache__/
+*.pyc
+python/.env
+python/resposta_alunos.json
+python/lista_faltas.json
+

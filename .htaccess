@@ -1,0 +1,33 @@
+# Security and PHP configuration
+<IfModule mod_php8.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect sensitive files
+<FilesMatch "^(config|classes|models)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect SQL files
+<FilesMatch "\.sql$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Enable rewrite engine (if needed)
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Redirect to login if not authenticated (optional)
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteCond %{REQUEST_URI} !^/login\.php$
+    # RewriteRule ^(.*)$ login.php [L]
+</IfModule>
+

@@ -1,0 +1,363 @@
+<?php
+$page_title = 'Dashboard';
+require_once 'includes/header.php';
+
+$database = new Database();
+$db = $database->getConnection();
+$evento = new Evento($db);
+$user = new User($db);
+$curso = new Curso($db);
+$turma = new Turma($db);
+$configuracao = new Configuracao($db);
+
+$user_id = $_SESSION['user_id'];
+$incluir_sabados = resolveIncluirSabadosSession();
+
+// Get filters
+$filtro_curso = $_GET['filtro_curso'] ?? '';
+$filtro_turma = $_GET['filtro_turma'] ?? '';
+$filtro_tipo_evento = $_GET['filtro_tipo_evento'] ?? '';
+$apenas_meus_eventos = ($_GET['apenas_meus_eventos'] ?? '') === '1';
+
+// Get ano corrente
+$ano_corrente = $configuracao->getAnoCorrente();
+
+// Get courses and turmas for filters
+$cursos = $curso->getAll();
+$turmas_ano_corrente_lista = $turma->getTurmasPorAnoCorrente($ano_corrente);
+
+// Get turma info if filtered
+$turma_filtrada = null;
+if ($filtro_turma) {
+    $turma_filtrada = $turma->getById($filtro_turma);
+}
+
+// Get all event types for display
+$tipo_evento_model = new TipoEvento($db);
+$todos_tipos = $tipo_evento_model->getAll(true); // Apenas ativos
+
+// Get statistics
+if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()) {
+    // Nivel2 só vê seus eventos; demais usuários podem ativar esse filtro.
+    $registrado_por = ($user->isNivel2() || $apenas_meus_eventos) ? $user_id : null;
+    $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por, $incluir_sabados);
+    $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados);
+    // Filter eventos recentes by ano corrente
+    $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($ano_corrente) {
+        return !empty($evt['ano_civil']) && $evt['ano_civil'] == $ano_corrente;
+    });
+    // Filter by curso if selected
+    if ($filtro_curso) {
+        $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($filtro_curso) {
+            return !empty($evt['curso_id']) && $evt['curso_id'] == $filtro_curso;
+        });
+    }
+    // Filter by turma if selected
+    if ($filtro_turma) {
+        $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($filtro_turma) {
+            return !empty($evt['turma_id']) && $evt['turma_id'] == $filtro_turma;
+        });
+    }
+    // Filter by tipo_evento if selected
+    if ($filtro_tipo_evento) {
+        $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($filtro_tipo_evento) {
+            return !empty($evt['tipo_evento_id']) && $evt['tipo_evento_id'] == $filtro_tipo_evento;
+        });
+    }
+    // Mostrar todos os eventos que passaram nos filtros (sem limite)
+} else {
+    $estatisticas = $evento->getEstatisticas($user_id, null, null, $ano_corrente, null, $incluir_sabados);
+    $eventos_recentes = filterEventosPorSabado($evento->getByAluno($user_id), $incluir_sabados);
+    // Filter by tipo_evento if selected
+    if ($filtro_tipo_evento) {
+        $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($filtro_tipo_evento) {
+            return !empty($evt['tipo_evento_id']) && $evt['tipo_evento_id'] == $filtro_tipo_evento;
+        });
+    }
+    // Mostrar todos os eventos do aluno que passaram nos filtros (sem limite)
+}
+?>
+
+<?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <form method="GET" action="" class="row g-3">
+                    <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
+                    <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
+                    <div class="col-md-3">
+                        <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
+                        <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
+                            <option value="">Todos os cursos</option>
+                            <?php foreach ($cursos as $c): ?>
+                            <option value="<?php echo $c['id']; ?>" <?php echo ($filtro_curso == $c['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($c['nome']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtro_turma" class="form-label">Filtrar por Turma (Ano <?php echo $ano_corrente; ?>)</label>
+                        <select class="form-select form-select-sm" id="filtro_turma" name="filtro_turma">
+                            <option value="">Todas as turmas</option>
+                            <?php 
+                            $turmas_filtradas = $turmas_ano_corrente_lista;
+                            if ($filtro_curso) {
+                                $turmas_filtradas = array_filter($turmas_ano_corrente_lista, function($t) use ($filtro_curso) {
+                                    return $t['curso_id'] == $filtro_curso;
+                                });
+                            }
+                            foreach ($turmas_filtradas as $t): 
+                            ?>
+                            <option value="<?php echo $t['id']; ?>" <?php echo ($filtro_turma == $t['id']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($t['curso_nome'] ?? ''); ?> - 
+                                <?php echo htmlspecialchars($t['ano_curso']); ?>º Ano
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-12 d-flex align-items-center flex-wrap gap-4">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                                   onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                            <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
+                        </div>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
+                                   <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                                   onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                            <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
+                        </div>
+                        <?php if ($filtro_curso || $filtro_turma || $filtro_tipo_evento || !$incluir_sabados || $apenas_meus_eventos): ?>
+                        <a href="index.php?limpar_filtros=1" class="btn btn-secondary btn-sm">
+                            <i class="bi bi-x-circle"></i> Filtros padrão
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<div class="row">
+    <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
+    <?php 
+    // Create a map of statistics by tipo_evento_id
+    $estatisticas_map = [];
+    foreach ($estatisticas as $stat) {
+        $estatisticas_map[$stat['tipo_evento_id']] = $stat['total'];
+    }
+    
+    // Display cards for all event types
+    foreach ($todos_tipos as $tipo):
+        $total = $estatisticas_map[$tipo['id']] ?? 0;
+        $cor = $tipo['cor'] ?? 'secondary';
+        // If color starts with #, use inline style, otherwise use Bootstrap class
+        $bg_class = (strpos($cor, '#') === 0) ? '' : 'bg-' . $cor;
+        $style = (strpos($cor, '#') === 0) ? 'background-color: ' . htmlspecialchars($cor) . ';' : '';
+        
+        // Build URL with filters
+        $url_params = [];
+        if ($filtro_curso) $url_params['filtro_curso'] = $filtro_curso;
+        if ($filtro_turma) $url_params['filtro_turma'] = $filtro_turma;
+        if (!$incluir_sabados) $url_params['incluir_sabados'] = '0';
+        if ($apenas_meus_eventos) $url_params['apenas_meus_eventos'] = '1';
+        $url_params['filtro_tipo_evento'] = $tipo['id'];
+        $card_url = 'index.php?' . http_build_query($url_params);
+        
+        $is_selected = ($filtro_tipo_evento == $tipo['id']);
+    ?>
+    <div class="col-md-3 mb-4">
+        <a href="<?php echo htmlspecialchars($card_url); ?>" class="text-decoration-none" style="display: block;">
+            <div class="card text-white <?php echo $bg_class; ?> <?php echo $is_selected ? 'border border-light border-3' : ''; ?>" <?php if ($style): ?>style="<?php echo $style; ?>"<?php endif; ?>>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title"><?php echo htmlspecialchars($tipo['nome']); ?></h6>
+                            <h3><?php echo $total; ?></h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-calendar-event" style="font-size: 2rem;"></i>
+                        </div>
+                    </div>
+                    <?php if ($is_selected): ?>
+                    <div class="mt-2">
+                        <small><i class="bi bi-funnel-fill"></i> Filtro ativo</small>
+                    </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </a>
+    </div>
+    <?php endforeach; ?>
+    <?php else: ?>
+    <div class="col-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Minhas Estatísticas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <?php
+                    $tipos = [
+                        'chegada_atrasada' => ['label' => 'Atrasos', 'icon' => 'clock-history', 'color' => 'primary'],
+                        'saida_antecipada' => ['label' => 'Saídas Antecipadas', 'icon' => 'arrow-left-circle', 'color' => 'warning'],
+                        'falta' => ['label' => 'Faltas', 'icon' => 'x-circle', 'color' => 'danger'],
+                        'atendimento' => ['label' => 'Atendimentos', 'icon' => 'person-check', 'color' => 'success']
+                    ];
+                    
+                    foreach ($tipos as $tipo => $info):
+                        $total = 0;
+                        foreach ($estatisticas as $stat) {
+                            if ($stat['tipo_evento'] == $tipo) {
+                                $total = $stat['total'];
+                                break;
+                            }
+                        }
+                    ?>
+                    <div class="col-md-3 mb-3">
+                        <div class="card border-<?php echo $info['color']; ?>">
+                            <div class="card-body text-center">
+                                <i class="bi bi-<?php echo $info['icon']; ?> text-<?php echo $info['color']; ?>" style="font-size: 2rem;"></i>
+                                <h5 class="mt-2"><?php echo $total; ?></h5>
+                                <small class="text-muted"><?php echo $info['label']; ?></small>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0">Eventos</h5>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <?php if (!($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2())): ?>
+                    <a href="<?php echo htmlspecialchars(sabadoFilterToggleHref('index.php', $filtro_tipo_evento ? ['filtro_tipo_evento' => $filtro_tipo_evento] : [], $incluir_sabados)); ?>"
+                       class="btn btn-sm <?php echo $incluir_sabados ? 'btn-outline-secondary' : 'btn-secondary'; ?>">
+                        <i class="bi bi-calendar-week"></i>
+                        <?php echo $incluir_sabados ? 'Ocultar sábados' : 'Mostrar sábados'; ?>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (!$incluir_sabados): ?>
+                    <span class="badge bg-secondary">Sábados ocultos</span>
+                    <?php endif; ?>
+                    <?php if ($user->isNivel2() || $apenas_meus_eventos): ?>
+                    <span class="badge bg-primary">Apenas meus eventos</span>
+                    <?php endif; ?>
+                <?php if ($filtro_tipo_evento): ?>
+                    <?php 
+                    $tipo_selecionado = null;
+                    foreach ($todos_tipos as $t) {
+                        if ($t['id'] == $filtro_tipo_evento) {
+                            $tipo_selecionado = $t;
+                            break;
+                        }
+                    }
+                    if ($tipo_selecionado):
+                    ?>
+                    <span class="badge <?php echo (strpos($tipo_selecionado['cor'], '#') === 0) ? '' : 'bg-' . htmlspecialchars($tipo_selecionado['cor']); ?>" 
+                          <?php if (strpos($tipo_selecionado['cor'], '#') === 0): ?>style="background-color: <?php echo htmlspecialchars($tipo_selecionado['cor']); ?>;"<?php endif; ?>>
+                        Filtrando por: <?php echo htmlspecialchars($tipo_selecionado['nome']); ?>
+                    </span>
+                    <?php endif; ?>
+                <?php endif; ?>
+                </div>
+            </div>
+            <div class="card-body">
+                <?php if (empty($eventos_recentes)): ?>
+                <p class="text-muted text-center">Nenhum evento registrado ainda.</p>
+                <?php else: ?>
+                <?php if ($turma_filtrada): ?>
+                <div class="alert alert-info mb-3" role="alert">
+                    <h5 class="alert-heading mb-0">
+                        <i class="bi bi-collection"></i> 
+                        Turma: <strong><?php echo htmlspecialchars($turma_filtrada['curso_nome'] ?? ''); ?></strong> - 
+                        <?php echo htmlspecialchars($turma_filtrada['ano_curso'] ?? ''); ?>º Ano - 
+                        Ano <?php echo htmlspecialchars($turma_filtrada['ano_civil'] ?? ''); ?>
+                    </h5>
+                </div>
+                <?php endif; ?>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Data / Hora</th>
+                                <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
+                                <th>Aluno</th>
+                                <th>Curso / Turma</th>
+                                <?php endif; ?>
+                                <th style="max-width: 140px;">Tipo</th>
+                                <th>Registrado por</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($eventos_recentes as $evt): ?>
+                            <tr class="row-observacoes" style="cursor: pointer;" data-evento='<?php echo htmlspecialchars(json_encode([
+                                'id' => $evt['id'],
+                                'aluno_id' => $evt['aluno_id'] ?? null,
+                                'data' => date('d/m/Y', strtotime($evt['data_evento'])),
+                                'hora' => $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-',
+                                'aluno' => $evt['aluno_nome'] ?? 'N/A',
+                                'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
+                                'registrado_por' => $evt['registrado_por_nome'] ?? '-',
+                                'observacoes' => $evt['observacoes'] ?? ''
+                            ])); ?>'>
+                                <td><div><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></div><div class="small text-muted"><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></div></td>
+                                <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
+                                <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
+                                <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
+                                <?php endif; ?>
+                                <td style="max-width: 140px; overflow-wrap: break-word;">
+                                    <?php if (!empty($evt['tipo_evento_nome'])): ?>
+                                        <?php 
+                                        $cor = $evt['tipo_evento_cor'] ?? 'secondary';
+                                        if (strpos($cor, '#') === 0) {
+                                            echo '<span class="badge" style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;">';
+                                        } else {
+                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '" style="white-space: normal;">';
+                                        }
+                                        ?>
+                                            <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">N/A</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?php echo htmlspecialchars($evt['registrado_por_nome'] ?? '-'); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu contextual da lista de eventos no dashboard (igual ao de alunos: clique na linha) -->
+<div class="dropdown-menu" id="dashboardEventoContextMenu" style="position: absolute; display: none;">
+    <button class="dropdown-item" type="button" id="dashboardMenuVerFicha">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha do Aluno
+    </button>
+    <button class="dropdown-item" type="button" id="dashboardMenuVerEvento">
+        <i class="bi bi-info-circle"></i> Ver Detalhes do Evento
+    </button>
+</div>
+
+<?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
+<?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
+
+<?php require_once 'includes/footer.php'; ?>
+
