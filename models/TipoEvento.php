@@ -1,6 +1,9 @@
 <?php
 /**
  * TipoEvento model
+ *
+ * Campo `ativo` no banco = visível para usuários ao registrar/editar eventos.
+ * Tipos não visíveis continuam no sistema (listagens, alertas, registro automático).
  */
 
 class TipoEvento {
@@ -12,6 +15,7 @@ class TipoEvento {
     public $cor;
     public $gera_prontuario;
     public $prontuario_user_type_id;
+    /** @var int|bool 1 = visível para usuários ao registrar eventos */
     public $ativo;
     public $created_at;
 
@@ -41,8 +45,11 @@ class TipoEvento {
         return false;
     }
 
-    public function getAll($apenas_ativos = false) {
-        $where = $apenas_ativos ? "WHERE ativo = 1" : "";
+    /**
+     * @param bool $apenas_visiveis Se true, só tipos visíveis para seleção por usuários
+     */
+    public function getAll($apenas_visiveis = false) {
+        $where = $apenas_visiveis ? "WHERE t.ativo = 1" : "";
         $query = "SELECT t.*, 
                   COUNT(DISTINCT e.id) as total_eventos,
                   ut.nome as prontuario_user_type_nome
@@ -130,4 +137,3 @@ class TipoEvento {
     }
 }
 ?>
-

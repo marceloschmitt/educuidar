@@ -89,7 +89,7 @@ if (isset($_GET['edit'])) {
 }
 
 $regras = $alerta_regra->getAll();
-$tipos_eventos = $tipo_evento->getAll(true);
+$tipos_eventos = $tipo_evento->getAll(false); // Inclui não visíveis (ex.: registro automático)
 $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 ?>
 
@@ -133,6 +133,7 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 
                     <div class="mb-3">
                         <label class="form-label">Tipos de evento <span class="text-danger">*</span></label>
+                        <div class="form-text mb-2">Inclui tipos não visíveis aos usuários (ex.: registro automático).</div>
                         <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
                             <?php foreach ($tipos_eventos as $te): ?>
                             <div class="form-check">
@@ -144,6 +145,9 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                                     <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1">
                                         <?php echo htmlspecialchars($te['nome']); ?>
                                     </span>
+                                    <?php if (empty($te['ativo'])): ?>
+                                        <small class="text-muted">(não visível aos usuários)</small>
+                                    <?php endif; ?>
                                 </label>
                             </div>
                             <?php endforeach; ?>

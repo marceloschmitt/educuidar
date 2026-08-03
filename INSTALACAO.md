@@ -106,7 +106,7 @@ Armazena os tipos de eventos configuráveis:
 - `id` - ID único
 - `nome` - Nome do tipo de evento
 - `cor` - Cor (classe Bootstrap ou hexadecimal)
-- `ativo` - Status ativo/inativo
+- `ativo` - Visível para usuários ao registrar eventos (1) ou só uso interno/automático/alertas (0)
 - `created_at` - Data de criação
 
 #### Tabela: `eventos`

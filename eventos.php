@@ -380,10 +380,10 @@ if (empty($anos_disponiveis)) {
     array_unshift($anos_disponiveis, $filtro_ano);
 }
 $tipo_evento_model = new TipoEvento($db);
-$tipos_eventos = $tipo_evento_model->getAll(true); // Apenas ativos
-// Tipos disponíveis no modal de edição: admin vê todos; demais veem só tipos sem categoria ou da sua categoria
+$tipos_eventos = $tipo_evento_model->getAll(true); // Apenas visíveis para usuários
+// Edição: admin vê todos (incl. não visíveis); demais só visíveis da sua categoria
 $tipos_eventos_para_edicao = $user->isAdmin()
-    ? $tipos_eventos
+    ? $tipo_evento_model->getAll(false)
     : array_values(array_filter($tipos_eventos, function($te) use ($current_user_type_id) {
         $pid = $te['prontuario_user_type_id'] ?? '';
         return $pid === '' || (string)$pid === (string)$current_user_type_id;
@@ -628,7 +628,14 @@ require_once 'includes/header.php';
                                 <td><div><?php echo htmlspecialchars($evt['curso_nome'] ?? '-'); ?></div><div class="small text-muted"><?php echo !empty($evt['ano_curso']) ? (int)$evt['ano_curso'] . 'º Ano' : '-'; ?></div></td>
                                 <td style="max-width: 140px; overflow-wrap: break-word;">
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
-                                        <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>" style="white-space: normal;">
+                                        <?php
+                                        $obs_tipo = trim((string)($evt['observacoes'] ?? ''));
+                                        $title_obs = $obs_tipo !== ''
+                                            ? ' title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
+                                            : '';
+                                        ?>
+                                        <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>"
+                                              style="white-space: normal; cursor: help;"<?php echo $title_obs; ?>>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>
                                         </span>
                                         <?php if (!empty($anexos_por_evento[$evt['id']])): ?>

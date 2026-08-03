@@ -270,7 +270,7 @@ INSERT INTO tipos_eventos (nome, cor, ativo) VALUES
 ('Entrada atrasada (após recreio)', 'danger', 1),
 ('Atendimento no NAPNE', 'primary', 1),
 ('Ausência na aula estando no campus', 'danger', 1),
-('Falta (registro automático)', 'danger', 1);
+('Falta (registro automático)', 'danger', 0);
 
 -- Regras de alerta (configuráveis)
 CREATE TABLE IF NOT EXISTS alertas_regras (

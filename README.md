@@ -20,7 +20,7 @@ Sistema desenvolvido em PHP 8 com interface Bootstrap para controle de aspectos 
 
 ### Tipos de Eventos
 Os tipos de eventos são configuráveis pelo administrador:
-- Cada tipo possui nome, cor (Bootstrap ou hexadecimal) e status ativo/inativo
+- Cada tipo possui nome, cor (Bootstrap ou hexadecimal) e visibilidade para usuários (visível / não visível)
 - Tipos padrão podem incluir: Chegada Atrasada, Saída Antecipada, Faltas, Atendimento, etc.
 - O administrador pode criar, editar e desativar tipos de eventos
 

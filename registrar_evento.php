@@ -497,7 +497,7 @@ if ($aluno_id) {
             $anexos_por_evento[$row['evento_id']][] = $row;
         }
     }
-    $tipos_eventos = $tipo_evento->getAll(true); // Apenas ativos
+    $tipos_eventos = $tipo_evento->getAll(true); // Apenas visíveis para usuários
     $tipos_eventos_criacao = array_filter($tipos_eventos, function($te) use ($current_user_type_id) {
         $prontuario_tipo_id = $te['prontuario_user_type_id'] ?? '';
         return empty($prontuario_tipo_id) || (string)$prontuario_tipo_id === (string)$current_user_type_id;

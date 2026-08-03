@@ -172,7 +172,7 @@ def garantir_tipo_evento_auto(conn) -> int:
         cur.execute(
             """
             INSERT INTO tipos_eventos (nome, cor, gera_prontuario, ativo)
-            VALUES (%s, 'danger', 0, 1)
+            VALUES (%s, 'danger', 0, 0)
             """,
             (TIPO_EVENTO_AUTO,),
         )

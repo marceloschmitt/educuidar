@@ -156,9 +156,12 @@ $tipos = $tipo_evento->getAll();
                             <input class="form-check-input" type="checkbox" id="ativo" name="ativo" value="1" 
                                    <?php echo (!isset($tipo_edit) || $tipo_edit['ativo']) ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="ativo">
-                                Ativo
+                                Visível para usuários
                             </label>
-                            <small class="text-muted d-block">Tipos inativos não aparecerão ao registrar eventos</small>
+                            <small class="text-muted d-block">
+                                Se desmarcado, o tipo não aparece na seleção ao registrar eventos
+                                (continua disponível para alertas e registro automático).
+                            </small>
                         </div>
                     </div>
                     
@@ -209,7 +212,7 @@ $tipos = $tipo_evento->getAll();
                             <tr>
                                 <th>Nome</th>
                                 <th>Prontuário</th>
-                                <th>Status</th>
+                                <th>Visibilidade</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -233,9 +236,9 @@ $tipos = $tipo_evento->getAll();
                                 </td>
                                 <td>
                                     <?php if ($t['ativo']): ?>
-                                        <span class="badge bg-success">Ativo</span>
+                                        <span class="badge bg-success">Visível</span>
                                     <?php else: ?>
-                                        <span class="badge bg-secondary">Inativo</span>
+                                        <span class="badge bg-secondary">Não visível</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
