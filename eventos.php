@@ -630,12 +630,12 @@ require_once 'includes/header.php';
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
                                         <?php
                                         $obs_tipo = trim((string)($evt['observacoes'] ?? ''));
-                                        $title_obs = $obs_tipo !== ''
-                                            ? ' title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
+                                        $tooltip_attrs = $obs_tipo !== ''
+                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
                                             : '';
                                         ?>
                                         <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>"
-                                              style="white-space: normal; cursor: help;"<?php echo $title_obs; ?>>
+                                              style="white-space: normal;<?php echo $obs_tipo !== '' ? ' cursor: help;' : ''; ?>"<?php echo $tooltip_attrs; ?>>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>
                                         </span>
                                         <?php if (!empty($anexos_por_evento[$evt['id']])): ?>

@@ -323,13 +323,13 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                         <?php
                                         $cor = $evt['tipo_evento_cor'] ?? 'secondary';
                                         $obs_tipo = trim((string)($evt['observacoes'] ?? ''));
-                                        $title_obs = $obs_tipo !== ''
-                                            ? ' title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
+                                        $tooltip_attrs = $obs_tipo !== ''
+                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
                                             : '';
                                         if (strpos($cor, '#') === 0) {
-                                            echo '<span class="badge"' . $title_obs . ' style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal; cursor: help;">';
+                                            echo '<span class="badge"' . $tooltip_attrs . ' style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;' . ($obs_tipo !== '' ? ' cursor: help;' : '') . '">';
                                         } else {
-                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '"' . $title_obs . ' style="white-space: normal; cursor: help;">';
+                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '"' . $tooltip_attrs . ' style="white-space: normal;' . ($obs_tipo !== '' ? ' cursor: help;' : '') . '">';
                                         }
                                         ?>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>

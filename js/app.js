@@ -718,6 +718,21 @@ function editAluno(aluno) {
     modal.show();
 }
 
+// Tooltips de observações nos badges de tipo (dashboard / eventos)
+function initObservacoesTooltips() {
+    if (typeof bootstrap === 'undefined' || !bootstrap.Tooltip) {
+        return;
+    }
+    document.querySelectorAll('.badge[data-bs-toggle="tooltip"]').forEach(function(el) {
+        bootstrap.Tooltip.getOrCreateInstance(el, {
+            container: 'body',
+            trigger: 'hover focus',
+            delay: { show: 80, hide: 50 },
+            customClass: 'tooltip-observacoes'
+        });
+    });
+}
+
 // Initialize password toggles function
 function initPasswordToggles() {
     // Find all password fields and add toggle functionality
@@ -845,6 +860,7 @@ function autoResizeTextarea(textarea) {
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize password toggles
     initPasswordToggles();
+    initObservacoesTooltips();
 
     // Máscara de CPF no formulário do aluno
     var modalCpfInput = document.getElementById('modal_cpf');
