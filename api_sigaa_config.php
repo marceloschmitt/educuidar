@@ -117,6 +117,7 @@ $api_url_alunos = $configuracao->getApiSigaaUrlAlunos();
 $api_verify_ssl = $configuracao->getApiSigaaVerifySsl();
 $api_registro_user_id = $configuracao->getApiSigaaRegistroUserId();
 $tem_secret = $configuracao->getApiSigaaClientSecret() !== '';
+$api_client_secret = $configuracao->getApiSigaaClientSecret();
 $api_periodo_letivo = $configuracao->getApiSigaaPeriodoLetivo();
 $api_data_inicial = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenciaDataInicial());
 $api_data_final = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenciaDataFinal());
@@ -189,11 +190,9 @@ require_once 'includes/header.php';
                                 <?php if (!$tem_secret): ?><span class="text-danger">*</span><?php endif; ?>
                             </label>
                             <input type="password" class="form-control" id="api_sigaa_client_secret" name="api_sigaa_client_secret"
-                                   value="" placeholder="<?php echo $tem_secret ? '•••••••• (deixe em branco para manter)' : ''; ?>"
+                                   value="<?php echo htmlspecialchars($api_client_secret); ?>"
                                    autocomplete="new-password" <?php echo $tem_secret ? '' : 'required'; ?>>
-                            <?php if ($tem_secret): ?>
-                            <div class="form-text">Secret já cadastrado. Preencha só para alterar.</div>
-                            <?php endif; ?>
+                            <div class="form-text">Clique no olho para mostrar ou ocultar o secret.</div>
                         </div>
                     </div>
 
