@@ -101,7 +101,59 @@ class AlertaGerado {
         return $this->aplicarFiltrosExibicao($rows, $filtros);
     }
 
+    public function getNaoNotificados($cursos_permitidos = null) {
+        $query = "SELECT ag.*,
+                         COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
+                         a.foto,
+                         ar.nome AS regra_nome
+                  FROM {$this->table} ag
+                  INNER JOIN alunos a ON a.id = ag.aluno_id
+                  INNER JOIN alertas_regras ar ON ar.id = ag.regra_id
+                  WHERE ag.notificado_em IS NULL
+                    AND COALESCE(a.desistente, 0) = 0
+                  ORDER BY ag.created_at DESC, ag.data_fim DESC, aluno_nome ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        $rows = array_map([$this, 'paraExibicao'], $stmt->fetchAll());
+
+        if (!is_array($cursos_permitidos)) {
+            return $rows;
+        }
+        if (empty($cursos_permitidos)) {
+            return [];
+        }
+
+        $cursos_permitidos = array_map('intval', $cursos_permitidos);
+        return array_values(array_filter($rows, function ($row) use ($cursos_permitidos) {
+            return in_array((int) ($row['curso_id'] ?? 0), $cursos_permitidos, true);
+        }));
+    }
+
+    /**
+     * @param int[] $ids
+     */
+    public function marcarNotificados(array $ids) {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), function ($id) {
+            return $id > 0;
+        })));
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->conn->prepare(
+            "UPDATE {$this->table}
+             SET notificado_em = NOW()
+             WHERE id IN ($placeholders)
+               AND notificado_em IS NULL"
+        );
+        $stmt->execute($ids);
+        return $stmt->rowCount();
+    }
+
     public function getRecentes($horas = 24, $cursos_permitidos = null) {
+        // Mantido por compatibilidade; o popup usa getNaoNotificados().
         $horas = max(1, (int) $horas);
 
         $query = "SELECT ag.*,
@@ -113,7 +165,7 @@ class AlertaGerado {
                   INNER JOIN alertas_regras ar ON ar.id = ag.regra_id
                   WHERE ag.created_at >= DATE_SUB(NOW(), INTERVAL :horas HOUR)
                     AND COALESCE(a.desistente, 0) = 0
-                  ORDER BY ag.created_at DESC, aluno_nome ASC";
+                  ORDER BY ag.created_at DESC, ag.data_fim DESC, aluno_nome ASC";
 
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':horas', $horas, PDO::PARAM_INT);

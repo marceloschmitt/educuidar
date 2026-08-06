@@ -138,14 +138,14 @@ if (!function_exists('processarAlertasAluno')) {
 }
 
 if (!function_exists('obterAlertasLoginPopup')) {
-    function obterAlertasLoginPopup($db, $user, $user_id = null, $horas = 24) {
+    function obterAlertasLoginPopup($db, $user, $user_id = null) {
         $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
         if (!usuarioPodeVerPopupAlertas($user, $user_id)) {
             return [];
         }
 
         $alerta_gerado = new AlertaGerado($db);
-        return $alerta_gerado->getRecentes($horas, getCursosCoordenadosPermitidos($user, $user_id));
+        return $alerta_gerado->getNaoNotificados(getCursosCoordenadosPermitidos($user, $user_id));
     }
 }
 

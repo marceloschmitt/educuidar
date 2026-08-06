@@ -1292,6 +1292,37 @@ document.addEventListener('DOMContentLoaded', function() {
 
     var modalAlertasLogin = document.getElementById('modalAlertasLogin');
     if (modalAlertasLogin && typeof bootstrap !== 'undefined') {
+        var idsAlertasLogin = [];
+        try {
+            idsAlertasLogin = JSON.parse(modalAlertasLogin.getAttribute('data-alerta-ids') || '[]') || [];
+        } catch (e) {
+            idsAlertasLogin = [];
+        }
+
+        var alertasMarcacaoEnviada = false;
+        function marcarAlertasLoginVisualizados() {
+            if (alertasMarcacaoEnviada || !idsAlertasLogin.length) {
+                return;
+            }
+            alertasMarcacaoEnviada = true;
+            fetch('api/marcar_alertas_notificados.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: idsAlertasLogin }),
+                credentials: 'same-origin'
+            }).catch(function() {});
+        }
+
+        var btnAlertasEntendi = document.getElementById('btnAlertasLoginEntendi');
+        if (btnAlertasEntendi) {
+            btnAlertasEntendi.addEventListener('click', marcarAlertasLoginVisualizados);
+        }
+        var btnAlertasVerTodos = document.getElementById('btnAlertasLoginVerTodos');
+        if (btnAlertasVerTodos) {
+            btnAlertasVerTodos.addEventListener('click', marcarAlertasLoginVisualizados);
+        }
+        modalAlertasLogin.addEventListener('hidden.bs.modal', marcarAlertasLoginVisualizados);
+
         var alertasLoginModal = new bootstrap.Modal(modalAlertasLogin);
         alertasLoginModal.show();
     }

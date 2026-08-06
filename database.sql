@@ -363,18 +363,7 @@ CREATE TABLE IF NOT EXISTS alertas_gerados (
 --     FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
 --     FOREIGN KEY (tipo_evento_id) REFERENCES tipos_eventos(id) ON DELETE CASCADE
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
--- CREATE TABLE IF NOT EXISTS alertas_gerados (
---     id INT AUTO_INCREMENT PRIMARY KEY,
---     aluno_id INT NOT NULL,
---     regra_id INT NOT NULL,
---     data_inicio DATE NULL,
---     data_fim DATE NULL,
---     quantidade_contada INT NOT NULL,
---     detalhe JSON NULL,
---     notificado_em TIMESTAMP NULL,
---     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
---     FOREIGN KEY (regra_id) REFERENCES alertas_regras(id) ON DELETE CASCADE,
---     INDEX idx_aluno_regra (aluno_id, regra_id),
---     INDEX idx_notificado (notificado_em)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+-- ALTER TABLE alertas_gerados ADD COLUMN notificado_em TIMESTAMP NULL AFTER detalhe;
+-- ALTER TABLE alertas_gerados ADD INDEX idx_notificado (notificado_em);
+-- (Opcional) marcar alertas antigos como já visualizados, para o popup não listar o histórico de uma vez:
+-- UPDATE alertas_gerados SET notificado_em = created_at WHERE notificado_em IS NULL;
