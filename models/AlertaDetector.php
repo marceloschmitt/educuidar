@@ -132,7 +132,15 @@ class AlertaDetector {
                 return [];
             }
             $curso_placeholders = implode(',', array_fill(0, count($cursos_permitidos), '?'));
-            $query .= " AND c.id IN ($curso_placeholders)";
+            // Curso do aluno no ano corrente (não o curso da turma salva no evento)
+            $query .= " AND EXISTS (
+                SELECT 1 FROM aluno_turmas atp
+                INNER JOIN turmas tp ON tp.id = atp.turma_id
+                WHERE atp.aluno_id = e.aluno_id
+                  AND tp.ano_civil = ?
+                  AND tp.curso_id IN ($curso_placeholders)
+            )";
+            $params[] = $ano_corrente;
             $params = array_merge($params, array_map('intval', $cursos_permitidos));
         }
 
@@ -174,6 +182,19 @@ class AlertaDetector {
         $stmt->bindParam(':ano_corrente', $ano_corrente);
         $stmt->execute();
         $row = $stmt->fetch();
+        if (!$row) {
+            // Fallback: qualquer turma do aluno (mais recente por ano civil)
+            $stmt = $this->conn->prepare("SELECT t.id AS turma_id, t.ano_curso, c.id AS curso_id, c.nome AS curso_nome
+                                          FROM aluno_turmas at
+                                          INNER JOIN turmas t ON t.id = at.turma_id
+                                          INNER JOIN cursos c ON c.id = t.curso_id
+                                          WHERE at.aluno_id = :aluno_id
+                                          ORDER BY t.ano_civil DESC, t.ano_curso ASC
+                                          LIMIT 1");
+            $stmt->bindParam(':aluno_id', $aluno_id);
+            $stmt->execute();
+            $row = $stmt->fetch();
+        }
         if (!$row) {
             return [];
         }

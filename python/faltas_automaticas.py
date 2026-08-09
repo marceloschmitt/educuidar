@@ -302,6 +302,21 @@ def obter_turma_aluno(conn, aluno_id: int) -> int | None:
             (aluno_id, ano),
         )
         row = cur.fetchone()
+        if row:
+            return int(row["id"])
+
+        cur.execute(
+            """
+            SELECT t.id
+            FROM aluno_turmas at
+            INNER JOIN turmas t ON t.id = at.turma_id
+            WHERE at.aluno_id = %s
+            ORDER BY t.ano_civil DESC, t.ano_curso ASC
+            LIMIT 1
+            """,
+            (aluno_id,),
+        )
+        row = cur.fetchone()
         return int(row["id"]) if row else None
 
 
