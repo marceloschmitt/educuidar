@@ -264,12 +264,16 @@ foreach ($regras as $r) {
         $minimo = (int) $r['quantidade'];
         dbg("   criterio dias_consecutivos: precisa >= {$minimo} dias");
 
-        $melhor_inicio = null;
-        $melhor_fim = null;
-        $melhor_tamanho = 0;
+        $sequencias_ok = [];
         $inicio_seq = $datas_ord[0];
         $anterior = $datas_ord[0];
         $tamanho = 1;
+
+        $flush = function ($inicio, $fim, $tam) use (&$sequencias_ok, $minimo) {
+            if ($tam >= $minimo) {
+                $sequencias_ok[] = [$inicio, $fim, $tam];
+            }
+        };
 
         for ($i = 1; $i < count($datas_ord); $i++) {
             $atual = $datas_ord[$i];
@@ -278,27 +282,21 @@ foreach ($regras as $r) {
             if ($consec) {
                 $tamanho++;
             } else {
-                if ($tamanho > $melhor_tamanho) {
-                    $melhor_tamanho = $tamanho;
-                    $melhor_inicio = $inicio_seq;
-                    $melhor_fim = $anterior;
-                }
+                $flush($inicio_seq, $anterior, $tamanho);
                 $inicio_seq = $atual;
                 $tamanho = 1;
             }
             $anterior = $atual;
         }
-        if ($tamanho > $melhor_tamanho) {
-            $melhor_tamanho = $tamanho;
-            $melhor_inicio = $inicio_seq;
-            $melhor_fim = $anterior;
-        }
+        $flush($inicio_seq, $anterior, $tamanho);
 
-        dbg("   melhor sequência: {$melhor_inicio} .. {$melhor_fim} (tamanho={$melhor_tamanho})");
-        if ($melhor_tamanho >= $minimo) {
-            dbg('   RESULTADO: GERARIA ALERTA');
+        if (empty($sequencias_ok)) {
+            dbg('   RESULTADO: NÃO gera (nenhuma sequência >= ' . $minimo . ')');
         } else {
-            dbg("   RESULTADO: NÃO gera (tamanho {$melhor_tamanho} < mínimo {$minimo})");
+            dbg('   RESULTADO: GERARIA ' . count($sequencias_ok) . ' alerta(s):');
+            foreach ($sequencias_ok as $seq) {
+                dbg("     • {$seq[0]} .. {$seq[1]} (tamanho={$seq[2]})");
+            }
         }
     } else {
         dbg('   criterio=' . $r['tipo_criterio'] . ' — usando motor oficial...');

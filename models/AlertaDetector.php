@@ -43,20 +43,27 @@ class AlertaDetector {
         $ocorrencias = [];
 
         foreach ($eventos_por_aluno as $aluno_id => $dados) {
-            $match = null;
+            $matches = [];
             switch ($regra['tipo_criterio']) {
                 case 'dias_consecutivos':
-                    $match = $this->avaliarDiasConsecutivos($dados['eventos'], $regra);
+                    // Todas as sequências que atingem o mínimo (não só a maior)
+                    $matches = $this->avaliarDiasConsecutivos($dados['eventos'], $regra);
                     break;
                 case 'intervalo_dias':
                     $match = $this->avaliarIntervaloDias($dados['eventos'], $regra);
+                    if ($match) {
+                        $matches[] = $match;
+                    }
                     break;
                 case 'mesmo_dia':
                     $match = $this->avaliarMesmoDia($dados['eventos'], $regra);
+                    if ($match) {
+                        $matches[] = $match;
+                    }
                     break;
             }
 
-            if ($match) {
+            foreach ($matches as $match) {
                 $ocorrencias[] = array_merge([
                     'aluno_id' => $aluno_id,
                     'aluno_nome' => $dados['aluno_nome'],
@@ -214,6 +221,12 @@ class AlertaDetector {
         return trim($row['curso_nome'] . ($ano !== '' ? ' - ' . $ano . 'º Ano' : ''));
     }
 
+    /**
+     * Retorna todas as sequências de dias consecutivos com tamanho >= quantidade da regra.
+     * (Antes só devolvia a maior — por isso agosto era ignorado se houvesse sequência maior em maio.)
+     *
+     * @return array<int, array>
+     */
     private function avaliarDiasConsecutivos(array $eventos, array $regra) {
         $datas = [];
         foreach ($eventos as $evento) {
@@ -223,55 +236,47 @@ class AlertaDetector {
         sort($datas_ordenadas);
 
         if (empty($datas_ordenadas)) {
-            return null;
+            return [];
         }
 
         $minimo = (int) $regra['quantidade'];
-        $melhor_inicio = null;
-        $melhor_fim = null;
-        $melhor_tamanho = 0;
+        $sequencias = [];
 
         $inicio_seq = $datas_ordenadas[0];
         $anterior = $datas_ordenadas[0];
         $tamanho = 1;
+
+        $registrar = function ($inicio, $fim, $tam) use (&$sequencias, $minimo, $datas_ordenadas) {
+            if ($tam < $minimo) {
+                return;
+            }
+            $datas_sequencia = array_values(array_filter($datas_ordenadas, function ($data) use ($inicio, $fim) {
+                return $data >= $inicio && $data <= $fim;
+            }));
+            $sequencias[] = [
+                'data_inicio' => $inicio,
+                'data_fim' => $fim,
+                'quantidade_contada' => $tam,
+                'datas' => $datas_sequencia,
+                'periodo_label' => formatAlertaPeriodoLabel($inicio, $fim, $datas_sequencia),
+            ];
+        };
 
         for ($i = 1; $i < count($datas_ordenadas); $i++) {
             $atual = $datas_ordenadas[$i];
             if ($this->saoDiasConsecutivos($anterior, $atual, $regra)) {
                 $tamanho++;
             } else {
-                if ($tamanho > $melhor_tamanho) {
-                    $melhor_tamanho = $tamanho;
-                    $melhor_inicio = $inicio_seq;
-                    $melhor_fim = $anterior;
-                }
+                $registrar($inicio_seq, $anterior, $tamanho);
                 $inicio_seq = $atual;
                 $tamanho = 1;
             }
             $anterior = $atual;
         }
 
-        if ($tamanho > $melhor_tamanho) {
-            $melhor_tamanho = $tamanho;
-            $melhor_inicio = $inicio_seq;
-            $melhor_fim = $anterior;
-        }
+        $registrar($inicio_seq, $anterior, $tamanho);
 
-        if ($melhor_tamanho < $minimo) {
-            return null;
-        }
-
-        $datas_sequencia = array_values(array_filter($datas_ordenadas, function ($data) use ($melhor_inicio, $melhor_fim) {
-            return $data >= $melhor_inicio && $data <= $melhor_fim;
-        }));
-
-        return [
-            'data_inicio' => $melhor_inicio,
-            'data_fim' => $melhor_fim,
-            'quantidade_contada' => $melhor_tamanho,
-            'datas' => $datas_sequencia,
-            'periodo_label' => formatAlertaPeriodoLabel($melhor_inicio, $melhor_fim, $datas_sequencia),
-        ];
+        return $sequencias;
     }
 
     private function avaliarIntervaloDias(array $eventos, array $regra) {
