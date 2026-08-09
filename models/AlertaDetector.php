@@ -97,17 +97,28 @@ class AlertaDetector {
                   LEFT JOIN cursos c ON c.id = t.curso_id
                   WHERE COALESCE(a.desistente, 0) = 0
                     AND e.tipo_evento_id IN ($placeholders)
-                    AND (t.ano_civil = ? OR (e.turma_id IS NULL AND YEAR(e.data_evento) = ?))";
+                    AND YEAR(e.data_evento) = ?";
 
-        $params = array_merge($tipo_ids, [$ano_corrente, $ano_corrente]);
+        $params = array_merge($tipo_ids, [$ano_corrente]);
 
         if ($filtro_curso) {
-            $query .= " AND c.id = ?";
+            // Curso da turma do aluno no ano corrente (não só da turma do evento)
+            $query .= " AND EXISTS (
+                SELECT 1 FROM aluno_turmas at2
+                INNER JOIN turmas t2 ON t2.id = at2.turma_id
+                WHERE at2.aluno_id = e.aluno_id
+                  AND t2.ano_civil = ?
+                  AND t2.curso_id = ?
+            )";
+            $params[] = $ano_corrente;
             $params[] = (int) $filtro_curso;
         }
 
         if ($filtro_turma) {
-            $query .= " AND t.id = ?";
+            $query .= " AND EXISTS (
+                SELECT 1 FROM aluno_turmas at3
+                WHERE at3.aluno_id = e.aluno_id AND at3.turma_id = ?
+            )";
             $params[] = (int) $filtro_turma;
         }
 
