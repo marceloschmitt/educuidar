@@ -54,6 +54,7 @@ $total_alunos = count($alunos);
 $com_alerta = 0;
 $total_alertas = 0;
 $erros = 0;
+$por_curso = [];
 
 echo $dry_run ? "[DRY-RUN] " : "";
 echo "Reprocessando alertas — ano {$ano}, {$total_alunos} aluno(s).\n";
@@ -77,7 +78,9 @@ foreach ($alunos as $i => $aluno) {
             $total_alertas += $qtd;
             echo "  [{$n}/{$total_alunos}] id={$aluno_id} {$aluno['nome']}: {$qtd} alerta(s)\n";
             foreach ($alertas as $al) {
-                echo "      - {$al['regra_nome']} | {$al['periodo_label']} | qtd={$al['quantidade_contada']}\n";
+                $curso_nome = trim((string) ($al['curso_nome'] ?? '')) ?: '(sem curso)';
+                $por_curso[$curso_nome] = ($por_curso[$curso_nome] ?? 0) + 1;
+                echo "      - [{$curso_nome}] {$al['regra_nome']} | {$al['periodo_label']} | qtd={$al['quantidade_contada']}\n";
             }
         } elseif ($aluno_filtro) {
             echo "  id={$aluno_id} {$aluno['nome']}: nenhum alerta\n";
@@ -102,6 +105,13 @@ echo $dry_run ? " (simulação, nada gravado)" : "";
 echo ".\n";
 echo "Alunos com alerta: {$com_alerta}\n";
 echo "Total de alertas detectados: {$total_alertas}\n";
+if (!empty($por_curso)) {
+    echo "Por curso:\n";
+    ksort($por_curso);
+    foreach ($por_curso as $curso_nome => $qtd_curso) {
+        echo "  - {$curso_nome}: {$qtd_curso}\n";
+    }
+}
 if ($erros) {
     echo "Erros: {$erros}\n";
     exit(1);
