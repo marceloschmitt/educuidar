@@ -21,6 +21,7 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -60,6 +61,17 @@ FREQUENCIA_DATA_INICIAL = ""
 FREQUENCIA_DATA_FINAL = ""
 _ENV: dict[str, str] = {}
 
+
+def agora() -> str:
+    return datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+
+def log(msg: str = "", *, erro: bool = False) -> None:
+    destino = sys.stderr if erro else sys.stdout
+    if msg == "":
+        print(file=destino)
+        return
+    print(f"[{agora()}] {msg}", file=destino)
 
 def carregar_config_mysql(config_path: Path) -> dict:
     texto = config_path.read_text(encoding="utf-8")
@@ -252,6 +264,9 @@ def main() -> int:
     global API_URL_ALUNOS_BASE, API_TOKEN, _ENV
     global PERIODO_LETIVO, FREQUENCIA_DATA_INICIAL, FREQUENCIA_DATA_FINAL
 
+    inicio = datetime.now()
+    log("=== Coleta SIGAA iniciada ===")
+
     parser = argparse.ArgumentParser(
         description="Consulta detalhes SIGAA dos alunos não desistentes (login = CPF)."
     )
@@ -279,7 +294,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if not ARQUIVO_CONFIG_PHP.exists():
-        print(f"Erro: config não encontrada: {ARQUIVO_CONFIG_PHP}", file=sys.stderr)
+        log(f"Erro: config não encontrada: {ARQUIVO_CONFIG_PHP}", erro=True)
         return 1
 
     try:
@@ -290,7 +305,7 @@ def main() -> int:
         finally:
             conn.close()
     except Exception as error:
-        print(f"Erro ao ler alunos do banco: {error}", file=sys.stderr)
+        log(f"Erro ao ler alunos do banco: {error}", erro=True)
         return 1
 
     limite = args.limite if args.limite is not None else LIMITE_CONSULTAS
@@ -298,32 +313,34 @@ def main() -> int:
         alunos = alunos[:limite]
 
     total = len(alunos)
-    print(f"Alunos não desistentes com CPF válido: {total}")
+    log(f"Alunos não desistentes com CPF válido: {total}")
 
     if total == 0:
-        print("Nada a consultar.")
+        log("Nada a consultar.")
+        log(f"=== Coleta finalizada em {agora()} ===")
         return 0
 
     if args.dry_run:
         for i, aluno in enumerate(alunos, start=1):
-            print(
+            log(
                 f"  {i}/{total} - id={aluno['id']} login={aluno['Login']} "
                 f"nome={aluno['Nome']}"
             )
-        print("Dry-run: nenhuma consulta à API foi feita.")
+        log("Dry-run: nenhuma consulta à API foi feita.")
+        log(f"=== Coleta finalizada em {agora()} ===")
         return 0
 
     try:
         _ENV = carregar_env()
     except Exception as error:
-        print(f"Erro ao ler configuração da API no banco: {error}", file=sys.stderr)
+        log(f"Erro ao ler configuração da API no banco: {error}", erro=True)
         return 1
 
     if not (_ENV.get("API_CLIENT_ID") and _ENV.get("API_CLIENT_SECRET")):
-        print(
+        log(
             "Erro: API SIGAA não configurada. "
             "Acesse Configurações → API SIGAA no sistema.",
-            file=sys.stderr,
+            erro=True,
         )
         return 1
 
@@ -332,15 +349,15 @@ def main() -> int:
         and _ENV.get("API_FREQUENCIA_DATA_INICIAL")
         and _ENV.get("API_FREQUENCIA_DATA_FINAL")
     ):
-        print(
+        log(
             "Erro: período letivo e datas de frequência não configurados. "
             "Acesse Configurações → API SIGAA.",
-            file=sys.stderr,
+            erro=True,
         )
         return 1
 
     if not verificar_ssl(_ENV):
-        print("Aviso: verificação SSL desativada na configuração da API.")
+        log("Aviso: verificação SSL desativada na configuração da API.")
 
     API_URL_ALUNOS_BASE = env_ou_padrao(
         _ENV,
@@ -351,19 +368,19 @@ def main() -> int:
     PERIODO_LETIVO = _ENV["API_PERIODO_LETIVO"].strip()
     FREQUENCIA_DATA_INICIAL = _ENV["API_FREQUENCIA_DATA_INICIAL"].strip()
     FREQUENCIA_DATA_FINAL = _ENV["API_FREQUENCIA_DATA_FINAL"].strip()
-    print(
+    log(
         f"Período {PERIODO_LETIVO}: "
         f"{FREQUENCIA_DATA_INICIAL} a {FREQUENCIA_DATA_FINAL}"
     )
 
     try:
         API_TOKEN = obter_access_token(_ENV)
-        print("Access token OAuth obtido.")
+        log("Access token OAuth obtido.")
     except (ValueError, RuntimeError) as error:
-        print(f"Erro de autenticação: {error}", file=sys.stderr)
+        log(f"Erro de autenticação: {error}", erro=True)
         return 1
 
-    print(
+    log(
         f"Consultando {total} aluno(s) com concorrência {CONCORRENCIA}, "
         f"timeout {TIMEOUT_SEGUNDOS}s, até {TENTATIVAS} tentativa(s)..."
     )
@@ -381,7 +398,7 @@ def main() -> int:
                 sucessos += 1
             else:
                 falhas += 1
-            print(
+            log(
                 f"  {concluido}/{total} - login {resultado['login']} -> "
                 f"{descrever_resultado(resultado)}"
             )
@@ -396,29 +413,29 @@ def main() -> int:
         encoding="utf-8",
     )
 
-    print()
-    print(f"Concluído: {sucessos} sucesso(s), {falhas} falha(s).")
-    print(f"Resposta completa salva em: {ARQUIVO_SAIDA}")
+    log()
+    log(f"Concluído: {sucessos} sucesso(s), {falhas} falha(s).")
+    log(f"Resposta completa salva em: {ARQUIVO_SAIDA}")
 
     if erros:
-        print("Falhas na consulta:", file=sys.stderr)
+        log("Falhas na consulta:", erro=True)
         for item in erros:
-            print(
+            log(
                 f"  - id={item.get('aluno_id')} login={item.get('login')} "
                 f"nome={item.get('nome')} -> {descrever_resultado(item)}",
-                file=sys.stderr,
+                erro=True,
             )
-        print("Resumo das falhas:", file=sys.stderr)
+        log("Resumo das falhas:", erro=True)
         for tipo_erro, quantidade in sorted(
             resumir_falhas(resultados).items(),
             key=lambda item: item[1],
             reverse=True,
         ):
-            print(f"  - {quantidade}x {tipo_erro}", file=sys.stderr)
+            log(f"  - {quantidade}x {tipo_erro}", erro=True)
 
     if not args.sem_importar_faltas:
-        print()
-        print("Importando faltas automáticas...")
+        log()
+        log("Importando faltas automáticas...")
         try:
             from faltas_automaticas import importar_faltas, processar_alertas_alunos
 
@@ -429,21 +446,27 @@ def main() -> int:
                 user_id_env=user_id,
                 gerar_lista_faltas=args.gerar_lista_faltas,
             )
-            print(f"Faltas extraídas: {resumo['total_faltas_extraidas']}")
-            print(f"Eventos inseridos: {resumo['inseridos']}")
-            print(
+            log(f"Faltas extraídas: {resumo['total_faltas_extraidas']}")
+            log(f"Eventos inseridos: {resumo['inseridos']}")
+            log(
                 f"Pulados (falta do professor no dia): {resumo['pulados_professor']}"
             )
-            print(f"Pulados (duplicado): {resumo['pulados_duplicado']}")
-            print(f"Pulados (sem aluno): {resumo['pulados_sem_aluno']}")
+            log(f"Pulados (duplicado): {resumo['pulados_duplicado']}")
+            log(f"Pulados (sem aluno): {resumo['pulados_sem_aluno']}")
             if resumo.get("lista_arquivo"):
-                print(f"Lista de faltas: {resumo['lista_arquivo']}")
+                log(f"Lista de faltas: {resumo['lista_arquivo']}")
             processar_alertas_alunos(resumo.get("alunos_afetados") or [])
         except Exception as error:
-            print(f"Aviso: falha ao importar faltas: {error}", file=sys.stderr)
+            log(f"Aviso: falha ao importar faltas: {error}", erro=True)
 
+    fim = datetime.now()
+    duracao = fim - inicio
+    log(
+        f"=== Coleta finalizada | início {inicio.strftime('%d/%m/%Y %H:%M:%S')} "
+        f"| fim {fim.strftime('%d/%m/%Y %H:%M:%S')} "
+        f"| duração {duracao} ==="
+    )
     return 0
-
 
 if __name__ == "__main__":
     raise SystemExit(main())
