@@ -396,6 +396,7 @@ if (!is_numeric($filtro_ano)) {
 } else {
     $filtro_ano = (int)$filtro_ano;
 }
+$incluir_sabados = resolveIncluirSabadosSession();
 
 // Get all classes from selected year and courses for filters
 $cursos = $curso->getAll();
@@ -475,10 +476,10 @@ if ($aluno_id) {
         $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
         $aluno_ficha['is_ano_corrente'] = true;
     }
-    $aluno_ficha['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $filtro_ano);
-    $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
-
     $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
+    $eventos_aluno = filterEventosPorSabado($eventos_aluno, $incluir_sabados);
+    $aluno_ficha['total_eventos'] = count($eventos_aluno);
+    $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
     $current_user_type_id = $_SESSION['user_type_id'] ?? '';
     if (empty($current_user_type_id)) {
         $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
@@ -614,6 +615,7 @@ if ($aluno_id) {
             <div class="card-body">
                 <form method="GET" action="" class="row g-3 mb-3 no-print">
                     <input type="hidden" name="aluno_id" value="<?php echo htmlspecialchars($aluno_id); ?>">
+                    <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
                     <div class="col-md-3">
                         <label for="filtro_ano" class="form-label">Filtrar por Ano</label>
                         <select class="form-select form-select-sm" id="filtro_ano" name="filtro_ano">
@@ -623,6 +625,13 @@ if ($aluno_id) {
                             </option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div class="col-12 d-flex align-items-center">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
+                                   onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
+                            <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
+                        </div>
                     </div>
                 </form>
                 <?php if (empty($eventos_aluno)): ?>
