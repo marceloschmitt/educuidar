@@ -25,12 +25,49 @@
         .resp-header {
             background: var(--resp-accent);
             color: #fff;
-            padding: 0.85rem 1rem;
+            padding: 0.75rem 1rem;
             position: sticky;
             top: 0;
             z-index: 100;
         }
-        .resp-header a { color: #fff; text-decoration: none; }
+        .resp-header-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            min-width: 0;
+            flex-wrap: wrap;
+        }
+        .resp-header-brand .resp-nome {
+            opacity: 0.85;
+            font-size: 0.95rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        .resp-header-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.55rem;
+        }
+        .resp-header-nav a {
+            color: #fff;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,.55);
+            border-radius: 0.5rem;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.9rem;
+            line-height: 1.2;
+            min-height: 2.25rem;
+            display: inline-flex;
+            align-items: center;
+        }
+        .resp-header-nav a:hover,
+        .resp-header-nav a:focus {
+            background: rgba(255,255,255,.12);
+            color: #fff;
+        }
         .resp-card {
             border: 0;
             border-radius: 1rem;
@@ -72,18 +109,19 @@
 </head>
 <body>
 <?php if (!empty($show_header)): ?>
-<header class="resp-header d-flex justify-content-between align-items-center gap-2">
-    <div class="min-w-0">
+<header class="resp-header">
+    <div class="resp-header-brand">
         <strong>EduCuidar</strong>
         <?php if (!empty($responsavel_nome)): ?>
-        <div class="small opacity-75 text-truncate"><?php echo htmlspecialchars($responsavel_nome); ?></div>
+        <span class="resp-nome"><?php echo htmlspecialchars($responsavel_nome); ?></span>
         <?php endif; ?>
     </div>
-    <div class="d-flex gap-2 flex-shrink-0">
-        <a href="autorizacoes.php" class="btn btn-sm btn-outline-light btn-touch">Autorizações</a>
-        <a href="meusdados.php" class="btn btn-sm btn-outline-light btn-touch">Meus dados</a>
-        <a href="logout.php" class="btn btn-sm btn-outline-light btn-touch">Sair</a>
-    </div>
+    <nav class="resp-header-nav" aria-label="Menu do responsável">
+        <a href="index.php">Ocorrências</a>
+        <a href="autorizacoes.php">Autorizações</a>
+        <a href="meusdados.php">Conta</a>
+        <a href="logout.php">Sair</a>
+    </nav>
 </header>
 <?php endif; ?>
 <main class="container<?php echo empty($layout_full) ? ' py-3' : ''; ?>"<?php echo empty($layout_full) ? ' style="max-width: 640px;"' : ''; ?>>
