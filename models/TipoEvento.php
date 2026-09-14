@@ -17,6 +17,8 @@ class TipoEvento {
     public $prontuario_user_type_id;
     /** @var int|bool 1 = visível para usuários ao registrar eventos */
     public $ativo;
+    /** @var int|bool 1 = visível no portal de responsáveis */
+    public $visivel_responsaveis;
     public $created_at;
 
     public function __construct($db) {
@@ -25,8 +27,8 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo) 
-                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo)";
+                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo, visivel_responsaveis) 
+                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo, :visivel_responsaveis)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -38,6 +40,8 @@ class TipoEvento {
         $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
+        $visivel_responsaveis = isset($this->visivel_responsaveis) ? ($this->visivel_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
 
         if ($stmt->execute()) {
             return true;
@@ -85,7 +89,8 @@ class TipoEvento {
                       cor = :cor,
                       gera_prontuario = :gera_prontuario,
                       prontuario_user_type_id = :prontuario_user_type_id,
-                      ativo = :ativo
+                      ativo = :ativo,
+                      visivel_responsaveis = :visivel_responsaveis
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -99,6 +104,8 @@ class TipoEvento {
         $stmt->bindParam(':prontuario_user_type_id', $prontuario_user_type_id);
         $ativo = isset($this->ativo) ? ($this->ativo ? 1 : 0) : 1;
         $stmt->bindParam(':ativo', $ativo);
+        $visivel_responsaveis = isset($this->visivel_responsaveis) ? ($this->visivel_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
 
         if ($stmt->execute()) {
             return true;

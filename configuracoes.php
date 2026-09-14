@@ -90,8 +90,11 @@ require_once 'includes/header.php';
                         <a href="ldap_config.php" class="btn btn-outline-primary me-2 mb-2">
                             <i class="bi bi-server"></i> Configuração LDAP
                         </a>
-                        <a href="api_sigaa_config.php" class="btn btn-outline-primary mb-2">
+                        <a href="api_sigaa_config.php" class="btn btn-outline-primary me-2 mb-2">
                             <i class="bi bi-cloud"></i> Configuração API SIGAA
+                        </a>
+                        <a href="admin_responsaveis.php" class="btn btn-outline-primary mb-2">
+                            <i class="bi bi-people"></i> Responsáveis
                         </a>
                     </div>
                     

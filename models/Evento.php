@@ -382,6 +382,33 @@ class Evento {
         $result = $stmt->fetch();
         return $result['total'] ?? 0;
     }
+
+    /**
+     * Eventos visíveis ao responsável: só data, hora e tipo (visivel_responsaveis=1).
+     */
+    public function getParaResponsavel($aluno_id, $ano_civil = null) {
+        $query = "SELECT e.data_evento, e.hora_evento,
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
+                  FROM " . $this->table . " e
+                  INNER JOIN tipos_eventos te ON e.tipo_evento_id = te.id
+                  LEFT JOIN turmas t ON e.turma_id = t.id
+                  WHERE e.aluno_id = :aluno_id
+                    AND te.visivel_responsaveis = 1";
+
+        if ($ano_civil !== null) {
+            $query .= " AND t.ano_civil = :ano_civil";
+        }
+
+        $query .= " ORDER BY e.data_evento DESC, e.hora_evento DESC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':aluno_id', $aluno_id);
+        if ($ano_civil !== null) {
+            $stmt->bindParam(':ano_civil', $ano_civil);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
 }
 ?>
 

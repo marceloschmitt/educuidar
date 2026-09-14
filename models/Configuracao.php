@@ -189,6 +189,19 @@ class Configuracao {
     public function setSistemaInstalado($instalado = true) {
         return $this->set('sistema_instalado', $instalado ? '1' : '0', 'Indica se o sistema foi instalado e configurado');
     }
+
+    public function isCadastroResponsaveisHabilitado() {
+        $valor = $this->get('cadastro_responsaveis_habilitado');
+        return $valor === '1' || $valor === 1 || $valor === 'true';
+    }
+
+    public function setCadastroResponsaveisHabilitado($habilitado) {
+        return $this->set(
+            'cadastro_responsaveis_habilitado',
+            $habilitado ? '1' : '0',
+            'Permite cadastro público de responsáveis (1=aberto, 0=fechado)'
+        );
+    }
 }
 ?>
 
