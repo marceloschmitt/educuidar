@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($autorizacao->cancelar((int) $_POST['id'], $responsavel_id)) {
             $success = 'Autorização cancelada.';
         } else {
-            $error = 'Não foi possível cancelar (já confirmada ou inexistente).';
+            $error = 'Não foi possível cancelar (já marcada como ocorrida ou inexistente).';
         }
     } else {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($justificativa === '') {
             $error = 'Informe a justificativa.';
         } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
-            $success = 'Autorização registrada. A escola poderá confirmar quando o fato ocorrer.';
+            $success = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
         } else {
             $error = 'Erro ao salvar a autorização.';
         }
@@ -131,8 +131,8 @@ require __DIR__ . '/header.php';
             <?php
             $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
             $tipo_label = $tipos[$item['tipo']] ?? $item['tipo'];
-            $st = $item['status'] ?? 'pendente';
-            $badge = $st === 'confirmada' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
+            $st = $item['status'] ?? 'previsto';
+            $badge = $st === 'ocorrido' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
             ?>
             <div class="p-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
@@ -145,7 +145,7 @@ require __DIR__ . '/header.php';
                     às <?php echo substr($item['hora'], 0, 5); ?>
                 </div>
                 <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></div>
-                <?php if ($st === 'pendente'): ?>
+                <?php if ($st === 'previsto'): ?>
                 <form method="POST" class="mt-2">
                     <input type="hidden" name="action" value="cancelar">
                     <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">

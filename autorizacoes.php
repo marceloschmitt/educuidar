@@ -11,28 +11,18 @@ if (!$user->isLoggedIn() || !($user->isAdmin() || $user->isNivel0() || $user->is
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'confirmar') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'marcar_ocorrido') {
     $id = (int) ($_POST['id'] ?? 0);
-    if ($id && $autorizacao->confirmar($id, $_SESSION['user_id'])) {
-        $_SESSION['success'] = 'Autorização confirmada (fato ocorrido).';
+    if ($id && $autorizacao->marcarOcorrido($id, $_SESSION['user_id'])) {
+        $_SESSION['success'] = 'Marcado como ocorrido.';
     } else {
-        $_SESSION['error'] = 'Não foi possível confirmar (já confirmada ou inexistente).';
+        $_SESSION['error'] = 'Não foi possível marcar (já ocorrido, cancelada ou inexistente).';
     }
-    $qs = [];
-    foreach (['status', 'tipo', 'data', 'nome'] as $k) {
-        if (!empty($_GET[$k])) {
-            $qs[$k] = $_GET[$k];
-        }
-        if (!empty($_POST['filtro_' . $k])) {
-            $qs[$k] = $_POST['filtro_' . $k];
-        }
-    }
-    // Preserve filters from referrer query string in POST redirect via hidden fields
     header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
     exit;
 }
 
-$filtro_status = $_GET['status'] ?? 'pendente';
+$filtro_status = $_GET['status'] ?? 'previsto';
 $filtro_tipo = $_GET['tipo'] ?? '';
 $filtro_data = $_GET['data'] ?? '';
 $filtro_nome = trim($_GET['nome'] ?? '');
@@ -89,8 +79,8 @@ require_once 'includes/header.php';
     </div>
     <div class="card-body">
         <p class="text-muted small">
-            Entrada ou saída fora do horário autorizadas pelos responsáveis.
-            Use <strong>OK</strong> quando o fato tiver ocorrido (aluno chegou ou saiu conforme a autorização).
+            Autorizações de entrada ou saída fora do horário.
+            Marque <strong>Ocorreu</strong> quando o aluno tiver chegado ou saído conforme previsto.
         </p>
         <form method="GET" class="row g-2 align-items-end mb-3">
             <div class="col-md-2">
@@ -150,8 +140,8 @@ require_once 'includes/header.php';
                     <?php foreach ($lista as $item): ?>
                     <?php
                     $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
-                    $st = $item['status'] ?? 'pendente';
-                    $badge = $st === 'confirmada' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
+                    $st = $item['status'] ?? 'previsto';
+                    $badge = $st === 'ocorrido' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
                     ?>
                     <tr>
                         <td class="text-nowrap">
@@ -169,7 +159,7 @@ require_once 'includes/header.php';
                         <td style="max-width: 280px;"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></td>
                         <td>
                             <span class="badge bg-<?php echo $badge; ?>"><?php echo htmlspecialchars($status_labels[$st] ?? $st); ?></span>
-                            <?php if ($st === 'confirmada' && !empty($item['confirmado_por_nome'])): ?>
+                            <?php if ($st === 'ocorrido' && !empty($item['confirmado_por_nome'])): ?>
                             <div class="small text-muted mt-1">
                                 <?php echo htmlspecialchars($item['confirmado_por_nome']); ?>
                                 <?php if (!empty($item['confirmado_em'])): ?>
@@ -179,15 +169,15 @@ require_once 'includes/header.php';
                             <?php endif; ?>
                         </td>
                         <td class="text-nowrap">
-                            <?php if ($st === 'pendente'): ?>
+                            <?php if ($st === 'previsto'): ?>
                             <form method="POST" class="d-inline">
-                                <input type="hidden" name="action" value="confirmar">
+                                <input type="hidden" name="action" value="marcar_ocorrido">
                                 <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
                                 <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($return_query); ?>">
                                 <button type="submit" class="btn btn-success btn-sm"
-                                        title="Confirmar que o fato ocorreu"
-                                        onclick="return confirm('Confirmar que a entrada/saída ocorreu conforme autorizado?');">
-                                    <i class="bi bi-check-lg"></i> OK
+                                        title="Marcar que o fato ocorreu"
+                                        onclick="return confirm('Marcar que a entrada/saída ocorreu?');">
+                                    <i class="bi bi-check-lg"></i> Ocorreu
                                 </button>
                             </form>
                             <?php endif; ?>

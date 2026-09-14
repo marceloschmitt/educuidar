@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     data_autorizacao DATE NOT NULL,
     hora TIME NOT NULL,
     justificativa TEXT NOT NULL,
-    status ENUM('pendente', 'confirmada', 'cancelada') NOT NULL DEFAULT 'pendente',
+    status ENUM('previsto', 'ocorrido', 'cancelada') NOT NULL DEFAULT 'previsto',
     confirmado_por INT NULL,
     confirmado_em TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

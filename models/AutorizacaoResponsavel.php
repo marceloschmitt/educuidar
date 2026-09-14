@@ -1,6 +1,7 @@
 <?php
 /**
  * Autorizações de entrada/saída fora do horário criadas por responsáveis.
+ * Status controla se o fato previsto (entrada/saída) já ocorreu.
  */
 
 class AutorizacaoResponsavel {
@@ -10,8 +11,8 @@ class AutorizacaoResponsavel {
     public const TIPO_ENTRADA = 'entrada_fora_horario';
     public const TIPO_SAIDA = 'saida_fora_horario';
 
-    public const STATUS_PENDENTE = 'pendente';
-    public const STATUS_CONFIRMADA = 'confirmada';
+    public const STATUS_PREVISTO = 'previsto';
+    public const STATUS_OCORRIDO = 'ocorrido';
     public const STATUS_CANCELADA = 'cancelada';
 
     public function __construct($db) {
@@ -27,8 +28,8 @@ class AutorizacaoResponsavel {
 
     public static function statusLabels() {
         return [
-            self::STATUS_PENDENTE => 'Pendente',
-            self::STATUS_CONFIRMADA => 'Confirmada',
+            self::STATUS_PREVISTO => 'Não ocorrido',
+            self::STATUS_OCORRIDO => 'Ocorrido',
             self::STATUS_CANCELADA => 'Cancelada',
         ];
     }
@@ -44,7 +45,7 @@ class AutorizacaoResponsavel {
 
         $query = "INSERT INTO " . $this->table . "
                   (responsavel_id, aluno_id, tipo, data_autorizacao, hora, justificativa, status)
-                  VALUES (:responsavel_id, :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'pendente')";
+                  VALUES (:responsavel_id, :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'previsto')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
         $stmt->bindParam(':aluno_id', $aluno_id);
@@ -122,7 +123,7 @@ class AutorizacaoResponsavel {
         }
 
         $query .= " ORDER BY
-                    CASE a.status WHEN 'pendente' THEN 0 WHEN 'confirmada' THEN 1 ELSE 2 END,
+                    CASE a.status WHEN 'previsto' THEN 0 WHEN 'ocorrido' THEN 1 ELSE 2 END,
                     a.data_autorizacao DESC, a.hora DESC, a.id DESC
                     LIMIT 200";
 
@@ -134,12 +135,13 @@ class AutorizacaoResponsavel {
         return $stmt->fetchAll();
     }
 
-    public function confirmar($id, $user_id) {
+    /** Marca que o fato previsto (entrada/saída) ocorreu. */
+    public function marcarOcorrido($id, $user_id) {
         $query = "UPDATE " . $this->table . "
-                  SET status = 'confirmada',
+                  SET status = 'ocorrido',
                       confirmado_por = :user_id,
                       confirmado_em = NOW()
-                  WHERE id = :id AND status = 'pendente'";
+                  WHERE id = :id AND status = 'previsto'";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':user_id', $user_id);
         $stmt->bindParam(':id', $id);
@@ -152,7 +154,7 @@ class AutorizacaoResponsavel {
                   SET status = 'cancelada'
                   WHERE id = :id
                     AND responsavel_id = :responsavel_id
-                    AND status = 'pendente'";
+                    AND status = 'previsto'";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
