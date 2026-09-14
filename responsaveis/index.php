@@ -69,6 +69,11 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
         <a href="index.php" class="btn btn-outline-secondary btn-sm btn-touch">Trocar</a>
         <?php endif; ?>
     </div>
+    <div class="mb-3">
+        <a href="autorizacoes.php" class="btn btn-outline-success btn-sm btn-touch w-100">
+            <i class="bi bi-clipboard-plus"></i> Nova autorização de horário
+        </a>
+    </div>
 
     <div class="card resp-card">
         <?php if (empty($eventos)): ?>

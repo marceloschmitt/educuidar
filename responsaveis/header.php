@@ -80,6 +80,7 @@
         <?php endif; ?>
     </div>
     <div class="d-flex gap-2 flex-shrink-0">
+        <a href="autorizacoes.php" class="btn btn-sm btn-outline-light btn-touch">Autorizações</a>
         <a href="meusdados.php" class="btn btn-sm btn-outline-light btn-touch">Meus dados</a>
         <a href="logout.php" class="btn btn-sm btn-outline-light btn-touch">Sair</a>
     </div>

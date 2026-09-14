@@ -42,6 +42,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <?php endif; ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'autorizacoes.php' ? 'active' : ''; ?>" href="autorizacoes.php">
+            <i class="bi bi-clipboard-check"></i> Autorizações
+        </a>
+    </li>
     <?php endif; ?>
 
     <?php if ($can_view_alunos): ?>
