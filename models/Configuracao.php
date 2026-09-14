@@ -202,6 +202,25 @@ class Configuracao {
             'Permite cadastro público de responsáveis (1=aberto, 0=fechado)'
         );
     }
+
+    public function getAutorizacaoTipoEventoId($tipo_autorizacao) {
+        $chave = $tipo_autorizacao === 'saida_fora_horario'
+            ? 'autorizacao_saida_tipo_evento_id'
+            : 'autorizacao_entrada_tipo_evento_id';
+        $valor = $this->get($chave);
+        return ($valor !== null && $valor !== '') ? (int) $valor : null;
+    }
+
+    public function setAutorizacaoTipoEventoId($tipo_autorizacao, $tipo_evento_id) {
+        $chave = $tipo_autorizacao === 'saida_fora_horario'
+            ? 'autorizacao_saida_tipo_evento_id'
+            : 'autorizacao_entrada_tipo_evento_id';
+        $desc = $tipo_autorizacao === 'saida_fora_horario'
+            ? 'Tipo de evento criado ao marcar saída fora do horário como ocorrida'
+            : 'Tipo de evento criado ao marcar entrada fora do horário como ocorrida';
+        $valor = ($tipo_evento_id === null || $tipo_evento_id === '') ? '' : (string) (int) $tipo_evento_id;
+        return $this->set($chave, $valor, $desc);
+    }
 }
 ?>
 

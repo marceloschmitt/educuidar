@@ -5,21 +5,40 @@ $database = new Database();
 $db = $database->getConnection();
 $user = new User($db);
 $autorizacao = new AutorizacaoResponsavel($db);
+$configuracao = new Configuracao($db);
+$tipo_evento = new TipoEvento($db);
 
 if (!$user->isLoggedIn() || !($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2())) {
     header('Location: index.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'marcar_ocorrido') {
-    $id = (int) ($_POST['id'] ?? 0);
-    if ($id && $autorizacao->marcarOcorrido($id, $_SESSION['user_id'])) {
-        $_SESSION['success'] = 'Marcado como ocorrido.';
-    } else {
-        $_SESSION['error'] = 'Não foi possível marcar (já ocorrido, cancelada ou inexistente).';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'salvar_vinculo_tipos' && $user->isAdmin()) {
+        $entrada = $_POST['tipo_entrada'] ?? '';
+        $saida = $_POST['tipo_saida'] ?? '';
+        $configuracao->setAutorizacaoTipoEventoId('entrada_fora_horario', $entrada);
+        $configuracao->setAutorizacaoTipoEventoId('saida_fora_horario', $saida);
+        $_SESSION['success'] = 'Vínculo com tipos de evento atualizado.';
+        header('Location: autorizacoes.php');
+        exit;
     }
-    header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
-    exit;
+
+    if ($action === 'marcar_ocorrido') {
+        $id = (int) ($_POST['id'] ?? 0);
+        $result = $id ? $autorizacao->marcarOcorrido($id, $_SESSION['user_id']) : false;
+        if ($result === true) {
+            $_SESSION['success'] = 'Marcado como ocorrido e evento criado.';
+        } elseif ($result === 'sem_tipo_evento') {
+            $_SESSION['error'] = 'Configure o tipo de evento correspondente (admin) antes de marcar como ocorrido.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível marcar (já ocorrido ou inexistente).';
+        }
+        header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
+        exit;
+    }
 }
 
 $filtro_status = $_GET['status'] ?? 'previsto';
@@ -44,6 +63,9 @@ if ($filtro_nome !== '') {
 $lista = $autorizacao->listForStaff($filtros);
 $tipos = AutorizacaoResponsavel::tiposLabels();
 $status_labels = AutorizacaoResponsavel::statusLabels();
+$tipos_eventos = $tipo_evento->getAll(false);
+$tipo_entrada_cfg = $configuracao->getAutorizacaoTipoEventoId('entrada_fora_horario');
+$tipo_saida_cfg = $configuracao->getAutorizacaoTipoEventoId('saida_fora_horario');
 
 $success = $_SESSION['success'] ?? '';
 $error = $_SESSION['error'] ?? '';
@@ -73,6 +95,53 @@ require_once 'includes/header.php';
 </div>
 <?php endif; ?>
 
+<?php if ($user->isAdmin()): ?>
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-link-45deg"></i> Relacionar com tipos de evento</h5>
+    </div>
+    <div class="card-body">
+        <p class="text-muted small">
+            Ao marcar uma autorização como <strong>ocorrida</strong>, o sistema cria automaticamente um evento
+            do tipo escolhido, com a justificativa, nome e parentesco de quem autorizou e a data da autorização nas observações.
+        </p>
+        <form method="POST" class="row g-3 align-items-end">
+            <input type="hidden" name="action" value="salvar_vinculo_tipos">
+            <div class="col-md-5">
+                <label class="form-label" for="tipo_entrada">Entrada fora do horário → tipo de evento</label>
+                <select class="form-select form-select-sm" id="tipo_entrada" name="tipo_entrada" required>
+                    <option value="">Selecione…</option>
+                    <?php foreach ($tipos_eventos as $te): ?>
+                    <option value="<?php echo (int) $te['id']; ?>" <?php echo ((int)$tipo_entrada_cfg === (int)$te['id']) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($te['nome']); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label" for="tipo_saida">Saída fora do horário → tipo de evento</label>
+                <select class="form-select form-select-sm" id="tipo_saida" name="tipo_saida" required>
+                    <option value="">Selecione…</option>
+                    <?php foreach ($tipos_eventos as $te): ?>
+                    <option value="<?php echo (int) $te['id']; ?>" <?php echo ((int)$tipo_saida_cfg === (int)$te['id']) ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($te['nome']); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Salvar</button>
+            </div>
+        </form>
+        <?php if (!$tipo_entrada_cfg || !$tipo_saida_cfg): ?>
+        <div class="alert alert-warning mt-3 mb-0 py-2 small">
+            Configure os dois tipos acima para que servidores possam marcar autorizações como ocorridas.
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="card mb-3">
     <div class="card-header">
         <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Autorizações de responsáveis</h5>
@@ -80,7 +149,7 @@ require_once 'includes/header.php';
     <div class="card-body">
         <p class="text-muted small">
             Autorizações de entrada ou saída fora do horário.
-            Marque <strong>Ocorreu</strong> quando o aluno tiver chegado ou saído conforme previsto.
+            Marque <strong>Ocorreu</strong> quando o aluno tiver chegado ou saído conforme previsto — isso cria o evento automaticamente.
         </p>
         <form method="GET" class="row g-2 align-items-end mb-3">
             <div class="col-md-2">
@@ -141,7 +210,7 @@ require_once 'includes/header.php';
                     <?php
                     $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
                     $st = $item['status'] ?? 'previsto';
-                    $badge = $st === 'ocorrido' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
+                    $badge = $st === 'ocorrido' ? 'success' : 'warning';
                     ?>
                     <tr>
                         <td class="text-nowrap">
@@ -167,6 +236,9 @@ require_once 'includes/header.php';
                                 <?php endif; ?>
                             </div>
                             <?php endif; ?>
+                            <?php if (!empty($item['evento_id'])): ?>
+                            <div class="small"><span class="badge bg-info">Evento #<?php echo (int) $item['evento_id']; ?></span></div>
+                            <?php endif; ?>
                         </td>
                         <td class="text-nowrap">
                             <?php if ($st === 'previsto'): ?>
@@ -175,8 +247,8 @@ require_once 'includes/header.php';
                                 <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
                                 <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($return_query); ?>">
                                 <button type="submit" class="btn btn-success btn-sm"
-                                        title="Marcar que o fato ocorreu"
-                                        onclick="return confirm('Marcar que a entrada/saída ocorreu?');">
+                                        title="Marcar que o fato ocorreu e criar evento"
+                                        onclick="return confirm('Marcar que a entrada/saída ocorreu e criar o evento?');">
                                     <i class="bi bi-check-lg"></i> Ocorreu
                                 </button>
                             </form>

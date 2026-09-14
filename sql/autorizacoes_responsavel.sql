@@ -8,9 +8,10 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     data_autorizacao DATE NOT NULL,
     hora TIME NOT NULL,
     justificativa TEXT NOT NULL,
-    status ENUM('previsto', 'ocorrido', 'cancelada') NOT NULL DEFAULT 'previsto',
+    status ENUM('previsto', 'ocorrido') NOT NULL DEFAULT 'previsto',
     confirmado_por INT NULL,
     confirmado_em TIMESTAMP NULL,
+    evento_id INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_aluno (aluno_id),
@@ -18,9 +19,11 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     INDEX idx_data (data_autorizacao),
     INDEX idx_status (status),
     INDEX idx_tipo (tipo),
+    INDEX idx_evento (evento_id),
     FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE,
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
-    FOREIGN KEY (confirmado_por) REFERENCES users(id) ON DELETE SET NULL
+    FOREIGN KEY (confirmado_por) REFERENCES users(id) ON DELETE SET NULL,
+    FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Se a tabela já existia com pendente/confirmada:

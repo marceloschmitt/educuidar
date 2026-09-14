@@ -13,7 +13,6 @@ class AutorizacaoResponsavel {
 
     public const STATUS_PREVISTO = 'previsto';
     public const STATUS_OCORRIDO = 'ocorrido';
-    public const STATUS_CANCELADA = 'cancelada';
 
     public function __construct($db) {
         $this->conn = $db;
@@ -30,7 +29,6 @@ class AutorizacaoResponsavel {
         return [
             self::STATUS_PREVISTO => 'Não ocorrido',
             self::STATUS_OCORRIDO => 'Ocorrido',
-            self::STATUS_CANCELADA => 'Cancelada',
         ];
     }
 
@@ -123,7 +121,7 @@ class AutorizacaoResponsavel {
         }
 
         $query .= " ORDER BY
-                    CASE a.status WHEN 'previsto' THEN 0 WHEN 'ocorrido' THEN 1 ELSE 2 END,
+                    CASE a.status WHEN 'previsto' THEN 0 ELSE 1 END,
                     a.data_autorizacao DESC, a.hora DESC, a.id DESC
                     LIMIT 200";
 
@@ -135,18 +133,92 @@ class AutorizacaoResponsavel {
         return $stmt->fetchAll();
     }
 
-    /** Marca que o fato previsto (entrada/saída) ocorreu. */
+    /** Marca como ocorrido e cria o evento vinculado (se houver tipo configurado). */
     public function marcarOcorrido($id, $user_id) {
-        $query = "UPDATE " . $this->table . "
-                  SET status = 'ocorrido',
-                      confirmado_por = :user_id,
-                      confirmado_em = NOW()
-                  WHERE id = :id AND status = 'previsto'";
+        $auth = $this->getById($id);
+        if (!$auth || ($auth['status'] ?? '') !== 'previsto') {
+            return false;
+        }
+
+        $config = new Configuracao($this->conn);
+        $tipo_evento_id = $config->getAutorizacaoTipoEventoId($auth['tipo']);
+        if (!$tipo_evento_id) {
+            return 'sem_tipo_evento';
+        }
+
+        $parentesco = $this->getParentesco($auth['responsavel_id'], $auth['aluno_id']);
+        $obs = $this->montarObservacoesEvento($auth, $parentesco);
+
+        try {
+            $this->conn->beginTransaction();
+
+            $evento = new Evento($this->conn);
+            $evento->aluno_id = $auth['aluno_id'];
+            $evento->turma_id = null;
+            $evento->tipo_evento_id = $tipo_evento_id;
+            $evento->data_evento = $auth['data_autorizacao'];
+            $evento->hora_evento = $auth['hora'];
+            $evento->observacoes = $obs;
+            $evento->prontuario = '';
+            $evento->registrado_por = $user_id;
+
+            if (!$evento->create()) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $query = "UPDATE " . $this->table . "
+                      SET status = 'ocorrido',
+                          confirmado_por = :user_id,
+                          confirmado_em = NOW(),
+                          evento_id = :evento_id
+                      WHERE id = :id AND status = 'previsto'";
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindParam(':user_id', $user_id);
+            $stmt->bindValue(':evento_id', (int) $evento->id);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            if ($stmt->rowCount() === 0) {
+                $this->conn->rollBack();
+                return false;
+            }
+
+            $this->conn->commit();
+            if (function_exists('processarAlertasAluno')) {
+                processarAlertasAluno($this->conn, $auth['aluno_id']);
+            }
+            return true;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+            return false;
+        }
+    }
+
+    private function getParentesco($responsavel_id, $aluno_id) {
+        $query = "SELECT parentesco FROM responsavel_alunos
+                  WHERE responsavel_id = :responsavel_id AND aluno_id = :aluno_id
+                  LIMIT 1";
         $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':responsavel_id', $responsavel_id);
+        $stmt->bindParam(':aluno_id', $aluno_id);
         $stmt->execute();
-        return $stmt->rowCount() > 0;
+        $row = $stmt->fetch();
+        return $row['parentesco'] ?? '';
+    }
+
+    private function montarObservacoesEvento(array $auth, $parentesco) {
+        $nome = $auth['responsavel_nome'] ?? '';
+        $data_fmt = !empty($auth['data_autorizacao'])
+            ? date('d/m/Y', strtotime($auth['data_autorizacao']))
+            : '';
+        $linhas = [];
+        $linhas[] = 'Justificativa: ' . trim((string) ($auth['justificativa'] ?? ''));
+        $linhas[] = 'Autorizado por: ' . $nome
+            . ($parentesco !== '' ? ' (' . $parentesco . ')' : '');
+        $linhas[] = 'Data da autorização: ' . $data_fmt;
+        return implode("\n", $linhas);
     }
 
     /**

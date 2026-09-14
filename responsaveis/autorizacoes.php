@@ -136,7 +136,7 @@ require __DIR__ . '/header.php';
             $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
             $tipo_label = $tipos[$item['tipo']] ?? $item['tipo'];
             $st = $item['status'] ?? 'previsto';
-            $badge = $st === 'ocorrido' ? 'success' : ($st === 'cancelada' ? 'secondary' : 'warning');
+            $badge = $st === 'ocorrido' ? 'success' : 'warning';
             ?>
             <div class="p-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
