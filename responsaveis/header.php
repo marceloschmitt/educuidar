@@ -72,14 +72,17 @@
 </head>
 <body>
 <?php if (!empty($show_header)): ?>
-<header class="resp-header d-flex justify-content-between align-items-center">
-    <div>
+<header class="resp-header d-flex justify-content-between align-items-center gap-2">
+    <div class="min-w-0">
         <strong>EduCuidar</strong>
         <?php if (!empty($responsavel_nome)): ?>
-        <div class="small opacity-75"><?php echo htmlspecialchars($responsavel_nome); ?></div>
+        <div class="small opacity-75 text-truncate"><?php echo htmlspecialchars($responsavel_nome); ?></div>
         <?php endif; ?>
     </div>
-    <a href="logout.php" class="btn btn-sm btn-outline-light btn-touch">Sair</a>
+    <div class="d-flex gap-2 flex-shrink-0">
+        <a href="meusdados.php" class="btn btn-sm btn-outline-light btn-touch">Meus dados</a>
+        <a href="logout.php" class="btn btn-sm btn-outline-light btn-touch">Sair</a>
+    </div>
 </header>
 <?php endif; ?>
 <main class="container<?php echo empty($layout_full) ? ' py-3' : ''; ?>"<?php echo empty($layout_full) ? ' style="max-width: 640px;"' : ''; ?>>

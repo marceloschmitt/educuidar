@@ -23,7 +23,6 @@ function responsavelRateLimitOk() {
     if (!isset($_SESSION[$key]) || !is_array($_SESSION[$key])) {
         $_SESSION[$key] = [];
     }
-    // Mantém só tentativas dos últimos 15 minutos
     $_SESSION[$key] = array_values(array_filter($_SESSION[$key], function ($t) use ($now) {
         return ($now - (int) $t) < 900;
     }));
@@ -40,21 +39,26 @@ if (!isset($_SESSION['cadastro_resp_captcha'])) {
 
 $parentescos = ['pai' => 'Pai', 'mãe' => 'Mãe', 'tutor' => 'Tutor(a)', 'outro' => 'Outro'];
 
+$cpfs_alunos_post = $_POST['cpf_aluno'] ?? [''];
+if (!is_array($cpfs_alunos_post)) {
+    $cpfs_alunos_post = [$cpfs_alunos_post];
+}
+if (empty($cpfs_alunos_post)) {
+    $cpfs_alunos_post = [''];
+}
+
 if ($cadastro_aberto && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!responsavelRateLimitOk()) {
         $error = 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
         responsavelCaptchaNovo();
     } elseif (!empty($_POST['website'])) {
-        // Honeypot
         $error = 'Não foi possível concluir o cadastro.';
         responsavelCaptchaNovo();
     } else {
         $nome = trim($_POST['nome'] ?? '');
         $cpf_raw = trim($_POST['cpf'] ?? '');
-        $cpf_aluno_raw = trim($_POST['cpf_aluno'] ?? '');
         $cpf = normalizeCpf($cpf_raw);
         $email = strtolower(trim($_POST['email'] ?? ''));
-        $cpf_aluno = normalizeCpf($cpf_aluno_raw);
         $parentesco = $_POST['parentesco'] ?? '';
         $senha = $_POST['senha'] ?? '';
         $senha2 = $_POST['senha_confirmacao'] ?? '';
@@ -63,12 +67,32 @@ if ($cadastro_aberto && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $esperado = $_SESSION['cadastro_resp_captcha'] ?? null;
         responsavelCaptchaNovo();
 
+        $cpfs_alunos = [];
+        $cpf_aluno_invalido = false;
+        foreach ($cpfs_alunos_post as $cpf_aluno_raw) {
+            $cpf_aluno_raw = trim((string) $cpf_aluno_raw);
+            if ($cpf_aluno_raw === '') {
+                continue;
+            }
+            $cpf_aluno = normalizeCpf($cpf_aluno_raw);
+            if ($cpf_aluno_raw !== $cpf_aluno || strlen($cpf_aluno) !== 11) {
+                $cpf_aluno_invalido = true;
+                break;
+            }
+            $cpfs_alunos[] = $cpf_aluno;
+        }
+        $cpfs_alunos = array_values(array_unique($cpfs_alunos));
+
         if ($esperado === null || (string) $captcha !== (string) $esperado) {
             $error = 'Resposta do desafio anti-robô incorreta.';
-        } elseif ($cpf_raw !== $cpf || $cpf_aluno_raw !== $cpf_aluno) {
-            $error = 'Informe os CPFs apenas com números, sem pontos ou traços.';
-        } elseif ($nome === '' || strlen($cpf) !== 11 || $email === '' || strlen($cpf_aluno) !== 11) {
-            $error = 'Preencha todos os campos obrigatórios corretamente. CPF deve ter 11 dígitos.';
+        } elseif ($cpf_raw !== $cpf) {
+            $error = 'Informe o seu CPF apenas com números, sem pontos ou traços.';
+        } elseif ($cpf_aluno_invalido) {
+            $error = 'Informe os CPFs dos alunos apenas com números, sem pontos ou traços (11 dígitos).';
+        } elseif ($nome === '' || strlen($cpf) !== 11 || $email === '') {
+            $error = 'Preencha todos os campos obrigatórios corretamente.';
+        } elseif (empty($cpfs_alunos)) {
+            $error = 'Informe o CPF de pelo menos um aluno.';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Informe um e-mail válido.';
         } elseif (!isset($parentescos[$parentesco])) {
@@ -82,15 +106,24 @@ if ($cadastro_aberto && $_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($responsavel->findByEmail($email)) {
             $error = 'Já existe um cadastro com este e-mail.';
         } else {
-            $aluno_id = $responsavel->findAlunoIdByCpf($cpf_aluno);
-            if (!$aluno_id) {
-                $error = 'Não foi possível validar os dados. Verifique o CPF do aluno e tente novamente.';
+            $vinculos = [];
+            $todos_ok = true;
+            foreach ($cpfs_alunos as $cpf_aluno) {
+                $aluno_id = $responsavel->findAlunoIdByCpf($cpf_aluno);
+                if (!$aluno_id) {
+                    $todos_ok = false;
+                    break;
+                }
+                $vinculos[] = ['aluno_id' => $aluno_id, 'parentesco' => $parentesco];
+            }
+            if (!$todos_ok || empty($vinculos)) {
+                $error = 'Não foi possível validar os dados. Verifique o(s) CPF(s) do(s) aluno(s) e tente novamente.';
             } else {
                 $responsavel->nome = $nome;
                 $responsavel->cpf = $cpf;
                 $responsavel->email = $email;
                 $responsavel->password = $senha;
-                if ($responsavel->create($aluno_id, $parentesco)) {
+                if ($responsavel->create($vinculos)) {
                     $success = 'Cadastro recebido. Aguarde a liberação da escola para acessar o portal.';
                 } else {
                     $error = 'Erro ao salvar o cadastro. Tente novamente.';
@@ -171,15 +204,29 @@ $captcha_q = $_SESSION['cadastro_resp_captcha_q'] ?? '';
                     <input type="email" class="form-control" id="email" name="email" required
                            value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
                 </div>
+
                 <div class="mb-3">
-                    <label class="form-label" for="cpf_aluno">CPF do aluno</label>
-                    <input type="text" class="form-control cpf-digitos" id="cpf_aluno" name="cpf_aluno" required
-                           inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
-                           placeholder="00000000000" autocomplete="off"
-                           title="Apenas 11 números, sem pontos ou traços"
-                           value="<?php echo htmlspecialchars(normalizeCpf($_POST['cpf_aluno'] ?? '')); ?>">
-                    <div class="form-text">Apenas números, sem pontos ou traços (11 dígitos).</div>
+                    <label class="form-label">CPF do(s) aluno(s)</label>
+                    <div class="form-text mb-2">Informe um CPF por filho. Apenas números, sem pontos ou traços.</div>
+                    <div id="cpf-alunos-lista">
+                        <?php foreach ($cpfs_alunos_post as $idx => $cpf_aluno_val): ?>
+                        <div class="input-group mb-2 cpf-aluno-row">
+                            <input type="text" class="form-control cpf-digitos" name="cpf_aluno[]" required
+                                   inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
+                                   placeholder="00000000000" autocomplete="off"
+                                   value="<?php echo htmlspecialchars(normalizeCpf($cpf_aluno_val)); ?>">
+                            <button type="button" class="btn btn-outline-danger btn-remover-cpf" title="Remover"
+                                    <?php echo count($cpfs_alunos_post) <= 1 ? 'disabled' : ''; ?>>
+                                <i class="bi bi-dash-lg"></i>
+                            </button>
+                        </div>
+                        <?php endforeach; ?>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-add-cpf">
+                        <i class="bi bi-plus-lg"></i> Adicionar outro aluno
+                    </button>
                 </div>
+
                 <div class="mb-3">
                     <label class="form-label" for="parentesco">Parentesco</label>
                     <select class="form-select" id="parentesco" name="parentesco" required>
@@ -216,10 +263,47 @@ $captcha_q = $_SESSION['cadastro_resp_captcha_q'] ?? '';
     </div>
 </div>
 <script>
-document.querySelectorAll('.cpf-digitos').forEach(function (el) {
-    el.addEventListener('input', function () {
-        this.value = this.value.replace(/\D+/g, '').slice(0, 11);
+function bindCpfDigits(root) {
+    (root || document).querySelectorAll('.cpf-digitos').forEach(function (el) {
+        if (el.dataset.bound) return;
+        el.dataset.bound = '1';
+        el.addEventListener('input', function () {
+            this.value = this.value.replace(/\D+/g, '').slice(0, 11);
+        });
     });
+}
+
+function atualizarBotoesRemover() {
+    var rows = document.querySelectorAll('.cpf-aluno-row');
+    rows.forEach(function (row) {
+        var btn = row.querySelector('.btn-remover-cpf');
+        if (btn) btn.disabled = rows.length <= 1;
+    });
+}
+
+bindCpfDigits();
+atualizarBotoesRemover();
+
+document.getElementById('btn-add-cpf')?.addEventListener('click', function () {
+    var lista = document.getElementById('cpf-alunos-lista');
+    var row = document.createElement('div');
+    row.className = 'input-group mb-2 cpf-aluno-row';
+    row.innerHTML =
+        '<input type="text" class="form-control cpf-digitos" name="cpf_aluno[]" required ' +
+        'inputmode="numeric" pattern="[0-9]{11}" maxlength="11" placeholder="00000000000" autocomplete="off">' +
+        '<button type="button" class="btn btn-outline-danger btn-remover-cpf" title="Remover">' +
+        '<i class="bi bi-dash-lg"></i></button>';
+    lista.appendChild(row);
+    bindCpfDigits(row);
+    atualizarBotoesRemover();
+});
+
+document.getElementById('cpf-alunos-lista')?.addEventListener('click', function (e) {
+    var btn = e.target.closest('.btn-remover-cpf');
+    if (!btn || btn.disabled) return;
+    var row = btn.closest('.cpf-aluno-row');
+    if (row) row.remove();
+    atualizarBotoesRemover();
 });
 </script>
 </body>

@@ -136,7 +136,6 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                 <thead>
                     <tr>
                         <th>Nome</th>
-                        <th>CPF</th>
                         <th>E-mail</th>
                         <th>Alunos</th>
                         <th>Status</th>
@@ -153,7 +152,6 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                     ?>
                     <tr>
                         <td><?php echo htmlspecialchars($r['nome']); ?></td>
-                        <td><?php echo htmlspecialchars(formatCpf($r['cpf'])); ?></td>
                         <td><?php echo htmlspecialchars($r['email']); ?></td>
                         <td>
                             <?php if (empty($alunos)): ?>
@@ -174,6 +172,10 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                         <td><span class="badge bg-<?php echo $badge; ?>"><?php echo htmlspecialchars($status); ?></span></td>
                         <td class="small text-muted"><?php echo date('d/m/Y H:i', strtotime($r['created_at'])); ?></td>
                         <td>
+                            <a href="admin_responsavel_edit.php?id=<?php echo (int) $r['id']; ?><?php echo $filtro_status !== '' ? '&status=' . urlencode($filtro_status) : ''; ?>"
+                               class="btn btn-primary btn-sm" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                             <?php if ($status === 'pendente'): ?>
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="aprovar">
@@ -194,7 +196,7 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                                 <input type="hidden" name="action" value="aprovar">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
                                 <button type="submit" class="btn btn-success btn-sm" title="Aprovar">
-                                    <i class="bi bi-check-lg"></i> Aprovar
+                                    <i class="bi bi-check-lg"></i>
                                 </button>
                             </form>
                             <?php else: ?>

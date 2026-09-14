@@ -87,12 +87,12 @@ $mostrar_form_servidor = ($acesso === 'servidor' || $error !== '');
         <div class="col-md-6 col-lg-5">
             <div class="card shadow">
                 <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <img src="image_white.png" alt="Logo" class="mb-1" style="max-width: 400px; width: 100%; height: auto;">
+                    <div class="text-center mb-2">
+                        <img src="image_white.png" alt="Logo" class="mb-0" style="max-width: 400px; width: 100%; height: auto;">
                     </div>
 
                     <?php if (!$mostrar_form_servidor): ?>
-                    <p class="text-center text-muted mb-4">Como deseja acessar?</p>
+                    <p class="text-center text-muted mb-3">Como deseja acessar?</p>
                     <div class="d-grid gap-3">
                         <a href="login.php?acesso=servidor" class="btn btn-primary btn-lg py-3 text-start">
                             <div class="d-flex align-items-center gap-3">
@@ -114,12 +114,12 @@ $mostrar_form_servidor = ($acesso === 'servidor' || $error !== '');
                         </a>
                     </div>
                     <?php else: ?>
-                    <div class="mb-3">
+                    <div class="mb-2">
                         <a href="login.php" class="text-decoration-none small">
                             <i class="bi bi-arrow-left"></i> Voltar
                         </a>
                     </div>
-                    <p class="text-center text-muted mb-3">Login de servidores</p>
+                    <p class="text-center text-muted mb-2">Login de servidores</p>
 
                     <?php if ($error): ?>
                     <div class="alert alert-danger" role="alert">

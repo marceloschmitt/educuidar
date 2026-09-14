@@ -77,7 +77,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <?php echo in_array($current_page, ['admin_responsaveis.php', 'alunos_sem_responsavel.php'], true) ? 'active' : ''; ?>" href="admin_responsaveis.php">
+        <a class="nav-link <?php echo in_array($current_page, ['admin_responsaveis.php', 'alunos_sem_responsavel.php', 'admin_responsavel_edit.php'], true) ? 'active' : ''; ?>" href="admin_responsaveis.php">
             <i class="bi bi-person-heart"></i> Responsáveis
         </a>
     </li>

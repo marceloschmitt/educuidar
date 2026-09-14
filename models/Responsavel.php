@@ -19,7 +19,11 @@ class Responsavel {
         $this->conn = $db;
     }
 
-    public function create($aluno_id, $parentesco = null) {
+    public function create(array $vinculos) {
+        if (empty($vinculos)) {
+            return false;
+        }
+
         try {
             $this->conn->beginTransaction();
 
@@ -40,9 +44,13 @@ class Responsavel {
             }
 
             $this->id = (int) $this->conn->lastInsertId();
-            if (!$this->vincularAluno($this->id, $aluno_id, $parentesco)) {
-                $this->conn->rollBack();
-                return false;
+            foreach ($vinculos as $vinculo) {
+                $aluno_id = (int) ($vinculo['aluno_id'] ?? 0);
+                $parentesco = $vinculo['parentesco'] ?? null;
+                if ($aluno_id <= 0 || !$this->vincularAluno($this->id, $aluno_id, $parentesco)) {
+                    $this->conn->rollBack();
+                    return false;
+                }
             }
 
             $this->conn->commit();
@@ -66,20 +74,34 @@ class Responsavel {
         return $stmt->execute();
     }
 
-    public function findByCpf($cpf) {
+    public function findByCpf($cpf, $exclude_id = null) {
         $cpf = normalizeCpf($cpf);
-        $query = "SELECT * FROM " . $this->table . " WHERE cpf = :cpf LIMIT 1";
+        $query = "SELECT * FROM " . $this->table . " WHERE cpf = :cpf";
+        if ($exclude_id !== null) {
+            $query .= " AND id != :exclude_id";
+        }
+        $query .= " LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':cpf', $cpf);
+        if ($exclude_id !== null) {
+            $stmt->bindParam(':exclude_id', $exclude_id);
+        }
         $stmt->execute();
         return $stmt->fetch();
     }
 
-    public function findByEmail($email) {
+    public function findByEmail($email, $exclude_id = null) {
         $email = strtolower(trim((string) $email));
-        $query = "SELECT * FROM " . $this->table . " WHERE email = :email LIMIT 1";
+        $query = "SELECT * FROM " . $this->table . " WHERE email = :email";
+        if ($exclude_id !== null) {
+            $query .= " AND id != :exclude_id";
+        }
+        $query .= " LIMIT 1";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':email', $email);
+        if ($exclude_id !== null) {
+            $stmt->bindParam(':exclude_id', $exclude_id);
+        }
         $stmt->execute();
         return $stmt->fetch();
     }
@@ -246,5 +268,131 @@ class Responsavel {
         }
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    public function updateNome($id, $nome) {
+        $nome = trim((string) $nome);
+        if ($nome === '') {
+            return false;
+        }
+        $query = "UPDATE " . $this->table . " SET nome = :nome WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':nome', $nome);
+        $stmt->bindParam(':id', $id);
+        if (!$stmt->execute()) {
+            return false;
+        }
+        if ($this->getLoggedId() === (int) $id) {
+            $_SESSION['responsavel_nome'] = $nome;
+        }
+        return true;
+    }
+
+    public function updateSenha($id, $senha_atual, $senha_nova) {
+        $row = $this->getById($id);
+        if (!$row || !password_verify($senha_atual, $row['password'])) {
+            return 'senha_atual';
+        }
+        if (strlen($senha_nova) < 6) {
+            return 'senha_curta';
+        }
+        $hash = password_hash($senha_nova, PASSWORD_DEFAULT);
+        $query = "UPDATE " . $this->table . " SET password = :password WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':password', $hash);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute() ? true : false;
+    }
+
+    /**
+     * Atualização administrativa: nome, cpf, email, status e senha opcional.
+     * @return true|string true ou código de erro
+     */
+    public function updateByAdmin($id, array $dados) {
+        $nome = trim((string) ($dados['nome'] ?? ''));
+        $cpf = normalizeCpf($dados['cpf'] ?? '');
+        $email = strtolower(trim((string) ($dados['email'] ?? '')));
+        $status = $dados['status'] ?? 'pendente';
+        $senha_nova = $dados['senha_nova'] ?? '';
+
+        if ($nome === '' || strlen($cpf) !== 11 || $email === '') {
+            return 'dados';
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return 'email';
+        }
+        if (!in_array($status, ['pendente', 'aprovado', 'rejeitado'], true)) {
+            return 'status';
+        }
+        if ($this->findByCpf($cpf, $id)) {
+            return 'cpf_duplicado';
+        }
+        if ($this->findByEmail($email, $id)) {
+            return 'email_duplicado';
+        }
+        if ($senha_nova !== '' && strlen($senha_nova) < 6) {
+            return 'senha_curta';
+        }
+
+        $ativo = ($status === 'aprovado') ? 1 : 0;
+
+        $query = "UPDATE " . $this->table . "
+                  SET nome = :nome, cpf = :cpf, email = :email,
+                      status = :status, ativo = :ativo
+                  WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':nome', $nome);
+        $stmt->bindParam(':cpf', $cpf);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':status', $status);
+        $stmt->bindParam(':ativo', $ativo);
+        $stmt->bindParam(':id', $id);
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        if ($senha_nova !== '') {
+            $hash = password_hash($senha_nova, PASSWORD_DEFAULT);
+            $stmt = $this->conn->prepare("UPDATE " . $this->table . " SET password = :password WHERE id = :id");
+            $stmt->bindParam(':password', $hash);
+            $stmt->bindParam(':id', $id);
+            if (!$stmt->execute()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function desvincularAluno($vinculo_id, $responsavel_id) {
+        $query = "DELETE FROM responsavel_alunos
+                  WHERE id = :id AND responsavel_id = :responsavel_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $vinculo_id);
+        $stmt->bindParam(':responsavel_id', $responsavel_id);
+        return $stmt->execute();
+    }
+
+    public function updateParentescoVinculo($vinculo_id, $responsavel_id, $parentesco) {
+        $parentesco = $parentesco !== null && $parentesco !== '' ? $parentesco : null;
+        $query = "UPDATE responsavel_alunos
+                  SET parentesco = :parentesco
+                  WHERE id = :id AND responsavel_id = :responsavel_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':parentesco', $parentesco);
+        $stmt->bindParam(':id', $vinculo_id);
+        $stmt->bindParam(':responsavel_id', $responsavel_id);
+        return $stmt->execute();
+    }
+
+    public function jaVinculado($responsavel_id, $aluno_id) {
+        $query = "SELECT id FROM responsavel_alunos
+                  WHERE responsavel_id = :responsavel_id AND aluno_id = :aluno_id
+                  LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':responsavel_id', $responsavel_id);
+        $stmt->bindParam(':aluno_id', $aluno_id);
+        $stmt->execute();
+        return (bool) $stmt->fetch();
     }
 }
