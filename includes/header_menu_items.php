@@ -77,34 +77,84 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link <?php echo in_array($current_page, ['admin_responsaveis.php', 'alunos_sem_responsavel.php', 'admin_responsavel_edit.php'], true) ? 'active' : ''; ?>" href="admin_responsaveis.php">
-            <i class="bi bi-person-heart"></i> Responsáveis
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'alertas_regras.php' ? 'active' : ''; ?>" href="alertas_regras.php">
             <i class="bi bi-bell"></i> Regras de Alerta
         </a>
     </li>
+    <?php
+    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'ldap_config.php'];
+    $menu_config_aberto = in_array($current_page, $paginas_config, true);
+    if (!isset($menu_config_uid)) {
+        $menu_config_uid = 0;
+    }
+    $menu_config_uid++;
+    $menu_config_id = 'menuConfig' . $menu_config_uid;
+    ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'configuracoes.php' ? 'active' : ''; ?>" href="configuracoes.php">
-            <i class="bi bi-gear"></i> Configurações
+        <a class="nav-link d-flex justify-content-between align-items-center <?php echo $menu_config_aberto ? 'active' : ''; ?>"
+           data-bs-toggle="collapse" href="#<?php echo $menu_config_id; ?>" role="button"
+           aria-expanded="<?php echo $menu_config_aberto ? 'true' : 'false'; ?>"
+           aria-controls="<?php echo $menu_config_id; ?>">
+            <span><i class="bi bi-gear"></i> Configurações</span>
+            <i class="bi bi-chevron-down small"></i>
         </a>
+        <div class="collapse <?php echo $menu_config_aberto ? 'show' : ''; ?>" id="<?php echo $menu_config_id; ?>">
+            <ul class="nav flex-column sidebar-submenu">
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'configuracoes.php' ? 'active' : ''; ?>" href="configuracoes.php">
+                        <i class="bi bi-sliders"></i> Geral
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'api_sigaa_config.php' ? 'active' : ''; ?>" href="api_sigaa_config.php">
+                        <i class="bi bi-cloud"></i> API SIGAA
+                    </a>
+                </li>
+            </ul>
+        </div>
     </li>
+    <?php
+    $paginas_usuarios = [
+        'usuarios.php',
+        'user_types.php',
+        'admin_responsaveis.php',
+        'alunos_sem_responsavel.php',
+        'admin_responsavel_edit.php',
+    ];
+    $menu_usuarios_aberto = in_array($current_page, $paginas_usuarios, true);
+    if (!isset($menu_usuarios_uid)) {
+        $menu_usuarios_uid = 0;
+    }
+    $menu_usuarios_uid++;
+    $menu_usuarios_id = 'menuUsuarios' . $menu_usuarios_uid;
+    ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'api_sigaa_config.php' ? 'active' : ''; ?>" href="api_sigaa_config.php">
-            <i class="bi bi-cloud"></i> API SIGAA
+        <a class="nav-link d-flex justify-content-between align-items-center <?php echo $menu_usuarios_aberto ? 'active' : ''; ?>"
+           data-bs-toggle="collapse" href="#<?php echo $menu_usuarios_id; ?>" role="button"
+           aria-expanded="<?php echo $menu_usuarios_aberto ? 'true' : 'false'; ?>"
+           aria-controls="<?php echo $menu_usuarios_id; ?>">
+            <span><i class="bi bi-people"></i> Usuários</span>
+            <i class="bi bi-chevron-down small"></i>
         </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'usuarios.php' ? 'active' : ''; ?>" href="usuarios.php">
-            <i class="bi bi-people"></i> Usuários
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'user_types.php' ? 'active' : ''; ?>" href="user_types.php">
-            <i class="bi bi-person-badge"></i> Tipos de Usuário
-        </a>
+        <div class="collapse <?php echo $menu_usuarios_aberto ? 'show' : ''; ?>" id="<?php echo $menu_usuarios_id; ?>">
+            <ul class="nav flex-column sidebar-submenu">
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'usuarios.php' ? 'active' : ''; ?>" href="usuarios.php">
+                        <i class="bi bi-building"></i> Servidores
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo in_array($current_page, ['admin_responsaveis.php', 'alunos_sem_responsavel.php', 'admin_responsavel_edit.php'], true) ? 'active' : ''; ?>" href="admin_responsaveis.php">
+                        <i class="bi bi-person-heart"></i> Responsáveis
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'user_types.php' ? 'active' : ''; ?>" href="user_types.php">
+                        <i class="bi bi-person-badge"></i> Tipos de servidores
+                    </a>
+                </li>
+            </ul>
+        </div>
     </li>
     <?php endif; ?>
 
