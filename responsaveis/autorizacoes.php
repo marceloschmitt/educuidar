@@ -145,7 +145,7 @@ require __DIR__ . '/header.php';
                 </div>
                 <div class="small"><?php echo htmlspecialchars($nome_aluno); ?></div>
                 <div class="small text-muted">
-                    <?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?>
+                    <?php echo date('d/m/y', strtotime($item['data_autorizacao'])); ?>
                     às <?php echo substr($item['hora'], 0, 5); ?>
                 </div>
                 <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></div>
