@@ -236,23 +236,35 @@ $tipos = $tipo_evento->getAll();
                 <?php if (empty($tipos)): ?>
                 <p class="text-muted text-center">Nenhum tipo de evento cadastrado ainda.</p>
                 <?php else: ?>
+                <p class="text-muted small mb-2">
+                    Visibilidade: <strong>usuários / responsáveis / observações</strong>
+                    — <strong>S</strong> = sim, <strong>N</strong> = não.
+                </p>
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table class="table table-hover table-sm align-middle">
                         <thead>
                             <tr>
-                                <th>Nome</th>
+                                <th style="width: 38%;">Nome</th>
                                 <th>Prontuário</th>
-                                <th>Visibilidade</th>
-                                <th>Responsáveis</th>
-                                <th>Obs. responsáveis</th>
-                                <th>Ações</th>
+                                <th class="text-nowrap" title="Usuários / Responsáveis / Observações">Visibilidade</th>
+                                <th style="width: 5.5rem;">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($tipos as $t): ?>
+                            <?php
+                            $vis_u = !empty($t['ativo']) ? 'S' : 'N';
+                            $vis_r = !empty($t['visivel_responsaveis']) ? 'S' : 'N';
+                            $vis_o = !empty($t['observacoes_visiveis_responsaveis']) ? 'S' : 'N';
+                            $vis_legenda = $vis_u . '/' . $vis_r . '/' . $vis_o;
+                            $vis_title = 'Ususuários: ' . ($vis_u === 'S' ? 'sim' : 'não')
+                                . ' · Responsáveis: ' . ($vis_r === 'S' ? 'sim' : 'não')
+                                . ' · Observações: ' . ($vis_o === 'S' ? 'sim' : 'não');
+                            ?>
                             <tr <?php echo (!$t['ativo']) ? 'class="table-secondary"' : ''; ?>>
                                 <td>
-                                    <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?>">
+                                    <span class="badge bg-<?php echo htmlspecialchars($t['cor']); ?> text-wrap text-start"
+                                          style="white-space: normal; max-width: 100%; display: inline-block; line-height: 1.3;">
                                         <?php echo htmlspecialchars($t['nome']); ?>
                                     </span>
                                 </td>
@@ -261,33 +273,18 @@ $tipos = $tipo_evento->getAll();
                                     $prontuario_tipo_nome = $t['prontuario_user_type_nome'] ?? '';
                                     ?>
                                     <?php if (!empty($prontuario_tipo_nome)): ?>
-                                        <span class="badge bg-info"><?php echo htmlspecialchars($prontuario_tipo_nome); ?></span>
+                                        <span class="badge bg-info text-wrap text-start"
+                                              style="white-space: normal;"><?php echo htmlspecialchars($prontuario_tipo_nome); ?></span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Não</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <?php if ($t['ativo']): ?>
-                                        <span class="badge bg-success">Visível</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Não visível</span>
-                                    <?php endif; ?>
+                                    <span class="font-monospace" title="<?php echo htmlspecialchars($vis_title); ?>">
+                                        <?php echo htmlspecialchars($vis_legenda); ?>
+                                    </span>
                                 </td>
-                                <td>
-                                    <?php if (!empty($t['visivel_responsaveis'])): ?>
-                                        <span class="badge bg-info">Sim</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Não</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php if (!empty($t['observacoes_visiveis_responsaveis'])): ?>
-                                        <span class="badge bg-info">Sim</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Não</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
+                                <td class="text-nowrap">
                                     <a href="tipos_eventos.php?edit=<?php echo $t['id']; ?>" class="btn btn-primary btn-sm">
                                         <i class="bi bi-pencil"></i>
                                     </a>
