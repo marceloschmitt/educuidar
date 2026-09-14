@@ -74,7 +74,7 @@ require __DIR__ . '/header.php';
 ?>
 
 <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <a href="index.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Eventos</a>
+    <a href="index.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Ocorrências</a>
     <span class="text-muted small">Autorizações</span>
 </div>
 

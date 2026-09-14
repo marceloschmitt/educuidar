@@ -37,7 +37,7 @@ if ($aluno_id) {
     $eventos = $evento->getParaResponsavel($aluno_id, $ano_corrente);
 }
 
-$page_title = 'Eventos — Responsável';
+$page_title = 'Ocorrências — Responsável';
 $show_header = true;
 $responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 require __DIR__ . '/header.php';
@@ -63,16 +63,11 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="h5 mb-0"><?php echo htmlspecialchars($nome); ?></h2>
-            <div class="small text-muted">Eventos de <?php echo (int) $ano_corrente; ?></div>
+            <div class="small text-muted">Ocorrências de <?php echo (int) $ano_corrente; ?></div>
         </div>
         <?php if (count($alunos) > 1): ?>
         <a href="index.php" class="btn btn-outline-secondary btn-sm btn-touch">Trocar</a>
         <?php endif; ?>
-    </div>
-    <div class="mb-3">
-        <a href="autorizacoes.php" class="btn btn-outline-success btn-sm btn-touch w-100">
-            <i class="bi bi-clipboard-plus"></i> Nova autorização de horário
-        </a>
     </div>
 
     <div class="card resp-card">
