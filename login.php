@@ -2,6 +2,7 @@
 // Process POST request BEFORE including header (to allow redirects)
 $error = '';
 $ldap_error = '';
+$acesso = $_GET['acesso'] ?? '';
 
 // Check for LDAP error from previous login attempt
 if (isset($_SESSION['ldap_error'])) {
@@ -11,6 +12,7 @@ if (isset($_SESSION['ldap_error'])) {
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     require_once 'config/init.php';
+    $acesso = 'servidor';
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
     
@@ -76,18 +78,49 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 $page_title = 'Login';
 require_once 'includes/header.php';
+
+$mostrar_form_servidor = ($acesso === 'servidor' || $error !== '');
 ?>
 
 <div class="container">
     <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
-        <div class="col-md-4">
+        <div class="col-md-6 col-lg-5">
             <div class="card shadow">
-                <div class="card-body">
+                <div class="card-body p-4">
                     <div class="text-center mb-4">
                         <img src="image_white.png" alt="Logo" class="mb-1" style="max-width: 400px; width: 100%; height: auto;">
-                        <p class="text-muted">Faça login para continuar</p>
                     </div>
-                    
+
+                    <?php if (!$mostrar_form_servidor): ?>
+                    <p class="text-center text-muted mb-4">Como deseja acessar?</p>
+                    <div class="d-grid gap-3">
+                        <a href="login.php?acesso=servidor" class="btn btn-primary btn-lg py-3 text-start">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-building fs-3"></i>
+                                <div>
+                                    <div class="fw-semibold">Servidores</div>
+                                    <small class="opacity-75">Acesso da equipe da escola</small>
+                                </div>
+                            </div>
+                        </a>
+                        <a href="responsaveis/login.php" class="btn btn-success btn-lg py-3 text-start">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-people fs-3"></i>
+                                <div>
+                                    <div class="fw-semibold">Responsáveis</div>
+                                    <small class="opacity-75">Pais, mães e tutores</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    <?php else: ?>
+                    <div class="mb-3">
+                        <a href="login.php" class="text-decoration-none small">
+                            <i class="bi bi-arrow-left"></i> Voltar
+                        </a>
+                    </div>
+                    <p class="text-center text-muted mb-3">Login de servidores</p>
+
                     <?php if ($error): ?>
                     <div class="alert alert-danger" role="alert">
                         <i class="bi bi-exclamation-triangle"></i> <strong><?php echo htmlspecialchars($error); ?></strong>
@@ -97,11 +130,12 @@ require_once 'includes/header.php';
                         <?php endif; ?>
                     </div>
                     <?php endif; ?>
-                    
-                    <form method="POST" action="">
+
+                    <form method="POST" action="login.php?acesso=servidor">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuário</label>
-                            <input type="text" class="form-control" id="username" name="username" required autofocus>
+                            <input type="text" class="form-control" id="username" name="username" required autofocus
+                                   value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">Senha</label>
@@ -112,6 +146,10 @@ require_once 'includes/header.php';
                             <i class="bi bi-box-arrow-in-right"></i> Entrar
                         </button>
                     </form>
+                    <div class="text-center mt-3">
+                        <a href="responsaveis/login.php" class="small">Sou responsável (pai/mãe/tutor)</a>
+                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -119,4 +157,3 @@ require_once 'includes/header.php';
 </div>
 
 <?php require_once 'includes/footer.php'; ?>
-

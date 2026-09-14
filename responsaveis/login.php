@@ -63,6 +63,8 @@ require __DIR__ . '/header.php';
         </form>
         <div class="text-center mt-3">
             <a href="../cadastro_responsavel.php">Quero me cadastrar</a>
+            <span class="text-muted mx-1">·</span>
+            <a href="../login.php">Acesso de servidores</a>
         </div>
     </div>
 </div>
