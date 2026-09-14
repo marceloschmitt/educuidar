@@ -47,6 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: admin_responsaveis.php');
         exit;
     }
+
+    if ($action === 'excluir' && !empty($_POST['id'])) {
+        if ($responsavel->delete((int) $_POST['id'])) {
+            $_SESSION['success'] = 'Responsável removido.';
+        } else {
+            $_SESSION['error'] = 'Erro ao remover responsável.';
+        }
+        header('Location: admin_responsaveis.php');
+        exit;
+    }
 }
 
 $page_title = 'Responsáveis';
@@ -208,6 +218,13 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                                 </button>
                             </form>
                             <?php endif; ?>
+                            <form method="POST" class="d-inline form-confirm" data-confirm="Remover permanentemente este responsável e seus vínculos?">
+                                <input type="hidden" name="action" value="excluir">
+                                <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
                         </td>
                     </tr>
                     <?php endforeach; ?>

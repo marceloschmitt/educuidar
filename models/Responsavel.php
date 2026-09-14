@@ -209,6 +209,13 @@ class Responsavel {
         return $stmt->execute();
     }
 
+    public function delete($id) {
+        $query = "DELETE FROM " . $this->table . " WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
     /**
      * Busca aluno pelo CPF (aceita CPF formatado ou só dígitos no banco).
      */
