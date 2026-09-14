@@ -149,16 +149,31 @@ class AutorizacaoResponsavel {
         return $stmt->rowCount() > 0;
     }
 
-    public function cancelar($id, $responsavel_id) {
-        $query = "UPDATE " . $this->table . "
-                  SET status = 'cancelada'
+    /**
+     * Remove autorização: só se ainda não ocorreu e a data prevista ainda não chegou.
+     */
+    public function remover($id, $responsavel_id) {
+        $query = "DELETE FROM " . $this->table . "
                   WHERE id = :id
                     AND responsavel_id = :responsavel_id
-                    AND status = 'previsto'";
+                    AND status = 'previsto'
+                    AND data_autorizacao > CURDATE()";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
         $stmt->execute();
         return $stmt->rowCount() > 0;
+    }
+
+    /** Indica se o responsável ainda pode remover esta autorização. */
+    public static function podeRemover(array $item) {
+        if (($item['status'] ?? '') !== 'previsto') {
+            return false;
+        }
+        $data = $item['data_autorizacao'] ?? '';
+        if ($data === '') {
+            return false;
+        }
+        return $data > date('Y-m-d');
     }
 }

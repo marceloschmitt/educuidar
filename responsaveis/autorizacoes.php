@@ -16,17 +16,18 @@ $alunos = $resp->getAlunosVinculados($responsavel_id);
 $tipos = AutorizacaoResponsavel::tiposLabels();
 $status_labels = AutorizacaoResponsavel::statusLabels();
 
-$success = '';
-$error = '';
+$success = $_SESSION['flash_success'] ?? '';
+$error = $_SESSION['flash_error'] ?? '';
+unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? 'criar';
 
-    if ($action === 'cancelar' && !empty($_POST['id'])) {
-        if ($autorizacao->cancelar((int) $_POST['id'], $responsavel_id)) {
-            $success = 'Autorização cancelada.';
+    if ($action === 'remover' && !empty($_POST['id'])) {
+        if ($autorizacao->remover((int) $_POST['id'], $responsavel_id)) {
+            $_SESSION['flash_success'] = 'Autorização removida.';
         } else {
-            $error = 'Não foi possível cancelar (já marcada como ocorrida ou inexistente).';
+            $_SESSION['flash_error'] = 'Não foi possível remover. Só é permitido antes da data prevista e se ainda não ocorreu.';
         }
     } else {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
@@ -36,19 +37,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $justificativa = trim($_POST['justificativa'] ?? '');
 
         if (!$resp->jaVinculado($responsavel_id, $aluno_id)) {
-            $error = 'Aluno inválido.';
+            $_SESSION['flash_error'] = 'Aluno inválido.';
         } elseif (!isset($tipos[$tipo])) {
-            $error = 'Selecione o tipo de autorização.';
+            $_SESSION['flash_error'] = 'Selecione o tipo de autorização.';
         } elseif ($data === '' || $hora === '') {
-            $error = 'Informe data e horário.';
+            $_SESSION['flash_error'] = 'Informe data e horário.';
         } elseif ($justificativa === '') {
-            $error = 'Informe a justificativa.';
+            $_SESSION['flash_error'] = 'Informe a justificativa.';
         } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
-            $success = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
+            $_SESSION['flash_success'] = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
         } else {
-            $error = 'Erro ao salvar a autorização.';
+            $_SESSION['flash_error'] = 'Erro ao salvar a autorização.';
         }
     }
+
+    header('Location: autorizacoes.php');
+    exit;
 }
 
 $lista = $autorizacao->listByResponsavel($responsavel_id);
@@ -145,12 +149,12 @@ require __DIR__ . '/header.php';
                     às <?php echo substr($item['hora'], 0, 5); ?>
                 </div>
                 <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></div>
-                <?php if ($st === 'previsto'): ?>
+                <?php if (AutorizacaoResponsavel::podeRemover($item)): ?>
                 <form method="POST" class="mt-2">
-                    <input type="hidden" name="action" value="cancelar">
+                    <input type="hidden" name="action" value="remover">
                     <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
-                    <button type="submit" class="btn btn-outline-secondary btn-sm"
-                            onclick="return confirm('Cancelar esta autorização?');">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Remover esta autorização?');">Remover</button>
                 </form>
                 <?php endif; ?>
             </div>
