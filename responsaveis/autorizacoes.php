@@ -32,16 +32,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
         $tipo = $_POST['tipo'] ?? '';
-        $data = $_POST['data_autorizacao'] ?? '';
+        $data_raw = trim($_POST['data_autorizacao'] ?? '');
         $hora = $_POST['hora'] ?? '';
         $justificativa = trim($_POST['justificativa'] ?? '');
+
+        $data = null;
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{2})$/', $data_raw, $m)) {
+            $y = 2000 + (int) $m[3];
+            if (checkdate((int) $m[2], (int) $m[1], $y)) {
+                $data = sprintf('%04d-%02d-%02d', $y, (int) $m[2], (int) $m[1]);
+            }
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_raw)) {
+            $data = $data_raw;
+        }
 
         if (!$resp->jaVinculado($responsavel_id, $aluno_id)) {
             $_SESSION['flash_error'] = 'Aluno inválido.';
         } elseif (!isset($tipos[$tipo])) {
             $_SESSION['flash_error'] = 'Selecione o tipo de autorização.';
-        } elseif ($data === '' || $hora === '') {
-            $_SESSION['flash_error'] = 'Informe data e horário.';
+        } elseif ($data === null || $hora === '') {
+            $_SESSION['flash_error'] = 'Informe a data no formato dd/mm/aa e o horário.';
         } elseif ($justificativa === '') {
             $_SESSION['flash_error'] = 'Informe a justificativa.';
         } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
@@ -104,9 +114,11 @@ require __DIR__ . '/header.php';
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="form-label" for="data_autorizacao">Data</label>
-                    <input type="date" class="form-control form-control-lg" id="data_autorizacao" name="data_autorizacao"
-                           required value="<?php echo date('Y-m-d'); ?>">
+                    <label class="form-label" for="data_autorizacao">Data (dd/mm/aa)</label>
+                    <input type="text" class="form-control form-control-lg" id="data_autorizacao" name="data_autorizacao"
+                           required inputmode="numeric" autocomplete="off" placeholder="dd/mm/aa"
+                           maxlength="8" pattern="\d{2}/\d{2}/\d{2}"
+                           value="<?php echo date('d/m/y'); ?>">
                 </div>
                 <div class="col-6">
                     <label class="form-label" for="hora">Horário</label>
@@ -164,5 +176,22 @@ require __DIR__ . '/header.php';
 </div>
 
 <?php endif; ?>
+
+<script>
+(function () {
+    var el = document.getElementById('data_autorizacao');
+    if (!el) return;
+    el.addEventListener('input', function () {
+        var d = this.value.replace(/\D/g, '').slice(0, 6);
+        if (d.length > 4) {
+            this.value = d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4);
+        } else if (d.length > 2) {
+            this.value = d.slice(0, 2) + '/' + d.slice(2);
+        } else {
+            this.value = d;
+        }
+    });
+})();
+</script>
 
 <?php require __DIR__ . '/footer.php'; ?>
