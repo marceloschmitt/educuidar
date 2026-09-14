@@ -36,6 +36,9 @@ ALTER TABLE tipos_eventos
 ALTER TABLE tipos_eventos
     ADD INDEX idx_visivel_responsaveis (visivel_responsaveis);
 
+ALTER TABLE tipos_eventos
+    ADD COLUMN observacoes_visiveis_responsaveis TINYINT(1) DEFAULT 0 AFTER visivel_responsaveis;
+
 INSERT INTO configuracoes (chave, valor, descricao)
 VALUES ('cadastro_responsaveis_habilitado', '0', 'Permite cadastro público de responsáveis (1=aberto, 0=fechado)')
 ON DUPLICATE KEY UPDATE descricao = VALUES(descricao);

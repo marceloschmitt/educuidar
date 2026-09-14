@@ -19,6 +19,8 @@ class TipoEvento {
     public $ativo;
     /** @var int|bool 1 = visível no portal de responsáveis */
     public $visivel_responsaveis;
+    /** @var int|bool 1 = observações visíveis aos responsáveis (quando o tipo é visível) */
+    public $observacoes_visiveis_responsaveis;
     public $created_at;
 
     public function __construct($db) {
@@ -27,8 +29,8 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo, visivel_responsaveis) 
-                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo, :visivel_responsaveis)";
+                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo, visivel_responsaveis, observacoes_visiveis_responsaveis) 
+                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo, :visivel_responsaveis, :observacoes_visiveis_responsaveis)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -42,6 +44,8 @@ class TipoEvento {
         $stmt->bindParam(':ativo', $ativo);
         $visivel_responsaveis = isset($this->visivel_responsaveis) ? ($this->visivel_responsaveis ? 1 : 0) : 0;
         $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
+        $observacoes_visiveis_responsaveis = isset($this->observacoes_visiveis_responsaveis) ? ($this->observacoes_visiveis_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':observacoes_visiveis_responsaveis', $observacoes_visiveis_responsaveis);
 
         if ($stmt->execute()) {
             return true;
@@ -90,7 +94,8 @@ class TipoEvento {
                       gera_prontuario = :gera_prontuario,
                       prontuario_user_type_id = :prontuario_user_type_id,
                       ativo = :ativo,
-                      visivel_responsaveis = :visivel_responsaveis
+                      visivel_responsaveis = :visivel_responsaveis,
+                      observacoes_visiveis_responsaveis = :observacoes_visiveis_responsaveis
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -106,6 +111,8 @@ class TipoEvento {
         $stmt->bindParam(':ativo', $ativo);
         $visivel_responsaveis = isset($this->visivel_responsaveis) ? ($this->visivel_responsaveis ? 1 : 0) : 0;
         $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
+        $observacoes_visiveis_responsaveis = isset($this->observacoes_visiveis_responsaveis) ? ($this->observacoes_visiveis_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':observacoes_visiveis_responsaveis', $observacoes_visiveis_responsaveis);
 
         if ($stmt->execute()) {
             return true;

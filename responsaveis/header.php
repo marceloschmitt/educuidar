@@ -82,4 +82,4 @@
     <a href="logout.php" class="btn btn-sm btn-outline-light btn-touch">Sair</a>
 </header>
 <?php endif; ?>
-<main class="container py-3" style="max-width: 640px;">
+<main class="container<?php echo empty($layout_full) ? ' py-3' : ''; ?>"<?php echo empty($layout_full) ? ' style="max-width: 640px;"' : ''; ?>>

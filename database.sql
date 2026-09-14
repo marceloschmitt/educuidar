@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS tipos_eventos (
     prontuario_user_type_id INT NULL,
     ativo TINYINT(1) DEFAULT 1,
     visivel_responsaveis TINYINT(1) DEFAULT 0,
+    observacoes_visiveis_responsaveis TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_ativo (ativo),

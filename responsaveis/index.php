@@ -94,6 +94,9 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
                     <?php if ($hora !== ''): ?>
                     <div class="text-muted small"><i class="bi bi-clock"></i> <?php echo htmlspecialchars($hora); ?></div>
                     <?php endif; ?>
+                    <?php if (!empty($ev['observacoes'])): ?>
+                    <div class="mt-1"><?php echo nl2br(htmlspecialchars($ev['observacoes'])); ?></div>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endforeach; ?>

@@ -384,11 +384,13 @@ class Evento {
     }
 
     /**
-     * Eventos visíveis ao responsável: só data, hora e tipo (visivel_responsaveis=1).
+     * Eventos visíveis ao responsável: data, hora, tipo;
+     * observações só quando observacoes_visiveis_responsaveis=1.
      */
     public function getParaResponsavel($aluno_id, $ano_civil = null) {
         $query = "SELECT e.data_evento, e.hora_evento,
-                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor
+                  te.nome as tipo_evento_nome, te.cor as tipo_evento_cor,
+                  CASE WHEN te.observacoes_visiveis_responsaveis = 1 THEN e.observacoes ELSE NULL END as observacoes
                   FROM " . $this->table . " e
                   INNER JOIN tipos_eventos te ON e.tipo_evento_id = te.id
                   LEFT JOIN turmas t ON e.turma_id = t.id

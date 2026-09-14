@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->gera_prontuario = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             $tipo_evento->visivel_responsaveis = isset($_POST['visivel_responsaveis']) ? 1 : 0;
+            $tipo_evento->observacoes_visiveis_responsaveis = isset($_POST['observacoes_visiveis_responsaveis']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
                 $_SESSION['error'] = 'Por favor, preencha o nome do tipo de evento!';
@@ -48,6 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->gera_prontuario = !empty($tipo_evento->prontuario_user_type_id) ? 1 : 0;
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             $tipo_evento->visivel_responsaveis = isset($_POST['visivel_responsaveis']) ? 1 : 0;
+            $tipo_evento->observacoes_visiveis_responsaveis = isset($_POST['observacoes_visiveis_responsaveis']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
                 $_SESSION['error'] = 'Por favor, preencha o nome do tipo de evento!';
@@ -175,7 +177,20 @@ $tipos = $tipo_evento->getAll();
                                 Visível para responsáveis
                             </label>
                             <small class="text-muted d-block">
-                                Se marcado, o responsável vê data, hora e este tipo no portal (sem observações).
+                                Se marcado, o responsável vê data, hora e este tipo no portal.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="observacoes_visiveis_responsaveis" name="observacoes_visiveis_responsaveis" value="1"
+                                   <?php echo (!empty($tipo_edit['observacoes_visiveis_responsaveis'])) ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="observacoes_visiveis_responsaveis">
+                                Observações visíveis para responsáveis
+                            </label>
+                            <small class="text-muted d-block">
+                                Ex.: disciplina da falta. Só tem efeito se o tipo também estiver visível para responsáveis.
                             </small>
                         </div>
                     </div>
@@ -229,6 +244,7 @@ $tipos = $tipo_evento->getAll();
                                 <th>Prontuário</th>
                                 <th>Visibilidade</th>
                                 <th>Responsáveis</th>
+                                <th>Obs. responsáveis</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
@@ -259,6 +275,13 @@ $tipos = $tipo_evento->getAll();
                                 </td>
                                 <td>
                                     <?php if (!empty($t['visivel_responsaveis'])): ?>
+                                        <span class="badge bg-info">Sim</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-secondary">Não</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if (!empty($t['observacoes_visiveis_responsaveis'])): ?>
                                         <span class="badge bg-info">Sim</span>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">Não</span>

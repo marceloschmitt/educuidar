@@ -35,12 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $page_title = 'Login — Responsável';
 $show_header = false;
+$layout_full = true;
 require __DIR__ . '/header.php';
 ?>
 
 <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
     <div class="col-md-6 col-lg-5">
-        <div class="card shadow resp-card">
+        <div class="card shadow">
             <div class="card-body p-4">
                 <div class="text-center mb-4">
                     <img src="../image_white.png" alt="Logo" class="mb-1" style="max-width: 400px; width: 100%; height: auto;">
