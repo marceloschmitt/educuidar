@@ -11,6 +11,7 @@ if ($resp->isLoggedIn()) {
 }
 
 $error = '';
+$info = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cpf = $_POST['cpf'] ?? '';
     $senha = $_POST['senha'] ?? '';
@@ -23,7 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         if ($result === 'pending') {
-            $error = 'Seu cadastro ainda não foi liberado pela escola.';
+            $info = 'Seu cadastro ainda não foi autorizado pela escola. Aguarde a liberação para acessar o portal.';
+        } elseif ($result === 'rejected') {
+            $error = 'Seu cadastro não foi autorizado. Entre em contato com a escola.';
         } else {
             $error = 'CPF ou senha incorretos.';
         }
@@ -36,14 +39,22 @@ require __DIR__ . '/header.php';
 ?>
 
 <div class="text-center mb-4 mt-4">
+    <img src="../image_white.png" alt="Logo" class="mb-2" style="max-width: 400px; width: 100%; height: auto;">
     <h1 class="h3">Portal do responsável</h1>
     <p class="text-muted">Acompanhe os eventos do seu aluno</p>
 </div>
 
 <div class="card resp-card">
     <div class="card-body p-4">
+        <?php if ($info): ?>
+        <div class="alert alert-warning" role="alert">
+            <i class="bi bi-hourglass-split"></i> <?php echo htmlspecialchars($info); ?>
+        </div>
+        <?php endif; ?>
         <?php if ($error): ?>
-        <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
+        <div class="alert alert-danger" role="alert">
+            <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($error); ?>
+        </div>
         <?php endif; ?>
         <form method="POST" action="">
             <div class="mb-3">
@@ -61,10 +72,11 @@ require __DIR__ . '/header.php';
             </div>
             <button type="submit" class="btn btn-success w-100 btn-lg btn-touch">Entrar</button>
         </form>
-        <div class="text-center mt-3">
-            <a href="../cadastro_responsavel.php">Quero me cadastrar</a>
-            <span class="text-muted mx-1">·</span>
-            <a href="../login.php">Acesso de servidores</a>
+        <div class="d-grid gap-2 mt-4">
+            <a href="../cadastro_responsavel.php" class="btn btn-outline-primary btn-lg btn-touch py-3">
+                <i class="bi bi-person-plus"></i> Quero me cadastrar
+            </a>
+            <a href="../login.php" class="btn btn-link btn-sm">Acesso de servidores</a>
         </div>
     </div>
 </div>

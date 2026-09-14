@@ -100,11 +100,19 @@ class Responsavel {
         if (!$row) {
             return false;
         }
-        if (($row['status'] ?? '') !== 'aprovado' || empty($row['ativo'])) {
-            return 'pending';
-        }
         if (!password_verify($password, $row['password'])) {
             return false;
+        }
+
+        $status = $row['status'] ?? '';
+        if ($status === 'pendente') {
+            return 'pending';
+        }
+        if ($status === 'rejeitado' || empty($row['ativo'])) {
+            return 'rejected';
+        }
+        if ($status !== 'aprovado') {
+            return 'pending';
         }
 
         $_SESSION['responsavel_id'] = (int) $row['id'];
