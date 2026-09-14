@@ -146,9 +146,6 @@ $mostrar_form_servidor = ($acesso === 'servidor' || $error !== '');
                             <i class="bi bi-box-arrow-in-right"></i> Entrar
                         </button>
                     </form>
-                    <div class="text-center mt-3">
-                        <a href="responsaveis/login.php" class="small">Sou responsável (pai/mãe/tutor)</a>
-                    </div>
                     <?php endif; ?>
                 </div>
             </div>
