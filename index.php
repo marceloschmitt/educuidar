@@ -173,20 +173,20 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     ?>
     <div class="col-md-3 mb-4">
         <a href="<?php echo htmlspecialchars($card_url); ?>" class="text-decoration-none" style="display: block;">
-            <div class="card text-white <?php echo $bg_class; ?> <?php echo $is_selected ? 'border border-light border-3' : ''; ?>" <?php if ($style): ?>style="<?php echo $style; ?>"<?php endif; ?>>
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h6 class="card-title"><?php echo htmlspecialchars($tipo['nome']); ?></h6>
-                            <h3><?php echo $total; ?></h3>
+            <div class="card text-white dashboard-tipo-card <?php echo $bg_class; ?> <?php echo $is_selected ? 'border border-light border-3' : ''; ?>" <?php if ($style): ?>style="<?php echo $style; ?>"<?php endif; ?>>
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="min-w-0">
+                            <div class="dashboard-tipo-nome"><?php echo htmlspecialchars($tipo['nome']); ?></div>
+                            <div class="dashboard-tipo-total"><?php echo $total; ?></div>
                         </div>
-                        <div class="align-self-center">
-                            <i class="bi bi-calendar-event" style="font-size: 2rem;"></i>
+                        <div class="align-self-center flex-shrink-0">
+                            <i class="bi bi-calendar-event dashboard-tipo-icon"></i>
                         </div>
                     </div>
                     <?php if ($is_selected): ?>
-                    <div class="mt-2">
-                        <small><i class="bi bi-funnel-fill"></i> Filtro ativo</small>
+                    <div class="mt-1">
+                        <small class="dashboard-tipo-filtro"><i class="bi bi-funnel-fill"></i> Filtro ativo</small>
                     </div>
                     <?php endif; ?>
                 </div>

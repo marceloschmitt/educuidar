@@ -441,6 +441,29 @@ body {
     padding: 20px;
 }
 
+.dashboard-tipo-card .dashboard-tipo-nome {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.25;
+    margin-bottom: 0.15rem;
+    word-break: break-word;
+}
+
+.dashboard-tipo-card .dashboard-tipo-total {
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.dashboard-tipo-card .dashboard-tipo-icon {
+    font-size: 1.35rem;
+    opacity: 0.85;
+}
+
+.dashboard-tipo-card .dashboard-tipo-filtro {
+    font-size: 0.7rem;
+}
+
 @media (max-width: 767.98px) {
     .main-content {
         padding-top: 60px;
