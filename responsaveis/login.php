@@ -48,9 +48,12 @@ require __DIR__ . '/header.php';
         <form method="POST" action="">
             <div class="mb-3">
                 <label class="form-label" for="cpf">CPF</label>
-                <input type="text" class="form-control form-control-lg" id="cpf" name="cpf"
-                       required inputmode="numeric" placeholder="000.000.000-00"
-                       value="<?php echo htmlspecialchars($_POST['cpf'] ?? ''); ?>">
+                <input type="text" class="form-control form-control-lg cpf-digitos" id="cpf" name="cpf"
+                       required inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
+                       placeholder="00000000000" autocomplete="username"
+                       title="Apenas 11 números, sem pontos ou traços"
+                       value="<?php echo htmlspecialchars(normalizeCpf($_POST['cpf'] ?? '')); ?>">
+                <div class="form-text">Apenas números, sem pontos ou traços.</div>
             </div>
             <div class="mb-4">
                 <label class="form-label" for="senha">Senha</label>
@@ -64,4 +67,13 @@ require __DIR__ . '/header.php';
     </div>
 </div>
 
+<script>
+document.querySelectorAll('.cpf-digitos').forEach(function (el) {
+    el.addEventListener('input', function () {
+        this.value = this.value.replace(/\D+/g, '').slice(0, 11);
+    });
+});
+</script>
+
 <?php require __DIR__ . '/footer.php'; ?>
+

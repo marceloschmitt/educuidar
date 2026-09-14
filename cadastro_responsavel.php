@@ -50,9 +50,11 @@ if ($cadastro_aberto && $_SERVER['REQUEST_METHOD'] === 'POST') {
         responsavelCaptchaNovo();
     } else {
         $nome = trim($_POST['nome'] ?? '');
-        $cpf = normalizeCpf($_POST['cpf'] ?? '');
+        $cpf_raw = trim($_POST['cpf'] ?? '');
+        $cpf_aluno_raw = trim($_POST['cpf_aluno'] ?? '');
+        $cpf = normalizeCpf($cpf_raw);
         $email = strtolower(trim($_POST['email'] ?? ''));
-        $cpf_aluno = normalizeCpf($_POST['cpf_aluno'] ?? '');
+        $cpf_aluno = normalizeCpf($cpf_aluno_raw);
         $parentesco = $_POST['parentesco'] ?? '';
         $senha = $_POST['senha'] ?? '';
         $senha2 = $_POST['senha_confirmacao'] ?? '';
@@ -63,8 +65,10 @@ if ($cadastro_aberto && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($esperado === null || (string) $captcha !== (string) $esperado) {
             $error = 'Resposta do desafio anti-robô incorreta.';
+        } elseif ($cpf_raw !== $cpf || $cpf_aluno_raw !== $cpf_aluno) {
+            $error = 'Informe os CPFs apenas com números, sem pontos ou traços.';
         } elseif ($nome === '' || strlen($cpf) !== 11 || $email === '' || strlen($cpf_aluno) !== 11) {
-            $error = 'Preencha todos os campos obrigatórios corretamente.';
+            $error = 'Preencha todos os campos obrigatórios corretamente. CPF deve ter 11 dígitos.';
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Informe um e-mail válido.';
         } elseif (!isset($parentescos[$parentesco])) {
@@ -155,9 +159,12 @@ $captcha_q = $_SESSION['cadastro_resp_captcha_q'] ?? '';
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="cpf">Seu CPF</label>
-                    <input type="text" class="form-control" id="cpf" name="cpf" required inputmode="numeric"
-                           placeholder="000.000.000-00"
-                           value="<?php echo htmlspecialchars($_POST['cpf'] ?? ''); ?>">
+                    <input type="text" class="form-control cpf-digitos" id="cpf" name="cpf" required
+                           inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
+                           placeholder="00000000000" autocomplete="off"
+                           title="Apenas 11 números, sem pontos ou traços"
+                           value="<?php echo htmlspecialchars(normalizeCpf($_POST['cpf'] ?? '')); ?>">
+                    <div class="form-text">Apenas números, sem pontos ou traços (11 dígitos).</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="email">Seu e-mail</label>
@@ -166,9 +173,12 @@ $captcha_q = $_SESSION['cadastro_resp_captcha_q'] ?? '';
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="cpf_aluno">CPF do aluno</label>
-                    <input type="text" class="form-control" id="cpf_aluno" name="cpf_aluno" required inputmode="numeric"
-                           placeholder="000.000.000-00"
-                           value="<?php echo htmlspecialchars($_POST['cpf_aluno'] ?? ''); ?>">
+                    <input type="text" class="form-control cpf-digitos" id="cpf_aluno" name="cpf_aluno" required
+                           inputmode="numeric" pattern="[0-9]{11}" maxlength="11"
+                           placeholder="00000000000" autocomplete="off"
+                           title="Apenas 11 números, sem pontos ou traços"
+                           value="<?php echo htmlspecialchars(normalizeCpf($_POST['cpf_aluno'] ?? '')); ?>">
+                    <div class="form-text">Apenas números, sem pontos ou traços (11 dígitos).</div>
                 </div>
                 <div class="mb-3">
                     <label class="form-label" for="parentesco">Parentesco</label>
@@ -205,5 +215,12 @@ $captcha_q = $_SESSION['cadastro_resp_captcha_q'] ?? '';
         </div>
     </div>
 </div>
+<script>
+document.querySelectorAll('.cpf-digitos').forEach(function (el) {
+    el.addEventListener('input', function () {
+        this.value = this.value.replace(/\D+/g, '').slice(0, 11);
+    });
+});
+</script>
 </body>
 </html>

@@ -230,7 +230,7 @@ class Responsavel {
             $params[':turma_id'] = $turma_id;
         }
 
-        $query .= " ORDER BY c.nome ASC, t.ano_curso ASC, COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
+        $query .= " ORDER BY COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC";
 
         $stmt = $this->conn->prepare($query);
         foreach ($params as $key => $value) {
