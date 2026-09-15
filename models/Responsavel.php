@@ -130,6 +130,9 @@ class Responsavel {
         if ($status === 'pendente') {
             return 'pending';
         }
+        if ($status === 'suspendido') {
+            return 'suspended';
+        }
         if ($status === 'rejeitado' || empty($row['ativo'])) {
             return 'rejected';
         }
@@ -157,18 +160,22 @@ class Responsavel {
 
     public function listByStatus($status = null) {
         $query = "SELECT r.*,
-                  (SELECT COUNT(*) FROM responsavel_alunos ra WHERE ra.responsavel_id = r.id) as total_alunos
+                  (SELECT COUNT(*) FROM responsavel_alunos ra WHERE ra.responsavel_id = r.id) as total_alunos,
+                  (SELECT COUNT(*) FROM autorizacoes_responsavel ar WHERE ar.responsavel_id = r.id) as total_autorizacoes
                   FROM " . $this->table . " r";
         if ($status !== null && $status !== '') {
             $query .= " WHERE r.status = :status";
         }
         $query .= " ORDER BY
-                    CASE r.status
-                        WHEN 'pendente' THEN 0
-                        WHEN 'aprovado' THEN 1
-                        ELSE 2
-                    END,
-                    r.created_at DESC";
+                    (
+                        SELECT COALESCE(NULLIF(a.nome_social, ''), a.nome)
+                        FROM responsavel_alunos ra
+                        INNER JOIN alunos a ON a.id = ra.aluno_id
+                        WHERE ra.responsavel_id = r.id
+                        ORDER BY COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC
+                        LIMIT 1
+                    ) ASC,
+                    r.nome ASC";
 
         $stmt = $this->conn->prepare($query);
         if ($status !== null && $status !== '') {
@@ -207,6 +214,24 @@ class Responsavel {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         return $stmt->execute();
+    }
+
+    /** Bloqueia o acesso sem apagar vínculos nem autorizações. */
+    public function suspender($id) {
+        $query = "UPDATE " . $this->table . "
+                  SET status = 'suspendido', ativo = 0
+                  WHERE id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        return $stmt->execute();
+    }
+
+    public function countAutorizacoes($id) {
+        $query = "SELECT COUNT(*) FROM autorizacoes_responsavel WHERE responsavel_id = :id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
     }
 
     public function delete($id) {
@@ -328,7 +353,7 @@ class Responsavel {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return 'email';
         }
-        if (!in_array($status, ['pendente', 'aprovado', 'rejeitado'], true)) {
+        if (!in_array($status, ['pendente', 'aprovado', 'rejeitado', 'suspendido'], true)) {
             return 'status';
         }
         if ($this->findByCpf($cpf, $id)) {

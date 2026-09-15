@@ -170,7 +170,7 @@ if ($voltar_status !== '') {
                     <div class="mb-3">
                         <label class="form-label" for="status">Status</label>
                         <select class="form-select" id="status" name="status" required>
-                            <?php foreach (['pendente' => 'Pendente', 'aprovado' => 'Aprovado', 'rejeitado' => 'Rejeitado'] as $k => $label): ?>
+                            <?php foreach (['pendente' => 'Pendente', 'aprovado' => 'Aprovado', 'suspendido' => 'Suspenso', 'rejeitado' => 'Rejeitado'] as $k => $label): ?>
                             <option value="<?php echo $k; ?>" <?php echo (($dados['status'] ?? '') === $k) ? 'selected' : ''; ?>>
                                 <?php echo $label; ?>
                             </option>

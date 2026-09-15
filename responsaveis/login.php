@@ -25,6 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($result === 'pending') {
             $info = 'Seu cadastro ainda não foi autorizado pela escola. Aguarde a liberação para acessar o portal.';
+        } elseif ($result === 'suspended') {
+            $error = 'Sua conta está suspensa. Entre em contato com a escola.';
         } elseif ($result === 'rejected') {
             $error = 'Seu cadastro não foi autorizado. Entre em contato com a escola.';
         } else {

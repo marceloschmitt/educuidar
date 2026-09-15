@@ -379,7 +379,7 @@ CREATE TABLE IF NOT EXISTS responsaveis (
     email VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
     ativo TINYINT(1) DEFAULT 0,
-    status ENUM('pendente', 'aprovado', 'rejeitado') NOT NULL DEFAULT 'pendente',
+    status ENUM('pendente', 'aprovado', 'rejeitado', 'suspendido') NOT NULL DEFAULT 'pendente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY unique_cpf (cpf),

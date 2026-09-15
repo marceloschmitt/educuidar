@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$filtro_status = $_GET['status'] ?? 'previsto';
+$filtro_status = $_GET['status'] ?? '';
 $filtro_tipo = $_GET['tipo'] ?? '';
 $filtro_data = $_GET['data'] ?? '';
 $filtro_nome = trim($_GET['nome'] ?? '');

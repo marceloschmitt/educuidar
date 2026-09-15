@@ -48,6 +48,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'suspender' && !empty($_POST['id'])) {
+        if ($responsavel->suspender((int) $_POST['id'])) {
+            $_SESSION['success'] = 'Responsável suspenso. Os vínculos e as autorizações foram mantidos.';
+        } else {
+            $_SESSION['error'] = 'Erro ao suspender responsável.';
+        }
+        header('Location: admin_responsaveis.php');
+        exit;
+    }
+
     if ($action === 'excluir' && !empty($_POST['id'])) {
         if ($responsavel->delete((int) $_POST['id'])) {
             $_SESSION['success'] = 'Responsável removido.';
@@ -69,6 +79,18 @@ unset($_SESSION['success'], $_SESSION['error']);
 $filtro_status = $_GET['status'] ?? '';
 $lista = $responsavel->listByStatus($filtro_status !== '' ? $filtro_status : null);
 $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
+
+$linhas = [];
+$alunos_contemplados = [];
+foreach ($lista as $r) {
+    $alunos = $responsavel->getAlunosVinculados($r['id']);
+    foreach ($alunos as $a) {
+        $alunos_contemplados[(int) $a['id']] = true;
+    }
+    $linhas[] = ['r' => $r, 'alunos' => $alunos];
+}
+$total_responsaveis = count($linhas);
+$total_alunos = count($alunos_contemplados);
 ?>
 
 <?php if ($success): ?>
@@ -127,42 +149,54 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
 
 <div class="card">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="mb-0"><i class="bi bi-people"></i> Responsáveis cadastrados</h5>
+        <div>
+            <h5 class="mb-0"><i class="bi bi-people"></i> Responsáveis cadastrados</h5>
+            <div class="small text-muted mt-1">
+                <?php echo (int) $total_responsaveis; ?> responsável(is)
+                · <?php echo (int) $total_alunos; ?> aluno(s) contemplado(s)
+            </div>
+        </div>
         <form method="GET" class="d-flex gap-2 align-items-center">
             <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
                 <option value="">Todos</option>
                 <option value="pendente" <?php echo $filtro_status === 'pendente' ? 'selected' : ''; ?>>Pendentes</option>
                 <option value="aprovado" <?php echo $filtro_status === 'aprovado' ? 'selected' : ''; ?>>Aprovados</option>
+                <option value="suspendido" <?php echo $filtro_status === 'suspendido' ? 'selected' : ''; ?>>Suspensos</option>
                 <option value="rejeitado" <?php echo $filtro_status === 'rejeitado' ? 'selected' : ''; ?>>Rejeitados</option>
             </select>
         </form>
     </div>
     <div class="card-body">
-        <?php if (empty($lista)): ?>
+        <?php if (empty($linhas)): ?>
         <p class="text-muted text-center mb-0">Nenhum responsável encontrado.</p>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>E-mail</th>
                         <th>Alunos</th>
+                        <th>Responsável</th>
+                        <th>E-mail</th>
                         <th>Status</th>
                         <th>Cadastro</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($lista as $r): ?>
+                    <?php foreach ($linhas as $linha): ?>
                     <?php
-                    $alunos = $responsavel->getAlunosVinculados($r['id']);
+                    $r = $linha['r'];
+                    $alunos = $linha['alunos'];
                     $status = $r['status'] ?? 'pendente';
-                    $badge = $status === 'aprovado' ? 'success' : ($status === 'rejeitado' ? 'danger' : 'warning');
+                    $badge = $status === 'aprovado' ? 'success'
+                        : ($status === 'rejeitado' ? 'danger'
+                        : ($status === 'suspendido' ? 'secondary' : 'warning'));
+                    $n_auth = (int) ($r['total_autorizacoes'] ?? 0);
+                    $msg_excluir = 'ATENÇÃO: a remoção é permanente. Serão apagados os vínculos com alunos'
+                        . ($n_auth > 0 ? ' e ' . $n_auth . ' autorização(ões)' : '')
+                        . '. Prefira Suspender para manter o histórico. Deseja continuar?';
                     ?>
                     <tr>
-                        <td><?php echo htmlspecialchars($r['nome']); ?></td>
-                        <td><?php echo htmlspecialchars($r['email']); ?></td>
                         <td>
                             <?php if (empty($alunos)): ?>
                                 <span class="text-muted">—</span>
@@ -179,6 +213,8 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                                 </ul>
                             <?php endif; ?>
                         </td>
+                        <td><?php echo htmlspecialchars($r['nome']); ?></td>
+                        <td><?php echo htmlspecialchars($r['email']); ?></td>
                         <td><span class="badge bg-<?php echo $badge; ?>"><?php echo htmlspecialchars($status); ?></span></td>
                         <td class="small text-muted"><?php echo date('d/m/Y H:i', strtotime($r['created_at'])); ?></td>
                         <td>
@@ -201,24 +237,26 @@ $cadastro_aberto = $configuracao->isCadastroResponsaveisHabilitado();
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
-                            <?php elseif ($status === 'rejeitado'): ?>
+                            <?php elseif ($status === 'aprovado'): ?>
+                            <form method="POST" class="d-inline form-confirm"
+                                  data-confirm="Suspender este responsável? O acesso será bloqueado, mas vínculos e autorizações serão mantidos.">
+                                <input type="hidden" name="action" value="suspender">
+                                <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Suspender">
+                                    <i class="bi bi-pause-circle"></i>
+                                </button>
+                            </form>
+                            <?php elseif ($status === 'suspendido' || $status === 'rejeitado'): ?>
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="aprovar">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
-                                <button type="submit" class="btn btn-success btn-sm" title="Aprovar">
+                                <button type="submit" class="btn btn-success btn-sm" title="Reativar / aprovar">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
                             </form>
-                            <?php else: ?>
-                            <form method="POST" class="d-inline form-confirm" data-confirm="Rejeitar / desativar este responsável?">
-                                <input type="hidden" name="action" value="rejeitar">
-                                <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
-                                <button type="submit" class="btn btn-outline-secondary btn-sm" title="Desativar">
-                                    <i class="bi bi-slash-circle"></i>
-                                </button>
-                            </form>
                             <?php endif; ?>
-                            <form method="POST" class="d-inline form-confirm" data-confirm="Remover permanentemente este responsável e seus vínculos?">
+                            <form method="POST" class="d-inline form-confirm"
+                                  data-confirm="<?php echo htmlspecialchars($msg_excluir, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="action" value="excluir">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover">
