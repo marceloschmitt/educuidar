@@ -20,13 +20,18 @@ class EventoEmail {
      */
     public function listPendentes($limit = 100) {
         $limit = max(1, (int) $limit);
+        $config = new Configuracao($this->conn);
+        $desde = $config->getEmailEventosDesde();
+
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
                          te.nome AS tipo_nome,
+                         te.observacoes_visiveis_responsaveis,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome
                   FROM eventos e
                   INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
                   INNER JOIN alunos a ON a.id = e.aluno_id
                   WHERE te.notificar_email_responsaveis = 1
+                    AND e.created_at >= :desde
                     AND e.created_at <= DATE_SUB(NOW(), INTERVAL " . (int) self::ATRASO_HORAS . " HOUR)
                     AND EXISTS (
                         SELECT 1
@@ -44,6 +49,7 @@ class EventoEmail {
                   ORDER BY e.created_at ASC
                   LIMIT {$limit}";
         $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':desde', $desde);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -133,7 +139,8 @@ class EventoEmail {
         $hora = !empty($evento['hora_evento'])
             ? substr($evento['hora_evento'], 0, 5)
             : '';
-        $obs = trim((string) ($evento['observacoes'] ?? ''));
+        $incluir_obs = !empty($evento['observacoes_visiveis_responsaveis']);
+        $obs = $incluir_obs ? trim((string) ($evento['observacoes'] ?? '')) : '';
 
         $linhas = [];
         $linhas[] = 'Esta é uma mensagem automática do sistema EduCuidar.';
@@ -145,12 +152,13 @@ class EventoEmail {
         $linhas[] = 'Tipo: ' . $tipo;
         $linhas[] = 'Data: ' . $data . ($hora !== '' ? ' às ' . $hora : '');
         $linhas[] = '';
-        if ($obs !== '') {
-            $linhas[] = 'Observação:';
-            $linhas[] = $obs;
-            $linhas[] = '';
-        } else {
-            $linhas[] = 'Observação: (não informada)';
+        if ($incluir_obs) {
+            if ($obs !== '') {
+                $linhas[] = 'Observação:';
+                $linhas[] = $obs;
+            } else {
+                $linhas[] = 'Observação: (não informada)';
+            }
             $linhas[] = '';
         }
         $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';

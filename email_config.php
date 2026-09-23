@@ -25,11 +25,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fromAddress = trim($_POST['email_from_address'] ?? '');
     $fromName = trim($_POST['email_from_name'] ?? 'EduCuidar');
     $enabled = isset($_POST['email_enabled']);
+    $eventosDesde = trim($_POST['email_eventos_desde'] ?? date('Y-m-d'));
 
     if ($enabled && ($host === '' || $fromAddress === '')) {
         $error = 'Com o envio habilitado, informe o host SMTP e o e-mail remetente.';
     } elseif ($enabled && $fromAddress !== '' && !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
         $error = 'Informe um e-mail de remetente válido.';
+    } elseif ($eventosDesde === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventosDesde)) {
+        $error = 'Informe a data inicial dos e-mails no formato válido.';
     } else {
         $dados = [
             'enabled' => $enabled,
@@ -39,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $username,
             'from_address' => $fromAddress,
             'from_name' => $fromName !== '' ? $fromName : 'EduCuidar',
+            'eventos_desde' => $eventosDesde,
         ];
         if ($password !== '') {
             $dados['password'] = $password;
@@ -52,7 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $email = $configuracao->getEmailConfig();
-
+$eventos_desde = $configuracao->get('email_eventos_desde');
+if ($eventos_desde === null || $eventos_desde === '') {
+    $configuracao->setEmailEventosDesde(date('Y-m-d'));
+    $eventos_desde = date('Y-m-d');
+}
 ob_end_flush();
 
 $page_title = 'Configuração de e-mail';
@@ -86,6 +94,7 @@ require_once 'includes/header.php';
                     O envio ocorre pelo script Python cerca de <strong>2 horas</strong> após o registro do evento,
                     apenas para tipos marcados em <a href="tipos_eventos.php">Tipos de eventos</a>.
                     Uma <strong>cópia</strong> vai também aos coordenadores do curso do aluno.
+                    Eventos registrados <strong>antes da data inicial</strong> não geram e-mail.
                 </div>
 
                 <form method="POST" action="">
@@ -96,6 +105,16 @@ require_once 'includes/header.php';
                         <label class="form-check-label" for="email_enabled">
                             Habilitar envio automático de e-mails
                         </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email_eventos_desde" class="form-label">Data inicial dos e-mails</label>
+                        <input type="date" class="form-control" id="email_eventos_desde" name="email_eventos_desde"
+                               required value="<?php echo htmlspecialchars($eventos_desde); ?>" style="max-width: 14rem;">
+                        <div class="form-text">
+                            Só eventos registrados a partir desta data (e com pelo menos 2 horas) serão notificados.
+                            Assim o histórico anterior não gera disparo em massa.
+                        </div>
                     </div>
 
                     <div class="row g-3">

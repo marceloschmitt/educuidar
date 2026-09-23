@@ -36,5 +36,6 @@ INSERT INTO configuracoes (chave, valor, descricao) VALUES
 ('email_username', '', 'Usuário SMTP'),
 ('email_password', '', 'Senha SMTP'),
 ('email_from_address', '', 'Remetente (From) — mesmo do projeto MAPA'),
-('email_from_name', 'EduCuidar', 'Nome do remetente')
+('email_from_name', 'EduCuidar', 'Nome do remetente'),
+('email_eventos_desde', CURDATE(), 'Data inicial para e-mails de eventos (não envia registros anteriores)')
 ON DUPLICATE KEY UPDATE chave = chave;

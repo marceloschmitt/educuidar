@@ -300,7 +300,39 @@ class Configuracao {
             $fromName !== '' ? $fromName : 'EduCuidar',
             'Nome do remetente'
         ) && $ok;
+
+        if (array_key_exists('eventos_desde', $dados)) {
+            $desde = trim((string) $dados['eventos_desde']);
+            if ($desde !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $desde)) {
+                $ok = $this->setEmailEventosDesde($desde) && $ok;
+            }
+        } elseif ($this->get('email_eventos_desde') === null || $this->get('email_eventos_desde') === '') {
+            $ok = $this->setEmailEventosDesde(date('Y-m-d')) && $ok;
+        }
+
         return $ok;
+    }
+
+    /** Data inicial (Y-m-d): eventos anteriores não geram e-mail. */
+    public function getEmailEventosDesde() {
+        $valor = trim((string) ($this->get('email_eventos_desde') ?: ''));
+        if ($valor !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor)) {
+            return $valor . ' 00:00:00';
+        }
+        // Padrão: hoje (não envia histórico atrasado)
+        return date('Y-m-d') . ' 00:00:00';
+    }
+
+    public function setEmailEventosDesde($data_ymd) {
+        $data_ymd = trim((string) $data_ymd);
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_ymd)) {
+            $data_ymd = date('Y-m-d');
+        }
+        return $this->set(
+            'email_eventos_desde',
+            $data_ymd,
+            'Data inicial para e-mails de eventos (não envia registros anteriores)'
+        );
     }
 }
 ?>
