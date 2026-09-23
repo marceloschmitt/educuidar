@@ -287,6 +287,11 @@ def main() -> int:
         help="Não extrai/insere faltas automáticas após a consulta",
     )
     parser.add_argument(
+        "--sem-emails",
+        action="store_true",
+        help="Não envia e-mails de eventos aos responsáveis após a coleta",
+    )
+    parser.add_argument(
         "--gerar-lista-faltas",
         action="store_true",
         help="Gera python/lista_faltas.json com as faltas extraídas (debug)",
@@ -458,6 +463,18 @@ def main() -> int:
             processar_alertas_alunos(resumo.get("alunos_afetados") or [])
         except Exception as error:
             log(f"Aviso: falha ao importar faltas: {error}", erro=True)
+
+    if not args.sem_emails:
+        log()
+        log("Enviando e-mails de eventos aos responsáveis...")
+        try:
+            from enviar_emails_eventos import main as enviar_emails_main
+
+            codigo = enviar_emails_main()
+            if codigo != 0:
+                log(f"Aviso: envio de e-mails terminou com código {codigo}", erro=True)
+        except Exception as error:
+            log(f"Aviso: falha ao enviar e-mails: {error}", erro=True)
 
     fim = datetime.now()
     duracao = fim - inicio

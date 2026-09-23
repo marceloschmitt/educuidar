@@ -176,8 +176,9 @@ require_once 'includes/header.php';
                 </form>
 
                 <hr class="my-4">
-                <p class="small text-muted mb-1">Script de envio (cron / agendador):</p>
-                <code class="small">python3 python/enviar_emails_eventos.py</code>
+                <p class="small text-muted mb-0">
+                    O envio roda ao final da coleta geral (<code>consulta_alunos.py</code>).
+                </p>
             </div>
         </div>
 

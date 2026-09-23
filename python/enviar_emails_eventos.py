@@ -2,10 +2,9 @@
 """
 Envia e-mails de eventos aos responsáveis após 2 horas do registro.
 
-Agende no cron, por exemplo a cada 15 minutos:
-  */15 * * * * cd /caminho/educuidar && python3 python/enviar_emails_eventos.py
-
-O atraso de 2h permite apagar um registro feito por engano antes do envio.
+Chamado automaticamente ao final de consulta_alunos.py (a menos que --sem-emails).
+Também pode rodar sozinho:
+  python3 python/enviar_emails_eventos.py
 """
 
 from __future__ import annotations
