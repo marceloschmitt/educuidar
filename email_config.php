@@ -90,11 +90,11 @@ require_once 'includes/header.php';
 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    Use o <strong>mesmo servidor SMTP e o mesmo remetente</strong> do projeto MAPA.
-                    O envio ocorre pelo script Python cerca de <strong>2 horas</strong> após o registro do evento,
-                    apenas para tipos marcados em <a href="tipos_eventos.php">Tipos de eventos</a>.
-                    Uma <strong>cópia</strong> vai também aos coordenadores do curso do aluno.
-                    Eventos registrados <strong>antes da data inicial</strong> não geram e-mail.
+                    O envio ocorre cerca de <strong>2 horas</strong> após o registro do evento,
+                    somente para os tipos com e-mail habilitado em
+                    <a href="tipos_eventos.php">Tipos de eventos</a>.
+                    Uma cópia é enviada aos coordenadores do curso.
+                    Eventos anteriores à data inicial não são notificados.
                 </div>
 
                 <form method="POST" action="">
