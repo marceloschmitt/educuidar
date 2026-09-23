@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             $tipo_evento->visivel_responsaveis = isset($_POST['visivel_responsaveis']) ? 1 : 0;
             $tipo_evento->observacoes_visiveis_responsaveis = isset($_POST['observacoes_visiveis_responsaveis']) ? 1 : 0;
+            $tipo_evento->notificar_email_responsaveis = isset($_POST['notificar_email_responsaveis']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
                 $_SESSION['error'] = 'Por favor, preencha o nome do tipo de evento!';
@@ -50,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $tipo_evento->ativo = isset($_POST['ativo']) ? 1 : 0;
             $tipo_evento->visivel_responsaveis = isset($_POST['visivel_responsaveis']) ? 1 : 0;
             $tipo_evento->observacoes_visiveis_responsaveis = isset($_POST['observacoes_visiveis_responsaveis']) ? 1 : 0;
+            $tipo_evento->notificar_email_responsaveis = isset($_POST['notificar_email_responsaveis']) ? 1 : 0;
             
             if (empty($tipo_evento->nome)) {
                 $_SESSION['error'] = 'Por favor, preencha o nome do tipo de evento!';
@@ -194,6 +196,20 @@ $tipos = $tipo_evento->getAll();
                             </small>
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="notificar_email_responsaveis" name="notificar_email_responsaveis" value="1"
+                                   <?php echo (!empty($tipo_edit['notificar_email_responsaveis'])) ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="notificar_email_responsaveis">
+                                Enviar e-mail aos responsáveis
+                            </label>
+                            <small class="text-muted d-block">
+                                O e-mail é enviado cerca de 2 horas após o registro (tempo para corrigir erros),
+                                a todos os responsáveis aprovados do aluno.
+                            </small>
+                        </div>
+                    </div>
                     
                     <div class="mb-3">
                         <?php
@@ -237,7 +253,7 @@ $tipos = $tipo_evento->getAll();
                 <p class="text-muted text-center">Nenhum tipo de evento cadastrado ainda.</p>
                 <?php else: ?>
                 <p class="text-muted small mb-2">
-                    Visibilidade: <strong>usuários / responsáveis / observações</strong>
+                    Visibilidade: <strong>usuários / responsáveis / observações / e-mail</strong>
                     — <strong>S</strong> = sim, <strong>N</strong> = não.
                 </p>
                 <div class="table-responsive">
@@ -246,7 +262,7 @@ $tipos = $tipo_evento->getAll();
                             <tr>
                                 <th style="width: 38%;">Nome</th>
                                 <th>Prontuário</th>
-                                <th class="text-nowrap" title="Usuários / Responsáveis / Observações">Visibilidade</th>
+                                <th class="text-nowrap" title="Usuários / Responsáveis / Observações / E-mail">Visibilidade</th>
                                 <th style="width: 5.5rem;">Ações</th>
                             </tr>
                         </thead>
@@ -256,10 +272,12 @@ $tipos = $tipo_evento->getAll();
                             $vis_u = !empty($t['ativo']) ? 'S' : 'N';
                             $vis_r = !empty($t['visivel_responsaveis']) ? 'S' : 'N';
                             $vis_o = !empty($t['observacoes_visiveis_responsaveis']) ? 'S' : 'N';
-                            $vis_legenda = $vis_u . '/' . $vis_r . '/' . $vis_o;
+                            $vis_e = !empty($t['notificar_email_responsaveis']) ? 'S' : 'N';
+                            $vis_legenda = $vis_u . '/' . $vis_r . '/' . $vis_o . '/' . $vis_e;
                             $vis_title = 'Ususuários: ' . ($vis_u === 'S' ? 'sim' : 'não')
                                 . ' · Responsáveis: ' . ($vis_r === 'S' ? 'sim' : 'não')
-                                . ' · Observações: ' . ($vis_o === 'S' ? 'sim' : 'não');
+                                . ' · Observações: ' . ($vis_o === 'S' ? 'sim' : 'não')
+                                . ' · E-mail: ' . ($vis_e === 'S' ? 'sim' : 'não');
                             ?>
                             <tr <?php echo (!$t['ativo']) ? 'class="table-secondary"' : ''; ?>>
                                 <td>

@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS turmas (
 CREATE TABLE IF NOT EXISTS configuracoes (
     id INT AUTO_INCREMENT PRIMARY KEY,
     chave VARCHAR(50) UNIQUE NOT NULL,
-    valor VARCHAR(200) NOT NULL,
+    valor VARCHAR(500) NOT NULL,
     descricao TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -209,10 +209,12 @@ CREATE TABLE IF NOT EXISTS tipos_eventos (
     ativo TINYINT(1) DEFAULT 1,
     visivel_responsaveis TINYINT(1) DEFAULT 0,
     observacoes_visiveis_responsaveis TINYINT(1) DEFAULT 0,
+    notificar_email_responsaveis TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_ativo (ativo),
     INDEX idx_visivel_responsaveis (visivel_responsaveis),
+    INDEX idx_notificar_email_responsaveis (notificar_email_responsaveis),
     INDEX idx_nome (nome),
     INDEX idx_prontuario_user_type (prontuario_user_type_id),
     FOREIGN KEY (prontuario_user_type_id) REFERENCES user_types(id) ON DELETE SET NULL
@@ -429,5 +431,19 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
     FOREIGN KEY (confirmado_por) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Log de e-mails de eventos enviados aos responsáveis
+CREATE TABLE IF NOT EXISTS eventos_email_enviados (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento_id INT NOT NULL,
+    responsavel_id INT NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    enviado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_evento_responsavel (evento_id, responsavel_id),
+    INDEX idx_evento (evento_id),
+    INDEX idx_responsavel (responsavel_id),
+    FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE,
+    FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

@@ -221,6 +221,87 @@ class Configuracao {
         $valor = ($tipo_evento_id === null || $tipo_evento_id === '') ? '' : (string) (int) $tipo_evento_id;
         return $this->set($chave, $valor, $desc);
     }
+
+    // E-mail SMTP (mesmos parâmetros do projeto MAPA)
+    public function isEmailEnabled() {
+        $valor = strtolower((string) ($this->get('email_enabled') ?? '0'));
+        return in_array($valor, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    public function setEmailEnabled($enabled) {
+        return $this->set(
+            'email_enabled',
+            $enabled ? '1' : '0',
+            'Enviar e-mails automáticos de eventos aos responsáveis'
+        );
+    }
+
+    /**
+     * Trava opcional de ambiente: se EMAIL_SEND estiver definido e não for true, bloqueia.
+     * Se a variável não existir, usa apenas email_enabled do banco.
+     */
+    public function permiteEnvioEmail() {
+        $env = getenv('EMAIL_SEND');
+        if ($env === false || $env === '') {
+            return true;
+        }
+        return in_array(strtolower(trim($env)), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    public function getEmailConfig() {
+        $port = (int) ($this->get('email_port') ?: 587);
+        if ($port <= 0) {
+            $port = 587;
+        }
+        $encryption = strtolower(trim((string) ($this->get('email_encryption') ?: 'tls')));
+        if (!in_array($encryption, ['tls', 'ssl', 'none'], true)) {
+            $encryption = 'tls';
+        }
+
+        return [
+            'enabled' => $this->isEmailEnabled(),
+            'host' => (string) ($this->get('email_host') ?: ''),
+            'port' => $port,
+            'encryption' => $encryption,
+            'username' => (string) ($this->get('email_username') ?: ''),
+            'password' => (string) ($this->get('email_password') ?: ''),
+            'from_address' => (string) ($this->get('email_from_address') ?: ''),
+            'from_name' => (string) ($this->get('email_from_name') ?: 'EduCuidar'),
+        ];
+    }
+
+    public function isEmailConfigured() {
+        $cfg = $this->getEmailConfig();
+        return $cfg['host'] !== '' && $cfg['from_address'] !== '' && $cfg['port'] > 0;
+    }
+
+    public function saveEmailConfig(array $dados) {
+        $ok = true;
+        $ok = $this->setEmailEnabled(!empty($dados['enabled'])) && $ok;
+        $ok = $this->set('email_host', trim((string) ($dados['host'] ?? '')), 'Host SMTP') && $ok;
+        $ok = $this->set('email_port', (string) (int) ($dados['port'] ?? 587), 'Porta SMTP') && $ok;
+        $enc = strtolower(trim((string) ($dados['encryption'] ?? 'tls')));
+        if (!in_array($enc, ['tls', 'ssl', 'none'], true)) {
+            $enc = 'tls';
+        }
+        $ok = $this->set('email_encryption', $enc, 'Criptografia SMTP') && $ok;
+        $ok = $this->set('email_username', trim((string) ($dados['username'] ?? '')), 'Usuário SMTP') && $ok;
+        if (array_key_exists('password', $dados) && $dados['password'] !== null && $dados['password'] !== '') {
+            $ok = $this->set('email_password', (string) $dados['password'], 'Senha SMTP') && $ok;
+        }
+        $ok = $this->set(
+            'email_from_address',
+            trim((string) ($dados['from_address'] ?? '')),
+            'Remetente (From)'
+        ) && $ok;
+        $fromName = trim((string) ($dados['from_name'] ?? ''));
+        $ok = $this->set(
+            'email_from_name',
+            $fromName !== '' ? $fromName : 'EduCuidar',
+            'Nome do remetente'
+        ) && $ok;
+        return $ok;
+    }
 }
 ?>
 

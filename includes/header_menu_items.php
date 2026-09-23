@@ -87,7 +87,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <?php
-    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'ldap_config.php'];
+    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'ldap_config.php', 'email_config.php'];
     $menu_config_aberto = in_array($current_page, $paginas_config, true);
     if (!isset($menu_config_uid)) {
         $menu_config_uid = 0;
@@ -113,6 +113,16 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
                 <li class="nav-item">
                     <a class="nav-link <?php echo $current_page === 'api_sigaa_config.php' ? 'active' : ''; ?>" href="api_sigaa_config.php">
                         <i class="bi bi-cloud"></i> API SIGAA
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'ldap_config.php' ? 'active' : ''; ?>" href="ldap_config.php">
+                        <i class="bi bi-server"></i> LDAP
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'email_config.php' ? 'active' : ''; ?>" href="email_config.php">
+                        <i class="bi bi-envelope"></i> E-mail
                     </a>
                 </li>
             </ul>

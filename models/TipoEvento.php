@@ -21,6 +21,8 @@ class TipoEvento {
     public $visivel_responsaveis;
     /** @var int|bool 1 = observações visíveis aos responsáveis (quando o tipo é visível) */
     public $observacoes_visiveis_responsaveis;
+    /** @var int|bool 1 = gera e-mail aos responsáveis (após atraso de 2h) */
+    public $notificar_email_responsaveis;
     public $created_at;
 
     public function __construct($db) {
@@ -29,8 +31,8 @@ class TipoEvento {
 
     public function create() {
         $query = "INSERT INTO " . $this->table . " 
-                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo, visivel_responsaveis, observacoes_visiveis_responsaveis) 
-                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo, :visivel_responsaveis, :observacoes_visiveis_responsaveis)";
+                  (nome, cor, gera_prontuario, prontuario_user_type_id, ativo, visivel_responsaveis, observacoes_visiveis_responsaveis, notificar_email_responsaveis) 
+                  VALUES (:nome, :cor, :gera_prontuario, :prontuario_user_type_id, :ativo, :visivel_responsaveis, :observacoes_visiveis_responsaveis, :notificar_email_responsaveis)";
 
         $stmt = $this->conn->prepare($query);
 
@@ -46,6 +48,8 @@ class TipoEvento {
         $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
         $observacoes_visiveis_responsaveis = isset($this->observacoes_visiveis_responsaveis) ? ($this->observacoes_visiveis_responsaveis ? 1 : 0) : 0;
         $stmt->bindParam(':observacoes_visiveis_responsaveis', $observacoes_visiveis_responsaveis);
+        $notificar_email_responsaveis = isset($this->notificar_email_responsaveis) ? ($this->notificar_email_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':notificar_email_responsaveis', $notificar_email_responsaveis);
 
         if ($stmt->execute()) {
             return true;
@@ -95,7 +99,8 @@ class TipoEvento {
                       prontuario_user_type_id = :prontuario_user_type_id,
                       ativo = :ativo,
                       visivel_responsaveis = :visivel_responsaveis,
-                      observacoes_visiveis_responsaveis = :observacoes_visiveis_responsaveis
+                      observacoes_visiveis_responsaveis = :observacoes_visiveis_responsaveis,
+                      notificar_email_responsaveis = :notificar_email_responsaveis
                   WHERE id = :id";
 
         $stmt = $this->conn->prepare($query);
@@ -113,6 +118,8 @@ class TipoEvento {
         $stmt->bindParam(':visivel_responsaveis', $visivel_responsaveis);
         $observacoes_visiveis_responsaveis = isset($this->observacoes_visiveis_responsaveis) ? ($this->observacoes_visiveis_responsaveis ? 1 : 0) : 0;
         $stmt->bindParam(':observacoes_visiveis_responsaveis', $observacoes_visiveis_responsaveis);
+        $notificar_email_responsaveis = isset($this->notificar_email_responsaveis) ? ($this->notificar_email_responsaveis ? 1 : 0) : 0;
+        $stmt->bindParam(':notificar_email_responsaveis', $notificar_email_responsaveis);
 
         if ($stmt->execute()) {
             return true;

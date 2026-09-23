@@ -198,6 +198,22 @@ class Responsavel {
         return $stmt->fetchAll();
     }
 
+    /** Responsáveis aprovados/ativos vinculados ao aluno (para e-mail). */
+    public function getAprovadosByAlunoId($aluno_id) {
+        $query = "SELECT r.id, r.nome, r.email, ra.parentesco
+                  FROM responsaveis r
+                  INNER JOIN responsavel_alunos ra ON ra.responsavel_id = r.id
+                  WHERE ra.aluno_id = :aluno_id
+                    AND r.status = 'aprovado'
+                    AND r.ativo = 1
+                    AND r.email <> ''
+                  ORDER BY r.nome ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':aluno_id', $aluno_id);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function aprovar($id) {
         $query = "UPDATE " . $this->table . "
                   SET status = 'aprovado', ativo = 1
