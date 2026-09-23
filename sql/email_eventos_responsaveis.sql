@@ -14,14 +14,18 @@ ALTER TABLE tipos_eventos
 CREATE TABLE IF NOT EXISTS eventos_email_enviados (
     id INT AUTO_INCREMENT PRIMARY KEY,
     evento_id INT NOT NULL,
-    responsavel_id INT NOT NULL,
+    responsavel_id INT NULL,
+    user_id INT NULL,
     email VARCHAR(100) NOT NULL,
     enviado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY unique_evento_responsavel (evento_id, responsavel_id),
+    UNIQUE KEY unique_evento_user (evento_id, user_id),
     INDEX idx_evento (evento_id),
     INDEX idx_responsavel (responsavel_id),
+    INDEX idx_user (user_id),
     FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE,
-    FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE
+    FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO configuracoes (chave, valor, descricao) VALUES

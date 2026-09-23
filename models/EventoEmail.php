@@ -1,6 +1,7 @@
 <?php
 /**
- * Envio de e-mails de eventos aos responsáveis (após atraso de 2h).
+ * Envio de e-mails de eventos aos responsáveis (após atraso de 2h),
+ * com cópia aos coordenadores do curso.
  */
 class EventoEmail {
     private $conn;
@@ -19,7 +20,7 @@ class EventoEmail {
      */
     public function listPendentes($limit = 100) {
         $limit = max(1, (int) $limit);
-        $query = "SELECT e.id, e.aluno_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
+        $query = "SELECT e.id, e.aluno_id, e.turma_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
                          te.nome AS tipo_nome,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome
                   FROM eventos e
@@ -47,7 +48,7 @@ class EventoEmail {
         return $stmt->fetchAll();
     }
 
-    public function jaEnviado($evento_id, $responsavel_id) {
+    public function jaEnviadoResponsavel($evento_id, $responsavel_id) {
         $query = "SELECT 1 FROM " . $this->table . "
                   WHERE evento_id = :evento_id AND responsavel_id = :responsavel_id
                   LIMIT 1";
@@ -58,14 +59,63 @@ class EventoEmail {
         return (bool) $stmt->fetchColumn();
     }
 
-    public function registrarEnvio($evento_id, $responsavel_id, $email) {
-        $query = "INSERT INTO " . $this->table . " (evento_id, responsavel_id, email)
-                  VALUES (:evento_id, :responsavel_id, :email)";
+    public function jaEnviadoCoordenador($evento_id, $user_id) {
+        $query = "SELECT 1 FROM " . $this->table . "
+                  WHERE evento_id = :evento_id AND user_id = :user_id
+                  LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':evento_id', $evento_id);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->execute();
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function registrarEnvioResponsavel($evento_id, $responsavel_id, $email) {
+        $query = "INSERT INTO " . $this->table . " (evento_id, responsavel_id, user_id, email)
+                  VALUES (:evento_id, :responsavel_id, NULL, :email)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':evento_id', $evento_id);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
         $stmt->bindParam(':email', $email);
         return $stmt->execute();
+    }
+
+    public function registrarEnvioCoordenador($evento_id, $user_id, $email) {
+        $query = "INSERT INTO " . $this->table . " (evento_id, responsavel_id, user_id, email)
+                  VALUES (:evento_id, NULL, :user_id, :email)";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':evento_id', $evento_id);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':email', $email);
+        return $stmt->execute();
+    }
+
+    /** Resolve curso_id a partir da turma do evento ou da matrícula no ano corrente. */
+    public function getCursoIdDoEvento($aluno_id, $turma_id = null) {
+        if (!empty($turma_id)) {
+            $stmt = $this->conn->prepare("SELECT curso_id FROM turmas WHERE id = :id LIMIT 1");
+            $stmt->bindParam(':id', $turma_id);
+            $stmt->execute();
+            $row = $stmt->fetch();
+            if ($row && !empty($row['curso_id'])) {
+                return (int) $row['curso_id'];
+            }
+        }
+
+        $config = new Configuracao($this->conn);
+        $ano = $config->getAnoCorrente();
+        $query = "SELECT t.curso_id
+                  FROM aluno_turmas at
+                  INNER JOIN turmas t ON t.id = at.turma_id
+                  WHERE at.aluno_id = :aluno_id AND t.ano_civil = :ano
+                  ORDER BY t.id DESC
+                  LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':aluno_id', $aluno_id);
+        $stmt->bindParam(':ano', $ano);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row && !empty($row['curso_id']) ? (int) $row['curso_id'] : null;
     }
 
     public static function montarAssunto(array $evento) {
@@ -135,6 +185,7 @@ class EventoEmail {
         $emailConfig = $configuracao->getEmailConfig();
         $mailer = new SmtpMailer($emailConfig);
         $responsavel = new Responsavel($this->conn);
+        $user = new User($this->conn);
         $pendentes = $this->listPendentes($limit);
 
         foreach ($pendentes as $evento) {
@@ -147,19 +198,56 @@ class EventoEmail {
             $assunto = self::montarAssunto($evento);
             $corpo = self::montarCorpo($evento);
 
+            $curso_id = $this->getCursoIdDoEvento(
+                (int) $evento['aluno_id'],
+                !empty($evento['turma_id']) ? (int) $evento['turma_id'] : null
+            );
+            $coordenadores = $curso_id ? $user->getCoordenadoresPorCurso($curso_id) : [];
+            $cc = [];
+            foreach ($coordenadores as $coord) {
+                $email_coord = trim((string) ($coord['email'] ?? ''));
+                if ($email_coord === '') {
+                    continue;
+                }
+                if ($this->jaEnviadoCoordenador((int) $evento['id'], (int) $coord['id'])) {
+                    continue;
+                }
+                $cc[] = $email_coord;
+            }
+            $cc = array_values(array_unique($cc));
+            $cc_enviado_neste_evento = false;
+
             foreach ($destinatarios as $dest) {
                 $resp_id = (int) $dest['id'];
                 $email = trim((string) ($dest['email'] ?? ''));
-                if ($email === '' || $this->jaEnviado((int) $evento['id'], $resp_id)) {
+                if ($email === '' || $this->jaEnviadoResponsavel((int) $evento['id'], $resp_id)) {
                     $stats['pulados']++;
                     continue;
                 }
 
+                // Cópia ao coordenador só no primeiro envio bem-sucedido deste evento
+                $cc_desta_msg = (!$cc_enviado_neste_evento && $cc !== []) ? $cc : [];
+
                 try {
-                    $mailer->send([$email], $assunto, $corpo);
-                    $this->registrarEnvio((int) $evento['id'], $resp_id, $email);
+                    $mailer->send([$email], $assunto, $corpo, $cc_desta_msg);
+                    $this->registrarEnvioResponsavel((int) $evento['id'], $resp_id, $email);
                     $stats['enviados']++;
-                    $stats['mensagens'][] = "OK evento={$evento['id']} → {$email}";
+                    $stats['mensagens'][] = "OK evento={$evento['id']} → {$email}"
+                        . ($cc_desta_msg !== [] ? ' (Cc coordenação)' : '');
+
+                    if ($cc_desta_msg !== []) {
+                        foreach ($coordenadores as $coord) {
+                            $email_coord = trim((string) ($coord['email'] ?? ''));
+                            if ($email_coord === '' || !in_array($email_coord, $cc_desta_msg, true)) {
+                                continue;
+                            }
+                            if ($this->jaEnviadoCoordenador((int) $evento['id'], (int) $coord['id'])) {
+                                continue;
+                            }
+                            $this->registrarEnvioCoordenador((int) $evento['id'], (int) $coord['id'], $email_coord);
+                        }
+                        $cc_enviado_neste_evento = true;
+                    }
                 } catch (Exception $e) {
                     $stats['falhas']++;
                     $stats['mensagens'][] = "ERRO evento={$evento['id']} → {$email}: " . $e->getMessage();

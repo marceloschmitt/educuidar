@@ -85,6 +85,7 @@ require_once 'includes/header.php';
                     Use o <strong>mesmo servidor SMTP e o mesmo remetente</strong> do projeto MAPA.
                     O envio ocorre pelo script Python cerca de <strong>2 horas</strong> após o registro do evento,
                     apenas para tipos marcados em <a href="tipos_eventos.php">Tipos de eventos</a>.
+                    Uma <strong>cópia</strong> vai também aos coordenadores do curso do aluno.
                 </div>
 
                 <form method="POST" action="">

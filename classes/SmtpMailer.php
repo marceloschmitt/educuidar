@@ -13,20 +13,19 @@ class SmtpMailer {
 
     /**
      * @param list<string> $to
+     * @param list<string> $cc
      * @throws RuntimeException
      */
-    public function send(array $to, $subject, $bodyText) {
-        $destinatarios = [];
-        foreach ($to as $email) {
-            $email = trim((string) $email);
-            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                $destinatarios[$email] = true;
-            }
-        }
-        $destinatarios = array_keys($destinatarios);
+    public function send(array $to, $subject, $bodyText, array $cc = []) {
+        $destinatarios = $this->normalizeEmails($to);
         if ($destinatarios === []) {
             throw new RuntimeException('Nenhum destinatário válido.');
         }
+        $copias = $this->normalizeEmails($cc);
+        // Evita repetir no Cc quem já está no To
+        $copias = array_values(array_filter($copias, static function ($email) use ($destinatarios) {
+            return !in_array($email, $destinatarios, true);
+        }));
 
         $host = trim((string) ($this->config['host'] ?? ''));
         $port = (int) ($this->config['port'] ?? 0);
@@ -77,7 +76,7 @@ class SmtpMailer {
             }
 
             $this->command($socket, 'MAIL FROM:<' . $from . '>', [250]);
-            foreach ($destinatarios as $email) {
+            foreach (array_merge($destinatarios, $copias) as $email) {
                 $this->command($socket, 'RCPT TO:<' . $email . '>', [250, 251]);
             }
             $this->command($socket, 'DATA', [354]);
@@ -85,6 +84,9 @@ class SmtpMailer {
             $headers = [];
             $headers[] = 'From: ' . $this->formatAddress($from, $fromName);
             $headers[] = 'To: ' . implode(', ', $destinatarios);
+            if ($copias !== []) {
+                $headers[] = 'Cc: ' . implode(', ', $copias);
+            }
             $headers[] = 'Subject: ' . $this->encodeHeader($subject);
             $headers[] = 'MIME-Version: 1.0';
             $headers[] = 'Content-Type: text/plain; charset=UTF-8';
@@ -103,6 +105,18 @@ class SmtpMailer {
         } finally {
             fclose($socket);
         }
+    }
+
+    /** @param list<string> $emails @return list<string> */
+    private function normalizeEmails(array $emails) {
+        $destinatarios = [];
+        foreach ($emails as $email) {
+            $email = trim((string) $email);
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $destinatarios[$email] = true;
+            }
+        }
+        return array_keys($destinatarios);
     }
 
     private function command($socket, $command, array $okCodes) {
