@@ -64,6 +64,7 @@ if ($eventos_desde === null || $eventos_desde === '') {
 
 $eventoEmail = new EventoEmail($db);
 $enviados = $eventoEmail->listEnviados(100);
+$resumos = $eventoEmail->listResumosCoordenador(50);
 ob_end_flush();
 
 $page_title = 'Configuração de e-mail';
@@ -93,10 +94,9 @@ require_once 'includes/header.php';
 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    O envio ocorre cerca de <strong>2 horas</strong> após o registro do evento,
-                    somente para os tipos com e-mail habilitado em
-                    <a href="tipos_eventos.php">Tipos de eventos</a>.
-                    Uma cópia é enviada aos coordenadores do curso.
+                    Aos responsáveis: envio cerca de <strong>2 horas</strong> após o registro,
+                    só para tipos com e-mail em <a href="tipos_eventos.php">Tipos de eventos</a>.
+                    Aos coordenadores: <strong>um resumo diário após as 19:30</strong> com a lista do dia.
                     Eventos anteriores à data inicial não são notificados.
                 </div>
 
@@ -228,6 +228,45 @@ require_once 'includes/header.php';
                                     </span>
                                     <div class="small"><?php echo htmlspecialchars($nome_dest); ?></div>
                                 </td>
+                                <td class="small"><?php echo htmlspecialchars($row['email']); ?></td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Resumos aos coordenadores</h5>
+                <span class="small text-muted">Últimos <?php echo count($resumos); ?></span>
+            </div>
+            <div class="card-body">
+                <?php if (empty($resumos)): ?>
+                <p class="text-muted mb-0">Nenhum resumo enviado ainda.</p>
+                <?php else: ?>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Enviado em</th>
+                                <th>Dia</th>
+                                <th>Coordenador</th>
+                                <th>Ocorrências</th>
+                                <th>E-mail</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($resumos as $row): ?>
+                            <tr>
+                                <td class="text-nowrap small">
+                                    <?php echo date('d/m/Y H:i', strtotime($row['enviado_em'])); ?>
+                                </td>
+                                <td><?php echo date('d/m/Y', strtotime($row['data_ref'])); ?></td>
+                                <td><?php echo htmlspecialchars($row['coordenador_nome']); ?></td>
+                                <td><?php echo (int) $row['total_eventos']; ?></td>
                                 <td class="small"><?php echo htmlspecialchars($row['email']); ?></td>
                             </tr>
                             <?php endforeach; ?>
