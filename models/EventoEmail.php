@@ -96,6 +96,34 @@ class EventoEmail {
         return $stmt->execute();
     }
 
+    /** Histórico de envios (mais recentes primeiro). */
+    public function listEnviados($limit = 100) {
+        $limit = max(1, (int) $limit);
+        $query = "SELECT ee.id, ee.evento_id, ee.email, ee.enviado_em,
+                         ee.responsavel_id, ee.user_id,
+                         COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
+                         te.nome AS tipo_nome,
+                         e.data_evento, e.hora_evento,
+                         r.nome AS responsavel_nome,
+                         u.full_name AS coordenador_nome,
+                         CASE
+                             WHEN ee.responsavel_id IS NOT NULL THEN 'Responsável'
+                             WHEN ee.user_id IS NOT NULL THEN 'Coordenador'
+                             ELSE '—'
+                         END AS destinatario_tipo
+                  FROM " . $this->table . " ee
+                  INNER JOIN eventos e ON e.id = ee.evento_id
+                  INNER JOIN alunos a ON a.id = e.aluno_id
+                  INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
+                  LEFT JOIN responsaveis r ON r.id = ee.responsavel_id
+                  LEFT JOIN users u ON u.id = ee.user_id
+                  ORDER BY ee.enviado_em DESC, ee.id DESC
+                  LIMIT {$limit}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     /** Resolve curso_id a partir da turma do evento ou da matrícula no ano corrente. */
     public function getCursoIdDoEvento($aluno_id, $turma_id = null) {
         if (!empty($turma_id)) {
