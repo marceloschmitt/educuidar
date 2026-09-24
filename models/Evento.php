@@ -51,14 +51,14 @@ class Evento {
 
         $stmt = $this->conn->prepare($query);
 
-        $stmt->bindParam(':aluno_id', $this->aluno_id);
-        $stmt->bindParam(':turma_id', $this->turma_id);
-        $stmt->bindParam(':tipo_evento_id', $this->tipo_evento_id);
-        $stmt->bindParam(':data_evento', $this->data_evento);
-        $stmt->bindParam(':hora_evento', $this->hora_evento);
-        $stmt->bindParam(':observacoes', $this->observacoes);
-        $stmt->bindParam(':prontuario', $this->prontuario);
-        $stmt->bindParam(':registrado_por', $this->registrado_por);
+        $stmt->bindValue(':aluno_id', $this->aluno_id);
+        $stmt->bindValue(':turma_id', $this->turma_id);
+        $stmt->bindValue(':tipo_evento_id', $this->tipo_evento_id);
+        $stmt->bindValue(':data_evento', $this->data_evento);
+        $stmt->bindValue(':hora_evento', $this->hora_evento !== '' && $this->hora_evento !== null ? $this->hora_evento : null);
+        $stmt->bindValue(':observacoes', $this->observacoes);
+        $stmt->bindValue(':prontuario', $this->prontuario);
+        $stmt->bindValue(':registrado_por', $this->registrado_por);
 
         if ($stmt->execute()) {
             $this->id = $this->conn->lastInsertId();

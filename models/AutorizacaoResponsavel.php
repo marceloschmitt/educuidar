@@ -161,6 +161,13 @@ class AutorizacaoResponsavel {
         $parentesco = $this->getParentesco($auth['responsavel_id'], $auth['aluno_id']);
         $obs = $this->montarObservacoesEvento($auth, $parentesco);
 
+        // Data/hora do evento = as pedidas na autorização (não o momento do OK)
+        $data_evento = $auth['data_autorizacao'];
+        $hora_evento = substr((string) ($auth['hora'] ?? ''), 0, 8);
+        if (strlen($hora_evento) === 5) {
+            $hora_evento .= ':00';
+        }
+
         try {
             $this->conn->beginTransaction();
 
@@ -168,8 +175,8 @@ class AutorizacaoResponsavel {
             $evento->aluno_id = $auth['aluno_id'];
             $evento->turma_id = null;
             $evento->tipo_evento_id = $tipo_evento_id;
-            $evento->data_evento = $auth['data_autorizacao'];
-            $evento->hora_evento = $auth['hora'];
+            $evento->data_evento = $data_evento;
+            $evento->hora_evento = $hora_evento;
             $evento->observacoes = $obs;
             $evento->prontuario = '';
             $evento->registrado_por = $user_id;
@@ -178,6 +185,15 @@ class AutorizacaoResponsavel {
                 $this->conn->rollBack();
                 return false;
             }
+
+            // Reforça data/hora da autorização no registro criado
+            $fixData = $this->conn->prepare(
+                "UPDATE eventos SET data_evento = :data_evento, hora_evento = :hora_evento WHERE id = :id"
+            );
+            $fixData->bindValue(':data_evento', $data_evento);
+            $fixData->bindValue(':hora_evento', $hora_evento);
+            $fixData->bindValue(':id', (int) $evento->id);
+            $fixData->execute();
 
             $query = "UPDATE " . $this->table . "
                       SET status = 'ocorrido',
