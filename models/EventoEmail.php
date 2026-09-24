@@ -227,32 +227,60 @@ class EventoEmail {
         $linhas[] = 'Resumo das ocorrências registradas em ' . date('d/m/Y', strtotime($data_ref)) . ':';
         $linhas[] = '';
 
-        $curso_atual = null;
+        // Agrupa: curso → aluno → eventos
+        $grupos = [];
         foreach ($eventos as $ev) {
             $curso = $ev['curso_nome'] ?? 'Curso não identificado';
-            if ($curso !== $curso_atual) {
-                if ($curso_atual !== null) {
-                    $linhas[] = '';
-                }
-                $linhas[] = '— ' . $curso . ' —';
-                $curso_atual = $curso;
-            }
+            $aluno_id = (int) ($ev['aluno_id'] ?? 0);
             $aluno = $ev['aluno_nome'] ?? 'aluno(a)';
-            $tipo = $ev['tipo_nome'] ?? 'Ocorrência';
-            $hora = !empty($ev['hora_evento']) ? substr($ev['hora_evento'], 0, 5) : '';
-            $hora_reg = !empty($ev['created_at']) ? date('H:i', strtotime($ev['created_at'])) : '';
-            $linha = '• ' . $aluno . ' — ' . $tipo;
-            if ($hora !== '') {
-                $linha .= ' (evento ' . $hora . ')';
-            } elseif ($hora_reg !== '') {
-                $linha .= ' (registro ' . $hora_reg . ')';
+            $chave_aluno = $aluno_id > 0 ? (string) $aluno_id : $aluno;
+            if (!isset($grupos[$curso])) {
+                $grupos[$curso] = [];
             }
-            $linhas[] = $linha;
+            if (!isset($grupos[$curso][$chave_aluno])) {
+                $grupos[$curso][$chave_aluno] = [
+                    'nome' => $aluno,
+                    'eventos' => [],
+                ];
+            }
+            $grupos[$curso][$chave_aluno]['eventos'][] = $ev;
+        }
 
-            if (!empty($ev['observacoes_visiveis_responsaveis'])) {
-                $obs = trim((string) ($ev['observacoes'] ?? ''));
-                if ($obs !== '') {
-                    $linhas[] = '  Obs.: ' . $obs;
+        $primeiro_curso = true;
+        foreach ($grupos as $curso => $alunos) {
+            if (!$primeiro_curso) {
+                $linhas[] = '';
+            }
+            $primeiro_curso = false;
+            $linhas[] = '— ' . $curso . ' —';
+
+            foreach ($alunos as $bloco) {
+                $linhas[] = $bloco['nome'];
+                $letra = 'a';
+                foreach ($bloco['eventos'] as $ev) {
+                    $tipo = $ev['tipo_nome'] ?? 'Ocorrência';
+                    $hora = !empty($ev['hora_evento']) ? substr($ev['hora_evento'], 0, 5) : '';
+                    $hora_reg = !empty($ev['created_at']) ? date('H:i', strtotime($ev['created_at'])) : '';
+                    $linha = '  ' . $letra . ') ' . $tipo;
+                    if ($hora !== '') {
+                        $linha .= ' (' . $hora . ')';
+                    } elseif ($hora_reg !== '') {
+                        $linha .= ' (registro ' . $hora_reg . ')';
+                    }
+                    if (!empty($ev['observacoes_visiveis_responsaveis'])) {
+                        $obs = trim((string) ($ev['observacoes'] ?? ''));
+                        if ($obs !== '') {
+                            // Uma linha: evita quebras no meio do resumo
+                            $obs = preg_replace('/\s+/', ' ', $obs);
+                            $linha .= ' — ' . $obs;
+                        }
+                    }
+                    $linhas[] = $linha;
+
+                    $letra = chr(ord($letra) + 1);
+                    if ($letra > 'z') {
+                        $letra = 'a';
+                    }
                 }
             }
         }
