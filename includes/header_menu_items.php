@@ -47,6 +47,13 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
             <i class="bi bi-clipboard-check"></i> Autorizações
         </a>
     </li>
+    <?php if ($is_admin): ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'emails_enviados.php' ? 'active' : ''; ?>" href="emails_enviados.php">
+            <i class="bi bi-envelope-check"></i> E-mails enviados
+        </a>
+    </li>
+    <?php endif; ?>
     <?php endif; ?>
 
     <?php if ($can_view_alunos): ?>

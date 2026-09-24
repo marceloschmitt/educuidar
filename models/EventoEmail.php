@@ -113,16 +113,35 @@ class EventoEmail {
         return $stmt->execute();
     }
 
-    /** Histórico de envios aos responsáveis (mais recentes primeiro). */
-    public function listEnviados($limit = 100) {
+    /**
+     * Histórico de envios aos responsáveis (mais recentes primeiro).
+     * @param array{curso_id?: int|null, turma_id?: int|null, aluno_id?: int|null} $filtros
+     */
+    public function listEnviados($limit = 200, array $filtros = []) {
         $limit = max(1, (int) $limit);
+        $config = new Configuracao($this->conn);
+        $ano = $config->getAnoCorrente();
+
         $query = "SELECT ee.id, ee.evento_id, ee.email, ee.enviado_em,
-                         ee.responsavel_id, ee.user_id,
+                         ee.responsavel_id, ee.user_id, e.aluno_id, e.turma_id,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
                          te.nome AS tipo_nome,
                          e.data_evento, e.hora_evento,
                          r.nome AS responsavel_nome,
                          u.full_name AS coordenador_nome,
+                         COALESCE(t.curso_id, (
+                             SELECT t2.curso_id FROM aluno_turmas at
+                             INNER JOIN turmas t2 ON t2.id = at.turma_id
+                             WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano
+                             ORDER BY t2.id DESC LIMIT 1
+                         )) AS curso_id,
+                         COALESCE(c.nome, (
+                             SELECT c2.nome FROM aluno_turmas at
+                             INNER JOIN turmas t2 ON t2.id = at.turma_id
+                             INNER JOIN cursos c2 ON c2.id = t2.curso_id
+                             WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano2
+                             ORDER BY t2.id DESC LIMIT 1
+                         )) AS curso_nome,
                          CASE
                              WHEN ee.responsavel_id IS NOT NULL THEN 'Responsável'
                              WHEN ee.user_id IS NOT NULL THEN 'Coordenador'
@@ -134,9 +153,50 @@ class EventoEmail {
                   INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
                   LEFT JOIN responsaveis r ON r.id = ee.responsavel_id
                   LEFT JOIN users u ON u.id = ee.user_id
-                  ORDER BY ee.enviado_em DESC, ee.id DESC
-                  LIMIT {$limit}";
+                  LEFT JOIN turmas t ON t.id = e.turma_id
+                  LEFT JOIN cursos c ON c.id = t.curso_id
+                  WHERE 1=1";
+
+        $params = [':ano' => $ano, ':ano2' => $ano];
+
+        if (!empty($filtros['aluno_id'])) {
+            $query .= " AND e.aluno_id = :aluno_id";
+            $params[':aluno_id'] = (int) $filtros['aluno_id'];
+        }
+        if (!empty($filtros['turma_id'])) {
+            $query .= " AND (
+                e.turma_id = :turma_id
+                OR EXISTS (
+                    SELECT 1 FROM aluno_turmas atx
+                    WHERE atx.aluno_id = e.aluno_id AND atx.turma_id = :turma_id2
+                )
+            )";
+            $params[':turma_id'] = (int) $filtros['turma_id'];
+            $params[':turma_id2'] = (int) $filtros['turma_id'];
+        }
+        if (!empty($filtros['curso_id'])) {
+            $query .= " AND (
+                t.curso_id = :curso_id
+                OR EXISTS (
+                    SELECT 1 FROM aluno_turmas atx
+                    INNER JOIN turmas tx ON tx.id = atx.turma_id
+                    WHERE atx.aluno_id = e.aluno_id
+                      AND tx.curso_id = :curso_id2
+                      AND tx.ano_civil = :ano3
+                )
+            )";
+            $params[':curso_id'] = (int) $filtros['curso_id'];
+            $params[':curso_id2'] = (int) $filtros['curso_id'];
+            $params[':ano3'] = $ano;
+        }
+
+        $query .= " ORDER BY ee.enviado_em DESC, ee.id DESC
+                    LIMIT {$limit}";
+
         $stmt = $this->conn->prepare($query);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
         $stmt->execute();
         return $stmt->fetchAll();
     }

@@ -61,10 +61,6 @@ if ($eventos_desde === null || $eventos_desde === '') {
     $configuracao->setEmailEventosDesde(date('Y-m-d'));
     $eventos_desde = date('Y-m-d');
 }
-
-$eventoEmail = new EventoEmail($db);
-$enviados = $eventoEmail->listEnviados(100);
-$resumos = $eventoEmail->listResumosCoordenador(50);
 ob_end_flush();
 
 $page_title = 'Configuração de e-mail';
@@ -177,103 +173,9 @@ require_once 'includes/header.php';
 
                 <hr class="my-4">
                 <p class="small text-muted mb-0">
-                    O envio roda ao final da coleta geral (<code>consulta_alunos.py</code>).
+                    O envio roda ao final da coleta geral.
+                    Consulte os disparos em <a href="emails_enviados.php">E-mails enviados</a>.
                 </p>
-            </div>
-        </div>
-
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-inbox"></i> E-mails enviados</h5>
-                <span class="small text-muted">Últimos <?php echo count($enviados); ?></span>
-            </div>
-            <div class="card-body">
-                <?php if (empty($enviados)): ?>
-                <p class="text-muted mb-0">Nenhum e-mail registrado ainda.</p>
-                <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Enviado em</th>
-                                <th>Aluno</th>
-                                <th>Evento</th>
-                                <th>Destinatário</th>
-                                <th>E-mail</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($enviados as $row): ?>
-                            <?php
-                            $nome_dest = $row['responsavel_nome'] ?: ($row['coordenador_nome'] ?: '—');
-                            $data_ev = !empty($row['data_evento'])
-                                ? date('d/m/y', strtotime($row['data_evento']))
-                                : '—';
-                            $hora_ev = !empty($row['hora_evento']) ? substr($row['hora_evento'], 0, 5) : '';
-                            ?>
-                            <tr>
-                                <td class="text-nowrap small">
-                                    <?php echo date('d/m/Y H:i', strtotime($row['enviado_em'])); ?>
-                                </td>
-                                <td><?php echo htmlspecialchars($row['aluno_nome']); ?></td>
-                                <td>
-                                    <?php echo htmlspecialchars($row['tipo_nome']); ?>
-                                    <div class="small text-muted">
-                                        <?php echo htmlspecialchars($data_ev . ($hora_ev !== '' ? ' ' . $hora_ev : '')); ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-<?php echo $row['destinatario_tipo'] === 'Coordenador' ? 'secondary' : 'primary'; ?>">
-                                        <?php echo htmlspecialchars($row['destinatario_tipo']); ?>
-                                    </span>
-                                    <div class="small"><?php echo htmlspecialchars($nome_dest); ?></div>
-                                </td>
-                                <td class="small"><?php echo htmlspecialchars($row['email']); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <div class="card mt-3">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-people"></i> Resumos aos coordenadores</h5>
-                <span class="small text-muted">Últimos <?php echo count($resumos); ?></span>
-            </div>
-            <div class="card-body">
-                <?php if (empty($resumos)): ?>
-                <p class="text-muted mb-0">Nenhum resumo enviado ainda.</p>
-                <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th>Enviado em</th>
-                                <th>Dia</th>
-                                <th>Coordenador</th>
-                                <th>Ocorrências</th>
-                                <th>E-mail</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($resumos as $row): ?>
-                            <tr>
-                                <td class="text-nowrap small">
-                                    <?php echo date('d/m/Y H:i', strtotime($row['enviado_em'])); ?>
-                                </td>
-                                <td><?php echo date('d/m/Y', strtotime($row['data_ref'])); ?></td>
-                                <td><?php echo htmlspecialchars($row['coordenador_nome']); ?></td>
-                                <td><?php echo (int) $row['total_eventos']; ?></td>
-                                <td class="small"><?php echo htmlspecialchars($row['email']); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endif; ?>
             </div>
         </div>
     </div>

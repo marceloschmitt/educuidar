@@ -12,6 +12,17 @@ if (!$user->isLoggedIn() || !$user->isAdmin()) {
     exit;
 }
 
+$redirectLista = static function () {
+    $status = $_POST['filtro_status'] ?? $_GET['status'] ?? '';
+    $status = is_string($status) ? trim($status) : '';
+    $url = 'admin_responsaveis.php';
+    if ($status !== '' && in_array($status, ['pendente', 'aprovado', 'suspendido', 'rejeitado'], true)) {
+        $url .= '?status=' . urlencode($status);
+    }
+    header('Location: ' . $url);
+    exit;
+};
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -24,8 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['error'] = 'Não foi possível atualizar a configuração.';
         }
-        header('Location: admin_responsaveis.php');
-        exit;
+        $redirectLista();
     }
 
     if ($action === 'aprovar' && !empty($_POST['id'])) {
@@ -34,8 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['error'] = 'Erro ao aprovar responsável.';
         }
-        header('Location: admin_responsaveis.php');
-        exit;
+        $redirectLista();
     }
 
     if ($action === 'rejeitar' && !empty($_POST['id'])) {
@@ -44,8 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['error'] = 'Erro ao rejeitar responsável.';
         }
-        header('Location: admin_responsaveis.php');
-        exit;
+        $redirectLista();
     }
 
     if ($action === 'suspender' && !empty($_POST['id'])) {
@@ -54,8 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['error'] = 'Erro ao suspender responsável.';
         }
-        header('Location: admin_responsaveis.php');
-        exit;
+        $redirectLista();
     }
 
     if ($action === 'excluir' && !empty($_POST['id'])) {
@@ -64,8 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $_SESSION['error'] = 'Erro ao remover responsável.';
         }
-        header('Location: admin_responsaveis.php');
-        exit;
+        $redirectLista();
     }
 }
 
@@ -226,6 +232,7 @@ $total_alunos = count($alunos_contemplados);
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="aprovar">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <input type="hidden" name="filtro_status" value="<?php echo htmlspecialchars($filtro_status); ?>">
                                 <button type="submit" class="btn btn-success btn-sm" title="Aprovar">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
@@ -233,6 +240,7 @@ $total_alunos = count($alunos_contemplados);
                             <form method="POST" class="d-inline form-confirm" data-confirm="Rejeitar este responsável?">
                                 <input type="hidden" name="action" value="rejeitar">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <input type="hidden" name="filtro_status" value="<?php echo htmlspecialchars($filtro_status); ?>">
                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Rejeitar">
                                     <i class="bi bi-x-lg"></i>
                                 </button>
@@ -242,6 +250,7 @@ $total_alunos = count($alunos_contemplados);
                                   data-confirm="Suspender este responsável? O acesso será bloqueado, mas vínculos e autorizações serão mantidos.">
                                 <input type="hidden" name="action" value="suspender">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <input type="hidden" name="filtro_status" value="<?php echo htmlspecialchars($filtro_status); ?>">
                                 <button type="submit" class="btn btn-outline-secondary btn-sm" title="Suspender">
                                     <i class="bi bi-pause-circle"></i>
                                 </button>
@@ -250,6 +259,7 @@ $total_alunos = count($alunos_contemplados);
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="aprovar">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <input type="hidden" name="filtro_status" value="<?php echo htmlspecialchars($filtro_status); ?>">
                                 <button type="submit" class="btn btn-success btn-sm" title="Reativar / aprovar">
                                     <i class="bi bi-check-lg"></i>
                                 </button>
@@ -259,6 +269,7 @@ $total_alunos = count($alunos_contemplados);
                                   data-confirm="<?php echo htmlspecialchars($msg_excluir, ENT_QUOTES, 'UTF-8'); ?>">
                                 <input type="hidden" name="action" value="excluir">
                                 <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <input type="hidden" name="filtro_status" value="<?php echo htmlspecialchars($filtro_status); ?>">
                                 <button type="submit" class="btn btn-outline-danger btn-sm" title="Remover">
                                     <i class="bi bi-trash"></i>
                                 </button>
