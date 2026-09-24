@@ -453,6 +453,7 @@ def main() -> int:
             )
             log(f"Faltas extraídas: {resumo['total_faltas_extraidas']}")
             log(f"Eventos inseridos: {resumo['inseridos']}")
+            log(f"Eventos removidos (sumiram no SIGAA): {resumo.get('removidos', 0)}")
             log(
                 f"Pulados (falta do professor no dia): {resumo['pulados_professor']}"
             )

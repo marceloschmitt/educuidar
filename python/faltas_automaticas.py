@@ -1,4 +1,9 @@
-"""Extrai faltas da resposta SIGAA e insere eventos automáticos no EduCuidar."""
+"""Extrai faltas da resposta SIGAA e reconcilia eventos automáticos no EduCuidar.
+
+- Insere faltas novas do período consultado.
+- Remove faltas automáticas que sumiram no SIGAA (só tipo automático).
+- Não altera registros manuais do professor.
+"""
 
 from __future__ import annotations
 
@@ -350,6 +355,109 @@ def inserir_evento_falta(
         return int(cur.lastrowid)
 
 
+def codigo_de_observacao_auto(observacoes: str | None) -> str | None:
+    """Extrai o código da disciplina de '[AUTO] COD - Disciplina'."""
+    texto = str(observacoes or "").strip()
+    match = re.match(r"^\[AUTO\]\s*(\S+)\s*-", texto)
+    if match:
+        return match.group(1).strip()
+    # Fallback: só código sem disciplina
+    match = re.match(r"^\[AUTO\]\s*(\S+)\s*$", texto)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
+def chave_falta_auto(aluno_id: int, data: str, codigo: str) -> tuple[int, str, str]:
+    return (int(aluno_id), str(data), str(codigo or "").strip())
+
+
+def obter_periodo_frequencia_iso(conn) -> tuple[str | None, str | None]:
+    """Lê datas da consulta SIGAA (DD-MM-AAAA ou AAAA-MM-DD) → ISO."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT chave, valor FROM configuracoes
+            WHERE chave IN (
+                'api_sigaa_frequencia_data_inicial',
+                'api_sigaa_frequencia_data_final'
+            )
+            """
+        )
+        rows = {r["chave"]: r["valor"] for r in cur.fetchall()}
+    ini = parsear_data_api(rows.get("api_sigaa_frequencia_data_inicial") or "")
+    fim = parsear_data_api(rows.get("api_sigaa_frequencia_data_final") or "")
+    return ini, fim
+
+
+def resolver_aluno_id(
+    falta_ou_aluno: dict[str, Any],
+    alunos_cpf: dict[str, dict[str, Any]],
+) -> int | None:
+    if falta_ou_aluno.get("aluno_id"):
+        try:
+            return int(falta_ou_aluno["aluno_id"])
+        except (TypeError, ValueError):
+            pass
+    login = normalizar_cpf(falta_ou_aluno.get("login"))
+    row = alunos_cpf.get(login)
+    return int(row["id"]) if row else None
+
+
+def alunos_consultados_ok(
+    respostas: list[dict[str, Any]],
+    alunos_cpf: dict[str, dict[str, Any]],
+) -> set[int]:
+    """Alunos com consulta SIGAA bem-sucedida (status 200) e vínculo no BD."""
+    ids: set[int] = set()
+    for item in respostas:
+        if item.get("status") != 200:
+            continue
+        aluno_id = resolver_aluno_id(item, alunos_cpf)
+        if aluno_id:
+            ids.add(aluno_id)
+    return ids
+
+
+def listar_eventos_auto_periodo(
+    conn,
+    *,
+    tipo_auto_id: int,
+    aluno_ids: set[int],
+    data_inicial: str,
+    data_final: str,
+) -> list[dict[str, Any]]:
+    if not aluno_ids:
+        return []
+    ids = sorted(aluno_ids)
+    placeholders = ",".join(["%s"] * len(ids))
+    with conn.cursor() as cur:
+        cur.execute(
+            f"""
+            SELECT id, aluno_id, data_evento, observacoes
+            FROM eventos
+            WHERE tipo_evento_id = %s
+              AND aluno_id IN ({placeholders})
+              AND data_evento >= %s
+              AND data_evento <= %s
+            """,
+            [tipo_auto_id, *ids, data_inicial, data_final],
+        )
+        return list(cur.fetchall())
+
+
+def apagar_eventos_auto_por_ids(conn, evento_ids: list[int]) -> int:
+    if not evento_ids:
+        return 0
+    placeholders = ",".join(["%s"] * len(evento_ids))
+    with conn.cursor() as cur:
+        cur.execute(
+            f"DELETE FROM eventos WHERE id IN ({placeholders})",
+            evento_ids,
+        )
+        return int(cur.rowcount)
+
+
 def importar_faltas(
     faltas: list[dict[str, Any]] | None = None,
     *,
@@ -359,21 +467,28 @@ def importar_faltas(
     gerar_lista_faltas: bool = False,
 ) -> dict[str, Any]:
     """
-    Extrai faltas (se necessário) e tenta inserir eventos.
-
-    Regras:
-    - Não duplica falta automática da mesma disciplina/data.
-    - Se já existe falta do professor (ou automática) na data do aluno, não insere.
+    Reconcilia faltas automáticas com o SIGAA:
+    - Insere faltas novas (disciplina/data) que ainda não existem.
+    - Remove eventos automáticos do período consultado que sumiram no SIGAA.
+    - Não altera faltas lançadas pelo professor.
+    - Só reprocessa alertas dos alunos com inserção ou remoção.
     """
+    respostas_brutas: list[dict[str, Any]] | None = None
+    reconciliar = False
+
     if faltas is None:
         caminho = arquivo_resposta or JSON_RESPOSTA_ALUNOS
         alunos = json.loads(caminho.read_text(encoding="utf-8"))
         if not isinstance(alunos, list):
             raise ValueError("resposta_alunos.json deve ser uma lista")
+        respostas_brutas = alunos
         faltas = extrair_faltas_da_resposta(alunos)
+        reconciliar = True
     elif faltas and isinstance(faltas[0], dict) and "status" in faltas[0]:
-        # Lista de respostas da API (consulta_alunos), não faltas já extraídas
+        # Lista de respostas da API (consulta_alunos)
+        respostas_brutas = faltas
         faltas = extrair_faltas_da_resposta(faltas)
+        reconciliar = True
 
     lista_path = None
     if gerar_lista_faltas:
@@ -383,16 +498,15 @@ def importar_faltas(
         "lista_arquivo": str(lista_path) if lista_path else None,
         "total_faltas_extraidas": len(faltas),
         "inseridos": 0,
+        "removidos": 0,
         "pulados_sem_aluno": 0,
         "pulados_professor": 0,
         "pulados_duplicado": 0,
         "erros": 0,
         "alunos_afetados": [],
         "dry_run": dry_run,
+        "reconciliado": False,
     }
-
-    if not faltas:
-        return resumo
 
     conn = pymysql.connect(**carregar_config_mysql())
     alunos_afetados: set[int] = set()
@@ -402,22 +516,26 @@ def importar_faltas(
         tipos_professor = ids_tipos_falta_professor(conn)
         alunos_cpf = mapear_alunos_por_cpf(conn)
         turmas_cache: dict[int, int | None] = {}
-        # Cache: (aluno_id, data) → já tem falta do professor?
         cache_professor: dict[tuple[int, str], bool] = {}
 
-        for falta in faltas:
-            login = normalizar_cpf(falta.get("login"))
-            if falta.get("aluno_id"):
-                aluno_id = int(falta["aluno_id"])
-            else:
-                aluno_row = alunos_cpf.get(login)
-                if not aluno_row:
-                    resumo["pulados_sem_aluno"] += 1
-                    continue
-                aluno_id = int(aluno_row["id"])
+        # Chaves presentes no SIGAA nesta leitura
+        chaves_sigaa: set[tuple[int, str, str]] = set()
+        faltas_validas: list[tuple[int, dict[str, Any]]] = []
 
+        for falta in faltas:
+            aluno_id = resolver_aluno_id(falta, alunos_cpf)
+            if not aluno_id:
+                resumo["pulados_sem_aluno"] += 1
+                continue
             data = falta["data"]
-            codigo = falta.get("codigo_disciplina") or ""
+            codigo = str(falta.get("codigo_disciplina") or "").strip()
+            chaves_sigaa.add(chave_falta_auto(aluno_id, data, codigo))
+            faltas_validas.append((aluno_id, falta))
+
+        # 1) Inserir novas
+        for aluno_id, falta in faltas_validas:
+            data = falta["data"]
+            codigo = str(falta.get("codigo_disciplina") or "").strip()
 
             chave_prof = (aluno_id, data)
             if chave_prof not in cache_professor:
@@ -450,13 +568,55 @@ def importar_faltas(
                     turma_id=turma_id,
                     tipo_evento_id=tipo_auto_id,
                     data_evento=data,
-                    observacoes=falta.get("observacoes") or montar_observacao(codigo, falta.get("disciplina") or ""),
+                    observacoes=falta.get("observacoes")
+                    or montar_observacao(codigo, falta.get("disciplina") or ""),
                     registrado_por=registrado_por,
                 )
                 resumo["inseridos"] += 1
                 alunos_afetados.add(aluno_id)
             except Exception:
                 resumo["erros"] += 1
+
+        # 2) Remover automáticas do período que sumiram no SIGAA
+        if reconciliar and respostas_brutas is not None:
+            consultados = alunos_consultados_ok(respostas_brutas, alunos_cpf)
+            data_ini, data_fim = obter_periodo_frequencia_iso(conn)
+            if not data_ini or not data_fim:
+                # Fallback: extremos das faltas lidas (ou só hoje)
+                datas = [f["data"] for f in faltas if f.get("data")]
+                if datas:
+                    data_ini = min(datas)
+                    data_fim = max(datas)
+
+            if consultados and data_ini and data_fim:
+                resumo["reconciliado"] = True
+                existentes = listar_eventos_auto_periodo(
+                    conn,
+                    tipo_auto_id=tipo_auto_id,
+                    aluno_ids=consultados,
+                    data_inicial=data_ini,
+                    data_final=data_fim,
+                )
+                ids_apagar: list[int] = []
+                for ev in existentes:
+                    codigo = codigo_de_observacao_auto(ev.get("observacoes"))
+                    if not codigo:
+                        # Observação fora do padrão: não remove automaticamente
+                        continue
+                    data_ev = ev["data_evento"]
+                    if hasattr(data_ev, "isoformat"):
+                        data_ev = data_ev.isoformat()
+                    else:
+                        data_ev = str(data_ev)[:10]
+                    chave = chave_falta_auto(int(ev["aluno_id"]), data_ev, codigo)
+                    if chave not in chaves_sigaa:
+                        ids_apagar.append(int(ev["id"]))
+                        alunos_afetados.add(int(ev["aluno_id"]))
+
+                if dry_run:
+                    resumo["removidos"] = len(ids_apagar)
+                elif ids_apagar:
+                    resumo["removidos"] = apagar_eventos_auto_por_ids(conn, ids_apagar)
 
         if not dry_run:
             conn.commit()
