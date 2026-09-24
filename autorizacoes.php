@@ -34,7 +34,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($result === 'sem_tipo_evento') {
             $_SESSION['error'] = 'Configure o tipo de evento correspondente (admin) antes de marcar como ocorrido.';
         } else {
-            $_SESSION['error'] = 'Não foi possível marcar (já ocorrido ou inexistente).';
+            $_SESSION['error'] = 'Não foi possível marcar (já resolvido ou inexistente).';
+        }
+        header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
+        exit;
+    }
+
+    if ($action === 'marcar_nao_ocorrido') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if ($id && $autorizacao->marcarNaoOcorrido($id, $_SESSION['user_id'])) {
+            $_SESSION['success'] = 'Marcado como não ocorrido.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível marcar (já resolvido ou inexistente).';
         }
         header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
         exit;
@@ -149,7 +160,8 @@ require_once 'includes/header.php';
     <div class="card-body">
         <p class="text-muted small">
             Autorizações de entrada ou saída fora do horário.
-            Marque <strong>Ocorreu</strong> quando o aluno tiver chegado ou saído conforme previsto — isso cria o evento automaticamente.
+            Marque com <i class="bi bi-check-lg"></i> se ocorreu (cria o evento) ou com
+            <i class="bi bi-x-lg text-danger"></i> se não ocorreu.
         </p>
         <form method="GET" class="row g-2 align-items-end mb-3">
             <div class="col-md-2">
@@ -209,8 +221,8 @@ require_once 'includes/header.php';
                     <?php foreach ($lista as $item): ?>
                     <?php
                     $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
-                    $st = $item['status'] ?? 'previsto';
-                    $badge = $st === 'ocorrido' ? 'success' : 'warning';
+                    $st = $item['status'] ?? 'pendente';
+                    $badge = AutorizacaoResponsavel::statusBadgeClass($st);
                     ?>
                     <tr>
                         <td class="text-nowrap">
@@ -228,7 +240,7 @@ require_once 'includes/header.php';
                         <td style="max-width: 280px;"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></td>
                         <td>
                             <span class="badge bg-<?php echo $badge; ?>"><?php echo htmlspecialchars($status_labels[$st] ?? $st); ?></span>
-                            <?php if ($st === 'ocorrido' && !empty($item['confirmado_por_nome'])): ?>
+                            <?php if (($st === 'ocorrido' || $st === 'nao_ocorrido') && !empty($item['confirmado_por_nome'])): ?>
                             <div class="small text-muted mt-1">
                                 <?php echo htmlspecialchars($item['confirmado_por_nome']); ?>
                                 <?php if (!empty($item['confirmado_em'])): ?>
@@ -241,15 +253,25 @@ require_once 'includes/header.php';
                             <?php endif; ?>
                         </td>
                         <td class="text-nowrap">
-                            <?php if ($st === 'previsto'): ?>
+                            <?php if ($st === 'pendente'): ?>
                             <form method="POST" class="d-inline">
                                 <input type="hidden" name="action" value="marcar_ocorrido">
                                 <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
                                 <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($return_query); ?>">
                                 <button type="submit" class="btn btn-success btn-sm"
-                                        title="Marcar que o fato ocorreu e criar evento"
+                                        title="Marcar como ocorrido e criar evento"
                                         onclick="return confirm('Marcar que a entrada/saída ocorreu e criar o evento?');">
-                                    <i class="bi bi-check-lg"></i> Ocorreu
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                            </form>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="marcar_nao_ocorrido">
+                                <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
+                                <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($return_query); ?>">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        title="Marcar como não ocorrido"
+                                        onclick="return confirm('Marcar que a entrada/saída NÃO ocorreu?');">
+                                    <i class="bi bi-x-lg"></i>
                                 </button>
                             </form>
                             <?php endif; ?>

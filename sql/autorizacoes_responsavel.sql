@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     data_autorizacao DATE NOT NULL,
     hora TIME NOT NULL,
     justificativa TEXT NOT NULL,
-    status ENUM('previsto', 'ocorrido') NOT NULL DEFAULT 'previsto',
+    status ENUM('pendente', 'ocorrido', 'nao_ocorrido') NOT NULL DEFAULT 'pendente',
     confirmado_por INT NULL,
     confirmado_em TIMESTAMP NULL,
     evento_id INT NULL,

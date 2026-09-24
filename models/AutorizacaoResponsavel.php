@@ -1,7 +1,7 @@
 <?php
 /**
  * Autorizações de entrada/saída fora do horário criadas por responsáveis.
- * Status controla se o fato previsto (entrada/saída) já ocorreu.
+ * Status: pendente → ocorrido | nao_ocorrido
  */
 
 class AutorizacaoResponsavel {
@@ -11,8 +11,9 @@ class AutorizacaoResponsavel {
     public const TIPO_ENTRADA = 'entrada_fora_horario';
     public const TIPO_SAIDA = 'saida_fora_horario';
 
-    public const STATUS_PREVISTO = 'previsto';
+    public const STATUS_PENDENTE = 'pendente';
     public const STATUS_OCORRIDO = 'ocorrido';
+    public const STATUS_NAO_OCORRIDO = 'nao_ocorrido';
 
     public function __construct($db) {
         $this->conn = $db;
@@ -27,9 +28,20 @@ class AutorizacaoResponsavel {
 
     public static function statusLabels() {
         return [
-            self::STATUS_PREVISTO => 'Não ocorrido',
+            self::STATUS_PENDENTE => 'Pendente',
             self::STATUS_OCORRIDO => 'Ocorrido',
+            self::STATUS_NAO_OCORRIDO => 'Não ocorrido',
         ];
+    }
+
+    public static function statusBadgeClass($status) {
+        if ($status === self::STATUS_OCORRIDO) {
+            return 'success';
+        }
+        if ($status === self::STATUS_NAO_OCORRIDO) {
+            return 'danger';
+        }
+        return 'warning';
     }
 
     public function create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa) {
@@ -43,7 +55,7 @@ class AutorizacaoResponsavel {
 
         $query = "INSERT INTO " . $this->table . "
                   (responsavel_id, aluno_id, tipo, data_autorizacao, hora, justificativa, status)
-                  VALUES (:responsavel_id, :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'previsto')";
+                  VALUES (:responsavel_id, :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'pendente')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
         $stmt->bindParam(':aluno_id', $aluno_id);
@@ -121,7 +133,7 @@ class AutorizacaoResponsavel {
         }
 
         $query .= " ORDER BY
-                    CASE a.status WHEN 'previsto' THEN 0 ELSE 1 END,
+                    CASE a.status WHEN 'pendente' THEN 0 ELSE 1 END,
                     a.data_autorizacao DESC, a.hora DESC, a.id DESC
                     LIMIT 200";
 
@@ -136,7 +148,7 @@ class AutorizacaoResponsavel {
     /** Marca como ocorrido e cria o evento vinculado (se houver tipo configurado). */
     public function marcarOcorrido($id, $user_id) {
         $auth = $this->getById($id);
-        if (!$auth || ($auth['status'] ?? '') !== 'previsto') {
+        if (!$auth || ($auth['status'] ?? '') !== self::STATUS_PENDENTE) {
             return false;
         }
 
@@ -172,7 +184,7 @@ class AutorizacaoResponsavel {
                           confirmado_por = :user_id,
                           confirmado_em = NOW(),
                           evento_id = :evento_id
-                      WHERE id = :id AND status = 'previsto'";
+                      WHERE id = :id AND status = 'pendente'";
             $stmt = $this->conn->prepare($query);
             $stmt->bindParam(':user_id', $user_id);
             $stmt->bindValue(':evento_id', (int) $evento->id);
@@ -194,6 +206,20 @@ class AutorizacaoResponsavel {
             }
             return false;
         }
+    }
+
+    /** Marca como não ocorrido (sem criar evento). */
+    public function marcarNaoOcorrido($id, $user_id) {
+        $query = "UPDATE " . $this->table . "
+                  SET status = 'nao_ocorrido',
+                      confirmado_por = :user_id,
+                      confirmado_em = NOW()
+                  WHERE id = :id AND status = 'pendente'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':id', $id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
     }
 
     private function getParentesco($responsavel_id, $aluno_id) {
@@ -222,14 +248,14 @@ class AutorizacaoResponsavel {
     }
 
     /**
-     * Remove autorização: só se ainda não ocorreu e a data prevista ainda não chegou.
+     * Remove autorização: só se pendente e a data/hora prevista ainda não chegou.
      */
     public function remover($id, $responsavel_id) {
         $query = "DELETE FROM " . $this->table . "
                   WHERE id = :id
                     AND responsavel_id = :responsavel_id
-                    AND status = 'previsto'
-                    AND data_autorizacao > CURDATE()";
+                    AND status = 'pendente'
+                    AND TIMESTAMP(data_autorizacao, hora) > NOW()";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
@@ -239,13 +265,21 @@ class AutorizacaoResponsavel {
 
     /** Indica se o responsável ainda pode remover esta autorização. */
     public static function podeRemover(array $item) {
-        if (($item['status'] ?? '') !== 'previsto') {
+        if (($item['status'] ?? '') !== self::STATUS_PENDENTE) {
             return false;
         }
         $data = $item['data_autorizacao'] ?? '';
         if ($data === '') {
             return false;
         }
-        return $data > date('Y-m-d');
+        $hora = $item['hora'] ?? '00:00:00';
+        if (strlen($hora) === 5) {
+            $hora .= ':00';
+        }
+        $ts = strtotime($data . ' ' . $hora);
+        if ($ts === false) {
+            return false;
+        }
+        return $ts > time();
     }
 }

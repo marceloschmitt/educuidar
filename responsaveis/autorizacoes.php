@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($autorizacao->remover((int) $_POST['id'], $responsavel_id)) {
             $_SESSION['flash_success'] = 'Autorização removida.';
         } else {
-            $_SESSION['flash_error'] = 'Não foi possível remover. Só é permitido antes da data prevista e se ainda não ocorreu.';
+            $_SESSION['flash_error'] = 'Não foi possível remover. Só é permitido enquanto estiver pendente e antes da data/hora prevista.';
         }
     } else {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
@@ -147,8 +147,8 @@ require __DIR__ . '/header.php';
             <?php
             $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
             $tipo_label = $tipos[$item['tipo']] ?? $item['tipo'];
-            $st = $item['status'] ?? 'previsto';
-            $badge = $st === 'ocorrido' ? 'success' : 'warning';
+            $st = $item['status'] ?? 'pendente';
+            $badge = AutorizacaoResponsavel::statusBadgeClass($st);
             ?>
             <div class="p-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
