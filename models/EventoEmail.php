@@ -315,7 +315,8 @@ class EventoEmail {
             $linhas[] = '— ' . $curso . ' —';
 
             foreach ($alunos as $bloco) {
-                $linhas[] = $bloco['nome'];
+                $linhas[] = '';
+                $linhas[] = '- ' . $bloco['nome'];
                 $letra = 'a';
                 foreach ($bloco['eventos'] as $ev) {
                     $tipo = $ev['tipo_nome'] ?? 'Ocorrência';
