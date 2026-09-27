@@ -451,17 +451,22 @@ def main() -> int:
                 user_id_env=user_id,
                 gerar_lista_faltas=args.gerar_lista_faltas,
             )
+            log(f"Tipo de evento das faltas: id={resumo['tipo_evento_id']}")
+            if resumo.get("silencioso"):
+                log("Carga inicial neste tipo: sem e-mails e sem pop-up de alertas.")
             log(f"Faltas extraídas: {resumo['total_faltas_extraidas']}")
             log(f"Eventos inseridos: {resumo['inseridos']}")
             log(f"Eventos removidos (sumiram no SIGAA): {resumo.get('removidos', 0)}")
-            log(
-                f"Pulados (falta do professor no dia): {resumo['pulados_professor']}"
-            )
             log(f"Pulados (duplicado): {resumo['pulados_duplicado']}")
             log(f"Pulados (sem aluno): {resumo['pulados_sem_aluno']}")
+            if resumo.get("erros"):
+                log(f"Erros ao inserir: {resumo['erros']}", erro=True)
             if resumo.get("lista_arquivo"):
                 log(f"Lista de faltas: {resumo['lista_arquivo']}")
-            processar_alertas_alunos(resumo.get("alunos_afetados") or [])
+            processar_alertas_alunos(
+                resumo.get("alunos_afetados") or [],
+                silencioso=bool(resumo.get("silencioso")),
+            )
         except Exception as error:
             log(f"Aviso: falha ao importar faltas: {error}", erro=True)
 

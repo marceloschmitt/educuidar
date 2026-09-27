@@ -64,14 +64,51 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 }
             }
         } elseif ($_POST['action'] == 'delete' && isset($_POST['id'])) {
-            $tipo_evento->id = $_POST['id'];
-            if ($tipo_evento->getTotalEventos() > 0) {
-                $_SESSION['error'] = 'Não é possível excluir um tipo que já possui eventos registrados.';
-            } elseif ($tipo_evento->delete()) {
-                header('Location: tipos_eventos.php?success=deleted');
-                exit;
-            } else {
+            $tipo_evento->id = (int) $_POST['id'];
+            $total_eventos = $tipo_evento->getTotalEventos();
+            $confirmados = (int) ($_POST['confirmar_eventos'] ?? -1);
+
+            if ($total_eventos === 0) {
+                if ($tipo_evento->delete()) {
+                    header('Location: tipos_eventos.php?success=deleted');
+                    exit;
+                }
                 $_SESSION['error'] = 'Erro ao excluir tipo de evento.';
+            } elseif ($confirmados !== $total_eventos) {
+                $_SESSION['error'] = "A quantidade de eventos deste tipo mudou (agora {$total_eventos}). Confira e confirme a exclusão novamente.";
+            } else {
+                $configuracao = new Configuracao($db);
+                $era_tipo_sigaa = $configuracao->getApiSigaaTipoEventoFaltaId() === (int) $tipo_evento->id;
+                $res = $tipo_evento->deleteComEventos();
+
+                if (!$res['ok']) {
+                    $_SESSION['error'] = 'Erro ao excluir o tipo e seus eventos. Nada foi apagado.';
+                } else {
+                    foreach ($res['anexos'] as $caminho) {
+                        $path = __DIR__ . '/' . ltrim((string) $caminho, '/');
+                        if (is_file($path)) {
+                            @unlink($path);
+                        }
+                        $dir = dirname($path);
+                        if (is_dir($dir) && count(scandir($dir)) === 2) {
+                            @rmdir($dir);
+                        }
+                    }
+                    foreach ($res['aluno_ids'] as $aluno_id) {
+                        processarAlertasAluno($db, $aluno_id);
+                    }
+                    if ($era_tipo_sigaa) {
+                        $configuracao->setApiSigaaTipoEventoFaltaId(null);
+                    }
+
+                    $msg = "Tipo de evento excluído junto com {$res['eventos']} evento(s).";
+                    if ($era_tipo_sigaa) {
+                        $msg .= ' Ele era o tipo das faltas do SIGAA: escolha outro em Configurações > API SIGAA, senão a coleta não importa faltas.';
+                    }
+                    $_SESSION['success_detail'] = $msg;
+                    header('Location: tipos_eventos.php?success=deleted');
+                    exit;
+                }
             }
         }
     }
@@ -90,7 +127,8 @@ if (isset($_GET['success'])) {
     } elseif ($_GET['success'] == 'updated') {
         $success = 'Tipo de evento atualizado com sucesso!';
     } elseif ($_GET['success'] == 'deleted') {
-        $success = 'Tipo de evento excluído com sucesso!';
+        $success = $_SESSION['success_detail'] ?? 'Tipo de evento excluído com sucesso!';
+        unset($_SESSION['success_detail']);
     }
 }
 
@@ -110,6 +148,7 @@ if (isset($_GET['edit'])) {
 }
 
 $tipos = $tipo_evento->getAll();
+$tipo_sigaa_id = (new Configuracao($db))->getApiSigaaTipoEventoFaltaId();
 ?>
 
 <?php if ($success): ?>
@@ -202,11 +241,11 @@ $tipos = $tipo_evento->getAll();
                             <input class="form-check-input" type="checkbox" id="notificar_email_responsaveis" name="notificar_email_responsaveis" value="1"
                                    <?php echo (!empty($tipo_edit['notificar_email_responsaveis'])) ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="notificar_email_responsaveis">
-                                Enviar e-mail aos responsáveis
+                                Incluir no resumo diário por e-mail
                             </label>
                             <small class="text-muted d-block">
-                                O e-mail é enviado cerca de 2 horas após o registro (tempo para corrigir erros),
-                                a todos os responsáveis aprovados do aluno.
+                                Eventos ocorridos no dia entram no resumo enviado após as 19:30
+                                aos responsáveis aprovados do aluno e aos coordenadores do curso.
                             </small>
                         </div>
                     </div>
@@ -285,6 +324,12 @@ $tipos = $tipo_evento->getAll();
                                           style="white-space: normal; max-width: 100%; display: inline-block; line-height: 1.3;">
                                         <?php echo htmlspecialchars($t['nome']); ?>
                                     </span>
+                                    <?php if ((int) $t['id'] === $tipo_sigaa_id): ?>
+                                    <span class="badge bg-dark" title="Tipo usado nas faltas lidas do SIGAA (Configurações > API SIGAA)">SIGAA</span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($t['total_eventos'])): ?>
+                                    <small class="text-muted d-block"><?php echo (int) $t['total_eventos']; ?> evento(s)</small>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <?php
@@ -306,21 +351,30 @@ $tipos = $tipo_evento->getAll();
                                     <a href="tipos_eventos.php?edit=<?php echo $t['id']; ?>" class="btn btn-primary btn-sm">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <?php if (!empty($t['total_eventos'])): ?>
-                                        <button type="button" class="btn btn-danger btn-sm" disabled
-                                                title="Não é possível excluir um tipo com eventos registrados.">
+                                    <?php
+                                    $total_ev = (int) ($t['total_eventos'] ?? 0);
+                                    if ($total_ev > 0) {
+                                        $msg_confirm = "ATENÇÃO: o tipo \"{$t['nome']}\" possui {$total_ev} evento(s) registrado(s).\n\n"
+                                            . "Excluir o tipo APAGA DEFINITIVAMENTE todos esses eventos, com anexos e histórico de e-mails enviados. "
+                                            . "Autorizações ligadas a eles perdem o vínculo e os alertas dos alunos são recalculados.";
+                                        if ((int) $t['id'] === $tipo_sigaa_id) {
+                                            $msg_confirm .= "\n\nEste é o tipo das faltas do SIGAA: a coleta deixará de importar faltas até você escolher outro tipo.";
+                                        }
+                                        $msg_confirm .= "\n\nEsta ação não pode ser desfeita. Continuar?";
+                                    } else {
+                                        $msg_confirm = 'Tem certeza que deseja excluir este tipo de evento?';
+                                    }
+                                    ?>
+                                    <form method="POST" action="" style="display: inline;"
+                                          class="form-confirm" data-confirm="<?php echo htmlspecialchars($msg_confirm); ?>">
+                                        <input type="hidden" name="action" value="delete">
+                                        <input type="hidden" name="id" value="<?php echo (int) $t['id']; ?>">
+                                        <input type="hidden" name="confirmar_eventos" value="<?php echo $total_ev; ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm"
+                                                title="<?php echo $total_ev > 0 ? 'Excluir tipo e seus ' . $total_ev . ' evento(s)' : 'Excluir tipo'; ?>">
                                             <i class="bi bi-trash"></i>
                                         </button>
-                                    <?php else: ?>
-                                        <form method="POST" action="" style="display: inline;" 
-                                              class="form-confirm" data-confirm="Tem certeza que deseja excluir este tipo de evento?">
-                                            <input type="hidden" name="action" value="delete">
-                                            <input type="hidden" name="id" value="<?php echo $t['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
+                                    </form>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

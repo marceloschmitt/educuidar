@@ -180,6 +180,21 @@ class Configuracao {
         return $this->set('api_sigaa_periodo_letivo', $periodo, 'Período letivo da consulta SIGAA (ex: 2026/1)');
     }
 
+    /** @return int|null tipos_eventos.id das faltas lidas do SIGAA */
+    public function getApiSigaaTipoEventoFaltaId() {
+        $valor = $this->get('api_sigaa_tipo_evento_falta_id');
+        return ($valor !== null && ctype_digit((string) $valor) && (int) $valor > 0) ? (int) $valor : null;
+    }
+
+    /**
+     * Ao trocar o tipo, a próxima coleta faz carga inicial silenciosa
+     * (sem e-mails nem pop-up de alertas).
+     */
+    public function setApiSigaaTipoEventoFaltaId($tipo_id) {
+        $valor = $tipo_id ? (string) (int) $tipo_id : '';
+        return $this->set('api_sigaa_tipo_evento_falta_id', $valor, 'tipos_eventos.id usado nas faltas lidas do SIGAA');
+    }
+
     // System installation status
     public function isSistemaInstalado() {
         $valor = $this->get('sistema_instalado');

@@ -1,226 +1,31 @@
 <?php
 /**
- * Envio de e-mails de eventos aos responsáveis (após atraso de 2h)
- * e resumo diário aos coordenadores (após 19:30).
+ * Resumos diários por e-mail (após 19:30) dos eventos ocorridos no dia
+ * (data_evento = hoje): um por responsável e um por coordenador de curso.
  */
 class EventoEmail {
     private $conn;
-    private $table = 'eventos_email_enviados';
-    private $table_resumo = 'email_resumo_coordenador';
+    private $table_resumo_coord = 'email_resumo_coordenador';
+    private $table_resumo_resp = 'email_resumo_responsavel';
 
-    /** Horas após o registro do evento antes de enviar aos responsáveis. */
-    public const ATRASO_HORAS = 2;
-
-    /** Horário (HH:MM) a partir do qual o resumo do dia pode ser enviado. */
-    public const HORA_RESUMO_COORDENADOR = '19:30';
+    /** Horário (HH:MM) a partir do qual os resumos do dia podem ser enviados. */
+    public const HORA_RESUMO = '19:30';
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    /**
-     * Eventos elegíveis: tipo notifica e-mail, registrados há >= 2h,
-     * ainda com destinatários aprovados sem registro de envio.
-     */
-    public function listPendentes($limit = 100) {
-        $limit = max(1, (int) $limit);
-        $config = new Configuracao($this->conn);
-        $desde = $config->getEmailEventosDesde();
-
-        $query = "SELECT e.id, e.aluno_id, e.turma_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
-                         te.nome AS tipo_nome,
-                         te.observacoes_visiveis_responsaveis,
-                         COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome
-                  FROM eventos e
-                  INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-                  INNER JOIN alunos a ON a.id = e.aluno_id
-                  WHERE te.notificar_email_responsaveis = 1
-                    AND e.created_at >= :desde
-                    AND e.created_at <= DATE_SUB(NOW(), INTERVAL " . (int) self::ATRASO_HORAS . " HOUR)
-                    AND EXISTS (
-                        SELECT 1
-                        FROM responsavel_alunos ra
-                        INNER JOIN responsaveis r ON r.id = ra.responsavel_id
-                        WHERE ra.aluno_id = e.aluno_id
-                          AND r.status = 'aprovado'
-                          AND r.ativo = 1
-                          AND r.email <> ''
-                          AND NOT EXISTS (
-                              SELECT 1 FROM " . $this->table . " ee
-                              WHERE ee.evento_id = e.id AND ee.responsavel_id = r.id
-                          )
-                    )
-                  ORDER BY e.created_at ASC
-                  LIMIT {$limit}";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':desde', $desde);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    public function jaEnviadoResponsavel($evento_id, $responsavel_id) {
-        $query = "SELECT 1 FROM " . $this->table . "
-                  WHERE evento_id = :evento_id AND responsavel_id = :responsavel_id
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':evento_id', $evento_id);
-        $stmt->bindParam(':responsavel_id', $responsavel_id);
-        $stmt->execute();
-        return (bool) $stmt->fetchColumn();
-    }
-
-    public function jaEnviadoCoordenador($evento_id, $user_id) {
-        $query = "SELECT 1 FROM " . $this->table . "
-                  WHERE evento_id = :evento_id AND user_id = :user_id
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':evento_id', $evento_id);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->execute();
-        return (bool) $stmt->fetchColumn();
-    }
-
-    public function registrarEnvioResponsavel($evento_id, $responsavel_id, $email) {
-        $query = "INSERT INTO " . $this->table . " (evento_id, responsavel_id, user_id, email)
-                  VALUES (:evento_id, :responsavel_id, NULL, :email)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':evento_id', $evento_id);
-        $stmt->bindParam(':responsavel_id', $responsavel_id);
-        $stmt->bindParam(':email', $email);
-        return $stmt->execute();
-    }
-
-    public function resumoJaEnviado($user_id, $data_ref) {
-        $query = "SELECT 1 FROM " . $this->table_resumo . "
-                  WHERE user_id = :user_id AND data_ref = :data_ref
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':data_ref', $data_ref);
-        $stmt->execute();
-        return (bool) $stmt->fetchColumn();
-    }
-
-    public function registrarResumoCoordenador($user_id, $data_ref, $email, $total_eventos) {
-        $query = "INSERT INTO " . $this->table_resumo . "
-                  (user_id, data_ref, email, total_eventos)
-                  VALUES (:user_id, :data_ref, :email, :total_eventos)";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':user_id', $user_id);
-        $stmt->bindParam(':data_ref', $data_ref);
-        $stmt->bindParam(':email', $email);
-        $stmt->bindParam(':total_eventos', $total_eventos);
-        return $stmt->execute();
+    public static function podeEnviarResumoAgora($agora = null) {
+        $agora = $agora ?: date('H:i');
+        return $agora >= self::HORA_RESUMO;
     }
 
     /**
-     * Histórico de envios aos responsáveis (mais recentes primeiro).
-     * @param array{curso_id?: int|null, turma_id?: int|null, aluno_id?: int|null} $filtros
+     * Eventos do dia que entram nos resumos: tipo com e-mail habilitado
+     * e fora de carga silenciosa do SIGAA.
      */
-    public function listEnviados($limit = 200, array $filtros = []) {
-        $limit = max(1, (int) $limit);
+    public function listEventosDoDia($data_ref) {
         $config = new Configuracao($this->conn);
-        $ano = $config->getAnoCorrente();
-
-        $query = "SELECT ee.id, ee.evento_id, ee.email, ee.enviado_em,
-                         ee.responsavel_id, ee.user_id, e.aluno_id, e.turma_id,
-                         COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
-                         te.nome AS tipo_nome,
-                         e.data_evento, e.hora_evento,
-                         r.nome AS responsavel_nome,
-                         u.full_name AS coordenador_nome,
-                         COALESCE(t.curso_id, (
-                             SELECT t2.curso_id FROM aluno_turmas at
-                             INNER JOIN turmas t2 ON t2.id = at.turma_id
-                             WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano
-                             ORDER BY t2.id DESC LIMIT 1
-                         )) AS curso_id,
-                         COALESCE(c.nome, (
-                             SELECT c2.nome FROM aluno_turmas at
-                             INNER JOIN turmas t2 ON t2.id = at.turma_id
-                             INNER JOIN cursos c2 ON c2.id = t2.curso_id
-                             WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano2
-                             ORDER BY t2.id DESC LIMIT 1
-                         )) AS curso_nome,
-                         CASE
-                             WHEN ee.responsavel_id IS NOT NULL THEN 'Responsável'
-                             WHEN ee.user_id IS NOT NULL THEN 'Coordenador'
-                             ELSE '—'
-                         END AS destinatario_tipo
-                  FROM " . $this->table . " ee
-                  INNER JOIN eventos e ON e.id = ee.evento_id
-                  INNER JOIN alunos a ON a.id = e.aluno_id
-                  INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-                  LEFT JOIN responsaveis r ON r.id = ee.responsavel_id
-                  LEFT JOIN users u ON u.id = ee.user_id
-                  LEFT JOIN turmas t ON t.id = e.turma_id
-                  LEFT JOIN cursos c ON c.id = t.curso_id
-                  WHERE 1=1";
-
-        $params = [':ano' => $ano, ':ano2' => $ano];
-
-        if (!empty($filtros['aluno_id'])) {
-            $query .= " AND e.aluno_id = :aluno_id";
-            $params[':aluno_id'] = (int) $filtros['aluno_id'];
-        }
-        if (!empty($filtros['turma_id'])) {
-            $query .= " AND (
-                e.turma_id = :turma_id
-                OR EXISTS (
-                    SELECT 1 FROM aluno_turmas atx
-                    WHERE atx.aluno_id = e.aluno_id AND atx.turma_id = :turma_id2
-                )
-            )";
-            $params[':turma_id'] = (int) $filtros['turma_id'];
-            $params[':turma_id2'] = (int) $filtros['turma_id'];
-        }
-        if (!empty($filtros['curso_id'])) {
-            $query .= " AND (
-                t.curso_id = :curso_id
-                OR EXISTS (
-                    SELECT 1 FROM aluno_turmas atx
-                    INNER JOIN turmas tx ON tx.id = atx.turma_id
-                    WHERE atx.aluno_id = e.aluno_id
-                      AND tx.curso_id = :curso_id2
-                      AND tx.ano_civil = :ano3
-                )
-            )";
-            $params[':curso_id'] = (int) $filtros['curso_id'];
-            $params[':curso_id2'] = (int) $filtros['curso_id'];
-            $params[':ano3'] = $ano;
-        }
-
-        $query .= " ORDER BY ee.enviado_em DESC, ee.id DESC
-                    LIMIT {$limit}";
-
-        $stmt = $this->conn->prepare($query);
-        foreach ($params as $k => $v) {
-            $stmt->bindValue($k, $v);
-        }
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    /** Histórico de resumos diários aos coordenadores. */
-    public function listResumosCoordenador($limit = 50) {
-        $limit = max(1, (int) $limit);
-        $query = "SELECT rc.*, u.full_name AS coordenador_nome
-                  FROM " . $this->table_resumo . " rc
-                  INNER JOIN users u ON u.id = rc.user_id
-                  ORDER BY rc.enviado_em DESC, rc.id DESC
-                  LIMIT {$limit}";
-        $stmt = $this->conn->prepare($query);
-        $stmt->execute();
-        return $stmt->fetchAll();
-    }
-
-    /**
-     * Eventos do dia (notificáveis) a partir da data inicial.
-     * Um registro por evento (curso resolvido pela turma do evento ou matrícula atual).
-     */
-    public function listEventosDoDiaParaResumo($data_ref) {
-        $config = new Configuracao($this->conn);
-        $desde = $config->getEmailEventosDesde();
         $ano = $config->getAnoCorrente();
 
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
@@ -256,27 +61,226 @@ class EventoEmail {
                   LEFT JOIN turmas t ON t.id = e.turma_id
                   LEFT JOIN cursos c ON c.id = t.curso_id
                   WHERE te.notificar_email_responsaveis = 1
-                    AND DATE(e.created_at) = :data_ref
-                    AND e.created_at >= :desde
+                    AND e.sem_notificacao = 0
+                    AND e.data_evento = :data_ref
                   ORDER BY curso_nome ASC,
                            COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC,
+                           e.hora_evento IS NULL, e.hora_evento ASC,
                            e.created_at ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':data_ref', $data_ref);
-        $stmt->bindParam(':desde', $desde);
         $stmt->bindParam(':ano', $ano);
         $stmt->bindParam(':ano2', $ano);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
-    public static function podeEnviarResumoAgora($agora = null) {
-        $agora = $agora ?: date('H:i');
-        return $agora >= self::HORA_RESUMO_COORDENADOR;
+    /** Responsáveis aprovados, ativos e com e-mail, com os alunos vinculados. */
+    private function listResponsaveisDestinatarios() {
+        $query = "SELECT r.id, r.nome, r.email, ra.aluno_id
+                  FROM responsaveis r
+                  INNER JOIN responsavel_alunos ra ON ra.responsavel_id = r.id
+                  WHERE r.status = 'aprovado'
+                    AND r.ativo = 1
+                    AND r.email <> ''";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        $por_resp = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $rid = (int) $row['id'];
+            if (!isset($por_resp[$rid])) {
+                $por_resp[$rid] = [
+                    'id' => $rid,
+                    'nome' => $row['nome'],
+                    'email' => trim((string) $row['email']),
+                    'aluno_ids' => [],
+                ];
+            }
+            $por_resp[$rid]['aluno_ids'][(int) $row['aluno_id']] = true;
+        }
+        return $por_resp;
     }
+
+    // ------------------------------------------------------------------
+    // Registro dos envios
+    // ------------------------------------------------------------------
+
+    public function resumoCoordenadorJaEnviado($user_id, $data_ref) {
+        $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_resumo_coord . "
+                                      WHERE user_id = :user_id AND data_ref = :data_ref LIMIT 1");
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':data_ref', $data_ref);
+        $stmt->execute();
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function registrarResumoCoordenador($user_id, $data_ref, $email, $total_eventos) {
+        $stmt = $this->conn->prepare("INSERT INTO " . $this->table_resumo_coord . "
+                                      (user_id, data_ref, email, total_eventos)
+                                      VALUES (:user_id, :data_ref, :email, :total_eventos)");
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':data_ref', $data_ref);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':total_eventos', $total_eventos);
+        return $stmt->execute();
+    }
+
+    public function resumoResponsavelJaEnviado($responsavel_id, $data_ref) {
+        $stmt = $this->conn->prepare("SELECT 1 FROM " . $this->table_resumo_resp . "
+                                      WHERE responsavel_id = :rid AND data_ref = :data_ref LIMIT 1");
+        $stmt->bindParam(':rid', $responsavel_id);
+        $stmt->bindParam(':data_ref', $data_ref);
+        $stmt->execute();
+        return (bool) $stmt->fetchColumn();
+    }
+
+    public function registrarResumoResponsavel($responsavel_id, $data_ref, $email, $total_eventos) {
+        $stmt = $this->conn->prepare("INSERT INTO " . $this->table_resumo_resp . "
+                                      (responsavel_id, data_ref, email, total_eventos)
+                                      VALUES (:rid, :data_ref, :email, :total_eventos)");
+        $stmt->bindParam(':rid', $responsavel_id);
+        $stmt->bindParam(':data_ref', $data_ref);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':total_eventos', $total_eventos);
+        return $stmt->execute();
+    }
+
+    /** Histórico de resumos diários aos coordenadores. */
+    public function listResumosCoordenador($limit = 50) {
+        $limit = max(1, (int) $limit);
+        $query = "SELECT rc.*, u.full_name AS coordenador_nome
+                  FROM " . $this->table_resumo_coord . " rc
+                  INNER JOIN users u ON u.id = rc.user_id
+                  ORDER BY rc.enviado_em DESC, rc.id DESC
+                  LIMIT {$limit}";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Histórico de resumos diários aos responsáveis (mais recentes primeiro).
+     * Filtros pelos alunos atualmente vinculados ao responsável.
+     * @param array{curso_id?: int|null, turma_id?: int|null, aluno_id?: int|null} $filtros
+     */
+    public function listResumosResponsavel($limit = 300, array $filtros = []) {
+        $limit = max(1, (int) $limit);
+        $config = new Configuracao($this->conn);
+        $ano = $config->getAnoCorrente();
+
+        $query = "SELECT rr.*, r.nome AS responsavel_nome,
+                         (SELECT GROUP_CONCAT(COALESCE(NULLIF(a.nome_social, ''), a.nome) ORDER BY a.nome SEPARATOR ', ')
+                          FROM responsavel_alunos ra
+                          INNER JOIN alunos a ON a.id = ra.aluno_id
+                          WHERE ra.responsavel_id = rr.responsavel_id) AS alunos_nomes
+                  FROM " . $this->table_resumo_resp . " rr
+                  INNER JOIN responsaveis r ON r.id = rr.responsavel_id
+                  WHERE 1=1";
+        $params = [];
+
+        if (!empty($filtros['aluno_id'])) {
+            $query .= " AND EXISTS (
+                SELECT 1 FROM responsavel_alunos rax
+                WHERE rax.responsavel_id = rr.responsavel_id AND rax.aluno_id = :aluno_id
+            )";
+            $params[':aluno_id'] = (int) $filtros['aluno_id'];
+        }
+        if (!empty($filtros['turma_id'])) {
+            $query .= " AND EXISTS (
+                SELECT 1 FROM responsavel_alunos rax
+                INNER JOIN aluno_turmas atx ON atx.aluno_id = rax.aluno_id
+                WHERE rax.responsavel_id = rr.responsavel_id AND atx.turma_id = :turma_id
+            )";
+            $params[':turma_id'] = (int) $filtros['turma_id'];
+        }
+        if (!empty($filtros['curso_id'])) {
+            $query .= " AND EXISTS (
+                SELECT 1 FROM responsavel_alunos rax
+                INNER JOIN aluno_turmas atx ON atx.aluno_id = rax.aluno_id
+                INNER JOIN turmas tx ON tx.id = atx.turma_id
+                WHERE rax.responsavel_id = rr.responsavel_id
+                  AND tx.curso_id = :curso_id
+                  AND tx.ano_civil = :ano
+            )";
+            $params[':curso_id'] = (int) $filtros['curso_id'];
+            $params[':ano'] = $ano;
+        }
+
+        $query .= " ORDER BY rr.enviado_em DESC, rr.id DESC LIMIT {$limit}";
+
+        $stmt = $this->conn->prepare($query);
+        foreach ($params as $k => $v) {
+            $stmt->bindValue($k, $v);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    // ------------------------------------------------------------------
+    // Montagem das mensagens
+    // ------------------------------------------------------------------
 
     public static function montarAssuntoResumo($data_ref) {
         return 'EduCuidar: resumo de ocorrências — ' . date('d/m/Y', strtotime($data_ref));
+    }
+
+    private static function formatarLinhaEvento(array $ev, $letra) {
+        $linha = '  ' . $letra . ') ' . ($ev['tipo_nome'] ?? 'Ocorrência');
+        if (!empty($ev['hora_evento'])) {
+            $linha .= ' (' . substr($ev['hora_evento'], 0, 5) . ')';
+        }
+        if (!empty($ev['observacoes_visiveis_responsaveis'])) {
+            $obs = trim(preg_replace('/^\[AUTO\]\s*/', '', (string) ($ev['observacoes'] ?? '')));
+            if ($obs !== '') {
+                // Uma linha: evita quebras no meio do resumo
+                $linha .= ' — ' . preg_replace('/\s+/', ' ', $obs);
+            }
+        }
+        return $linha;
+    }
+
+    /** @param array<string, array{nome: string, eventos: array}> $alunos */
+    private static function linhasAlunos(array $alunos) {
+        $linhas = [];
+        foreach ($alunos as $bloco) {
+            $linhas[] = '';
+            $linhas[] = '- ' . $bloco['nome'];
+            $letra = 'a';
+            foreach ($bloco['eventos'] as $ev) {
+                $linhas[] = self::formatarLinhaEvento($ev, $letra);
+                $letra = $letra === 'z' ? 'a' : chr(ord($letra) + 1);
+            }
+        }
+        return $linhas;
+    }
+
+    private static function agruparPorAluno(array $eventos) {
+        $alunos = [];
+        foreach ($eventos as $ev) {
+            $chave = (string) ((int) ($ev['aluno_id'] ?? 0));
+            if (!isset($alunos[$chave])) {
+                $alunos[$chave] = ['nome' => $ev['aluno_nome'] ?? 'aluno(a)', 'eventos' => []];
+            }
+            $alunos[$chave]['eventos'][] = $ev;
+        }
+        return $alunos;
+    }
+
+    public static function montarCorpoResumoResponsavel(array $eventos, $data_ref) {
+        $linhas = [];
+        $linhas[] = 'Esta é uma mensagem automática do sistema EduCuidar.';
+        $linhas[] = 'Não responda a este e-mail — respostas não são monitoradas.';
+        $linhas[] = '';
+        $linhas[] = 'Ocorrências do dia ' . date('d/m/Y', strtotime($data_ref)) . ':';
+        $linhas = array_merge($linhas, self::linhasAlunos(self::agruparPorAluno($eventos)));
+        $linhas[] = '';
+        $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';
+        $linhas[] = 'Confirme os fatos diretamente com o(a) adolescente.';
+        $linhas[] = '';
+        $linhas[] = '—';
+        $linhas[] = 'EduCuidar';
+        return implode("\n", $linhas);
     }
 
     public static function montarCorpoResumo(array $eventos, $data_ref) {
@@ -284,66 +288,22 @@ class EventoEmail {
         $linhas[] = 'Esta é uma mensagem automática do sistema EduCuidar.';
         $linhas[] = 'Não responda a este e-mail — respostas não são monitoradas.';
         $linhas[] = '';
-        $linhas[] = 'Resumo das ocorrências registradas em ' . date('d/m/Y', strtotime($data_ref)) . ':';
+        $linhas[] = 'Resumo das ocorrências de ' . date('d/m/Y', strtotime($data_ref)) . ':';
         $linhas[] = '';
 
-        // Agrupa: curso → aluno → eventos
-        $grupos = [];
+        $por_curso = [];
         foreach ($eventos as $ev) {
-            $curso = $ev['curso_nome'] ?? 'Curso não identificado';
-            $aluno_id = (int) ($ev['aluno_id'] ?? 0);
-            $aluno = $ev['aluno_nome'] ?? 'aluno(a)';
-            $chave_aluno = $aluno_id > 0 ? (string) $aluno_id : $aluno;
-            if (!isset($grupos[$curso])) {
-                $grupos[$curso] = [];
-            }
-            if (!isset($grupos[$curso][$chave_aluno])) {
-                $grupos[$curso][$chave_aluno] = [
-                    'nome' => $aluno,
-                    'eventos' => [],
-                ];
-            }
-            $grupos[$curso][$chave_aluno]['eventos'][] = $ev;
+            $por_curso[$ev['curso_nome'] ?? 'Curso não identificado'][] = $ev;
         }
 
         $primeiro_curso = true;
-        foreach ($grupos as $curso => $alunos) {
+        foreach ($por_curso as $curso => $lista) {
             if (!$primeiro_curso) {
                 $linhas[] = '';
             }
             $primeiro_curso = false;
             $linhas[] = '— ' . $curso . ' —';
-
-            foreach ($alunos as $bloco) {
-                $linhas[] = '';
-                $linhas[] = '- ' . $bloco['nome'];
-                $letra = 'a';
-                foreach ($bloco['eventos'] as $ev) {
-                    $tipo = $ev['tipo_nome'] ?? 'Ocorrência';
-                    $hora = !empty($ev['hora_evento']) ? substr($ev['hora_evento'], 0, 5) : '';
-                    $hora_reg = !empty($ev['created_at']) ? date('H:i', strtotime($ev['created_at'])) : '';
-                    $linha = '  ' . $letra . ') ' . $tipo;
-                    if ($hora !== '') {
-                        $linha .= ' (' . $hora . ')';
-                    } elseif ($hora_reg !== '') {
-                        $linha .= ' (registro ' . $hora_reg . ')';
-                    }
-                    if (!empty($ev['observacoes_visiveis_responsaveis'])) {
-                        $obs = trim((string) ($ev['observacoes'] ?? ''));
-                        if ($obs !== '') {
-                            // Uma linha: evita quebras no meio do resumo
-                            $obs = preg_replace('/\s+/', ' ', $obs);
-                            $linha .= ' — ' . $obs;
-                        }
-                    }
-                    $linhas[] = $linha;
-
-                    $letra = chr(ord($letra) + 1);
-                    if ($letra > 'z') {
-                        $letra = 'a';
-                    }
-                }
-            }
+            $linhas = array_merge($linhas, self::linhasAlunos(self::agruparPorAluno($lista)));
         }
 
         $linhas[] = '';
@@ -357,132 +317,84 @@ class EventoEmail {
         return implode("\n", $linhas);
     }
 
-    /** Resolve curso_id a partir da turma do evento ou da matrícula no ano corrente. */
-    public function getCursoIdDoEvento($aluno_id, $turma_id = null) {
-        if (!empty($turma_id)) {
-            $stmt = $this->conn->prepare("SELECT curso_id FROM turmas WHERE id = :id LIMIT 1");
-            $stmt->bindParam(':id', $turma_id);
-            $stmt->execute();
-            $row = $stmt->fetch();
-            if ($row && !empty($row['curso_id'])) {
-                return (int) $row['curso_id'];
-            }
+    // ------------------------------------------------------------------
+    // Processamento
+    // ------------------------------------------------------------------
+
+    /** @return string|null motivo para não enviar, ou null se pode enviar */
+    private function motivoBloqueio(Configuracao $configuracao, $forcar) {
+        if (!$configuracao->isEmailEnabled()) {
+            return 'envio desabilitado (email_enabled).';
         }
-
-        $config = new Configuracao($this->conn);
-        $ano = $config->getAnoCorrente();
-        $query = "SELECT t.curso_id
-                  FROM aluno_turmas at
-                  INNER JOIN turmas t ON t.id = at.turma_id
-                  WHERE at.aluno_id = :aluno_id AND t.ano_civil = :ano
-                  ORDER BY t.id DESC
-                  LIMIT 1";
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(':aluno_id', $aluno_id);
-        $stmt->bindParam(':ano', $ano);
-        $stmt->execute();
-        $row = $stmt->fetch();
-        return $row && !empty($row['curso_id']) ? (int) $row['curso_id'] : null;
-    }
-
-    public static function montarAssunto(array $evento) {
-        $tipo = $evento['tipo_nome'] ?? 'Ocorrência';
-        $aluno = $evento['aluno_nome'] ?? 'aluno(a)';
-        return 'EduCuidar: ' . $tipo . ' — ' . $aluno;
-    }
-
-    public static function montarCorpo(array $evento) {
-        $tipo = $evento['tipo_nome'] ?? 'Ocorrência';
-        $aluno = $evento['aluno_nome'] ?? 'aluno(a)';
-        $data = !empty($evento['data_evento'])
-            ? date('d/m/Y', strtotime($evento['data_evento']))
-            : '—';
-        $hora = !empty($evento['hora_evento'])
-            ? substr($evento['hora_evento'], 0, 5)
-            : '';
-        $incluir_obs = !empty($evento['observacoes_visiveis_responsaveis']);
-        $obs = $incluir_obs ? trim((string) ($evento['observacoes'] ?? '')) : '';
-
-        $linhas = [];
-        $linhas[] = 'Esta é uma mensagem automática do sistema EduCuidar.';
-        $linhas[] = 'Não responda a este e-mail — respostas não são monitoradas.';
-        $linhas[] = '';
-        $linhas[] = 'Informamos o registro da seguinte ocorrência:';
-        $linhas[] = '';
-        $linhas[] = 'Aluno(a): ' . $aluno;
-        $linhas[] = 'Tipo: ' . $tipo;
-        $linhas[] = 'Data: ' . $data . ($hora !== '' ? ' às ' . $hora : '');
-        $linhas[] = '';
-        if ($incluir_obs) {
-            if ($obs !== '') {
-                $linhas[] = 'Observação:';
-                $linhas[] = $obs;
-            } else {
-                $linhas[] = 'Observação: (não informada)';
-            }
-            $linhas[] = '';
+        if (!$configuracao->permiteEnvioEmail()) {
+            return 'bloqueado pela variável EMAIL_SEND.';
         }
-        $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';
-        $linhas[] = 'Confirme o fato diretamente com o(a) adolescente.';
-        $linhas[] = '';
-        $linhas[] = '—';
-        $linhas[] = 'EduCuidar';
-
-        return implode("\n", $linhas);
+        if (!$configuracao->isEmailConfigured()) {
+            return 'SMTP incompleto (host, porta e remetente).';
+        }
+        if (!$forcar && !self::podeEnviarResumoAgora()) {
+            return 'ainda não são ' . self::HORA_RESUMO . ' (hora atual ' . date('H:i') . ').';
+        }
+        return null;
     }
 
     /**
-     * Processa pendentes aos responsáveis. Retorna estatísticas.
+     * Um e-mail por responsável, após 19:30, com os eventos do dia dos seus alunos.
+     * Responsável sem evento no dia não recebe nada.
      * @return array{enviados: int, falhas: int, pulados: int, mensagens: list<string>}
      */
-    public function processarPendentes(Configuracao $configuracao, $limit = 100) {
+    public function processarResumosResponsaveis(Configuracao $configuracao, $forcar = false) {
         $stats = ['enviados' => 0, 'falhas' => 0, 'pulados' => 0, 'mensagens' => []];
 
-        if (!$configuracao->isEmailEnabled()) {
-            $stats['mensagens'][] = 'Envio desabilitado (email_enabled).';
-            return $stats;
-        }
-        if (!$configuracao->permiteEnvioEmail()) {
-            $stats['mensagens'][] = 'Envio bloqueado pela variável de ambiente EMAIL_SEND.';
-            return $stats;
-        }
-        if (!$configuracao->isEmailConfigured()) {
-            $stats['mensagens'][] = 'SMTP incompleto (host, porta e remetente).';
+        $bloqueio = $this->motivoBloqueio($configuracao, $forcar);
+        if ($bloqueio !== null) {
+            $stats['mensagens'][] = 'Responsáveis: ' . $bloqueio;
             return $stats;
         }
 
-        $emailConfig = $configuracao->getEmailConfig();
-        $mailer = new SmtpMailer($emailConfig);
-        $responsavel = new Responsavel($this->conn);
-        $pendentes = $this->listPendentes($limit);
+        $data_ref = date('Y-m-d');
+        $eventos = $this->listEventosDoDia($data_ref);
+        if (empty($eventos)) {
+            $stats['mensagens'][] = 'Responsáveis: nenhuma ocorrência notificável hoje.';
+            return $stats;
+        }
 
-        foreach ($pendentes as $evento) {
-            $destinatarios = $responsavel->getAprovadosByAlunoId((int) $evento['aluno_id']);
-            if (empty($destinatarios)) {
+        $por_aluno = [];
+        foreach ($eventos as $ev) {
+            $por_aluno[(int) $ev['aluno_id']][] = $ev;
+        }
+
+        $mailer = new SmtpMailer($configuracao->getEmailConfig());
+        $assunto = self::montarAssuntoResumo($data_ref);
+
+        foreach ($this->listResponsaveisDestinatarios() as $resp) {
+            $eventos_resp = [];
+            foreach (array_keys($resp['aluno_ids']) as $aluno_id) {
+                foreach ($por_aluno[$aluno_id] ?? [] as $ev) {
+                    $eventos_resp[] = $ev;
+                }
+            }
+            if (empty($eventos_resp)) {
+                continue;
+            }
+            if ($this->resumoResponsavelJaEnviado($resp['id'], $data_ref)) {
                 $stats['pulados']++;
                 continue;
             }
 
-            $assunto = self::montarAssunto($evento);
-            $corpo = self::montarCorpo($evento);
+            usort($eventos_resp, static function ($a, $b) {
+                return strcmp((string) $a['aluno_nome'], (string) $b['aluno_nome']);
+            });
 
-            foreach ($destinatarios as $dest) {
-                $resp_id = (int) $dest['id'];
-                $email = trim((string) ($dest['email'] ?? ''));
-                if ($email === '' || $this->jaEnviadoResponsavel((int) $evento['id'], $resp_id)) {
-                    $stats['pulados']++;
-                    continue;
-                }
-
-                try {
-                    $mailer->send([$email], $assunto, $corpo);
-                    $this->registrarEnvioResponsavel((int) $evento['id'], $resp_id, $email);
-                    $stats['enviados']++;
-                    $stats['mensagens'][] = "OK evento={$evento['id']} → {$email}";
-                } catch (Exception $e) {
-                    $stats['falhas']++;
-                    $stats['mensagens'][] = "ERRO evento={$evento['id']} → {$email}: " . $e->getMessage();
-                }
+            $total = count($eventos_resp);
+            try {
+                $mailer->send([$resp['email']], $assunto, self::montarCorpoResumoResponsavel($eventos_resp, $data_ref));
+                $this->registrarResumoResponsavel($resp['id'], $data_ref, $resp['email'], $total);
+                $stats['enviados']++;
+                $stats['mensagens'][] = "OK resumo responsável {$data_ref} ({$total} ocorrências) → {$resp['email']}";
+            } catch (Exception $e) {
+                $stats['falhas']++;
+                $stats['mensagens'][] = "ERRO resumo responsável → {$resp['email']}: " . $e->getMessage();
             }
         }
 
@@ -490,58 +402,41 @@ class EventoEmail {
     }
 
     /**
-     * Um e-mail de resumo por coordenador, após 19:30, com a lista do dia.
+     * Um e-mail por coordenador, após 19:30, com os eventos do dia dos seus cursos.
      * @return array{enviados: int, falhas: int, pulados: int, mensagens: list<string>}
      */
     public function processarResumosCoordenadores(Configuracao $configuracao, $forcar = false) {
         $stats = ['enviados' => 0, 'falhas' => 0, 'pulados' => 0, 'mensagens' => []];
 
-        if (!$configuracao->isEmailEnabled()) {
-            $stats['mensagens'][] = 'Resumo: envio desabilitado (email_enabled).';
-            return $stats;
-        }
-        if (!$configuracao->permiteEnvioEmail()) {
-            $stats['mensagens'][] = 'Resumo: bloqueado pela variável EMAIL_SEND.';
-            return $stats;
-        }
-        if (!$configuracao->isEmailConfigured()) {
-            $stats['mensagens'][] = 'Resumo: SMTP incompleto.';
-            return $stats;
-        }
-        if (!$forcar && !self::podeEnviarResumoAgora()) {
-            $stats['mensagens'][] = 'Resumo: ainda não são '
-                . self::HORA_RESUMO_COORDENADOR
-                . ' (hora atual ' . date('H:i') . ').';
+        $bloqueio = $this->motivoBloqueio($configuracao, $forcar);
+        if ($bloqueio !== null) {
+            $stats['mensagens'][] = 'Coordenadores: ' . $bloqueio;
             return $stats;
         }
 
         $data_ref = date('Y-m-d');
-        $eventos = $this->listEventosDoDiaParaResumo($data_ref);
+        $eventos = $this->listEventosDoDia($data_ref);
         if (empty($eventos)) {
-            $stats['mensagens'][] = 'Resumo: nenhuma ocorrência notificável hoje.';
+            $stats['mensagens'][] = 'Coordenadores: nenhuma ocorrência notificável hoje.';
             return $stats;
         }
 
         $por_curso = [];
         foreach ($eventos as $ev) {
             $curso_id = (int) ($ev['curso_id'] ?? 0);
-            if ($curso_id <= 0) {
-                continue;
+            if ($curso_id > 0) {
+                $por_curso[$curso_id][] = $ev;
             }
-            if (!isset($por_curso[$curso_id])) {
-                $por_curso[$curso_id] = [];
-            }
-            $por_curso[$curso_id][] = $ev;
         }
         if ($por_curso === []) {
-            $stats['mensagens'][] = 'Resumo: ocorrências sem curso identificado.';
+            $stats['mensagens'][] = 'Coordenadores: ocorrências sem curso identificado.';
             return $stats;
         }
 
         $user = new User($this->conn);
         $mailer = new SmtpMailer($configuracao->getEmailConfig());
 
-        // Agrupa por coordenador (pode coordenar vários cursos)
+        // Um coordenador pode coordenar vários cursos
         $por_coordenador = [];
         foreach ($por_curso as $curso_id => $lista) {
             foreach ($user->getCoordenadoresPorCurso($curso_id) as $coord) {
@@ -551,65 +446,44 @@ class EventoEmail {
                     continue;
                 }
                 if (!isset($por_coordenador[$uid])) {
-                    $por_coordenador[$uid] = [
-                        'id' => $uid,
-                        'nome' => $coord['full_name'] ?? '',
-                        'email' => $email,
-                        'eventos' => [],
-                        'ids_vistos' => [],
-                    ];
+                    $por_coordenador[$uid] = ['id' => $uid, 'email' => $email, 'eventos' => []];
                 }
                 foreach ($lista as $ev) {
-                    $eid = (int) $ev['id'];
-                    if (isset($por_coordenador[$uid]['ids_vistos'][$eid])) {
-                        continue;
-                    }
-                    $por_coordenador[$uid]['ids_vistos'][$eid] = true;
-                    $por_coordenador[$uid]['eventos'][] = $ev;
+                    $por_coordenador[$uid]['eventos'][(int) $ev['id']] = $ev;
                 }
             }
         }
 
         if ($por_coordenador === []) {
-            $stats['mensagens'][] = 'Resumo: nenhum coordenador com e-mail para os cursos do dia.';
+            $stats['mensagens'][] = 'Coordenadores: nenhum coordenador com e-mail para os cursos do dia.';
             return $stats;
         }
 
+        $assunto = self::montarAssuntoResumo($data_ref);
         foreach ($por_coordenador as $coord) {
-            $uid = (int) $coord['id'];
+            $uid = $coord['id'];
             $email = $coord['email'];
-            if ($this->resumoJaEnviado($uid, $data_ref)) {
+            if ($this->resumoCoordenadorJaEnviado($uid, $data_ref)) {
                 $stats['pulados']++;
                 $stats['mensagens'][] = "Resumo já enviado hoje → {$email}";
                 continue;
             }
-            if (empty($coord['eventos'])) {
-                $stats['pulados']++;
-                continue;
-            }
 
-            // Ordena por curso/aluno para o corpo
-            usort($coord['eventos'], static function ($a, $b) {
-                $ca = (string) ($a['curso_nome'] ?? '');
-                $cb = (string) ($b['curso_nome'] ?? '');
-                if ($ca !== $cb) {
-                    return strcmp($ca, $cb);
-                }
-                return strcmp((string) ($a['aluno_nome'] ?? ''), (string) ($b['aluno_nome'] ?? ''));
+            $lista = array_values($coord['eventos']);
+            usort($lista, static function ($a, $b) {
+                $cmp = strcmp((string) ($a['curso_nome'] ?? ''), (string) ($b['curso_nome'] ?? ''));
+                return $cmp !== 0 ? $cmp : strcmp((string) $a['aluno_nome'], (string) $b['aluno_nome']);
             });
 
-            $assunto = self::montarAssuntoResumo($data_ref);
-            $corpo = self::montarCorpoResumo($coord['eventos'], $data_ref);
-            $total = count($coord['eventos']);
-
+            $total = count($lista);
             try {
-                $mailer->send([$email], $assunto, $corpo);
+                $mailer->send([$email], $assunto, self::montarCorpoResumo($lista, $data_ref));
                 $this->registrarResumoCoordenador($uid, $data_ref, $email, $total);
                 $stats['enviados']++;
-                $stats['mensagens'][] = "OK resumo {$data_ref} ({$total} ocorrências) → {$email}";
+                $stats['mensagens'][] = "OK resumo coordenador {$data_ref} ({$total} ocorrências) → {$email}";
             } catch (Exception $e) {
                 $stats['falhas']++;
-                $stats['mensagens'][] = "ERRO resumo → {$email}: " . $e->getMessage();
+                $stats['mensagens'][] = "ERRO resumo coordenador → {$email}: " . $e->getMessage();
             }
         }
 

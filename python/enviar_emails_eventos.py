@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Envia e-mails de eventos aos responsáveis após 2 horas do registro.
+Envia, após 19:30, o resumo dos eventos do dia aos responsáveis e coordenadores.
 
 Chamado automaticamente ao final de consulta_alunos.py (a menos que --sem-emails).
 Também pode rodar sozinho:

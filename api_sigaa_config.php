@@ -50,6 +50,10 @@ function api_sigaa_data_para_html($api) {
 $success = '';
 $error = '';
 
+$tipoEventoModel = new TipoEvento($db);
+$tipos_evento = $tipoEventoModel->getAll();
+$tipos_evento_ids = array_map('intval', array_column($tipos_evento, 'id'));
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $base_url = trim($_POST['api_sigaa_base_url'] ?? '');
     $oauth_url = trim($_POST['api_sigaa_oauth_url'] ?? '');
@@ -61,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $periodo_letivo = trim($_POST['api_sigaa_periodo_letivo'] ?? '');
     $data_inicial_iso = trim($_POST['api_sigaa_frequencia_data_inicial'] ?? '');
     $data_final_iso = trim($_POST['api_sigaa_frequencia_data_final'] ?? '');
+    $tipo_falta_id = (int) ($_POST['api_sigaa_tipo_evento_falta_id'] ?? 0);
+    $tipo_falta_anterior = $configuracao->getApiSigaaTipoEventoFaltaId();
 
     $data_inicial = api_sigaa_data_para_api($data_inicial_iso);
     $data_final = api_sigaa_data_para_api($data_final_iso);
@@ -79,6 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Informe a data final da frequência.';
     } elseif ($data_inicial_iso > $data_final_iso) {
         $error = 'A data inicial não pode ser posterior à data final.';
+    } elseif (!in_array($tipo_falta_id, $tipos_evento_ids, true)) {
+        $error = 'Selecione o tipo de evento usado para as faltas do SIGAA.';
     } else {
         if ($oauth_url === '') {
             $oauth_url = rtrim($base_url, '/') . '/oauth/token';
@@ -94,6 +102,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($configuracao->setApiSigaaPeriodoLetivo($periodo_letivo)) $ok++;
         if ($configuracao->setApiSigaaFrequenciaDataInicial($data_inicial)) $ok++;
         if ($configuracao->setApiSigaaFrequenciaDataFinal($data_final)) $ok++;
+        if ($configuracao->setApiSigaaTipoEventoFaltaId($tipo_falta_id)) $ok++;
+
+        $regras_atualizadas = 0;
+        if ($tipo_falta_anterior && $tipo_falta_anterior !== $tipo_falta_id) {
+            $alertaRegra = new AlertaRegra($db);
+            $regras_atualizadas = $alertaRegra->incluirTipoOndeExiste($tipo_falta_anterior, $tipo_falta_id);
+        }
 
         if ($client_secret !== '') {
             if ($configuracao->setApiSigaaClientSecret($client_secret)) $ok++;
@@ -104,6 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($error === '' && $ok > 0) {
             $success = 'Configurações da API SIGAA salvas com sucesso!';
+            if ($tipo_falta_anterior !== $tipo_falta_id) {
+                $success .= ' Tipo de falta alterado: a próxima coleta relê as faltas nesse tipo sem enviar e-mails nem gerar pop-up de alertas.';
+                if ($regras_atualizadas > 0) {
+                    $success .= " {$regras_atualizadas} regra(s) de alerta passaram a contar também o novo tipo.";
+                }
+            }
         } elseif ($error === '') {
             $error = 'Erro ao salvar as configurações. Tente novamente.';
         }
@@ -121,6 +142,8 @@ $api_client_secret = $configuracao->getApiSigaaClientSecret();
 $api_periodo_letivo = $configuracao->getApiSigaaPeriodoLetivo();
 $api_data_inicial = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenciaDataInicial());
 $api_data_final = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenciaDataFinal());
+$api_tipo_falta_id = $configuracao->getApiSigaaTipoEventoFaltaId();
+$api_tipo_falta_existe = $api_tipo_falta_id !== null && in_array($api_tipo_falta_id, $tipos_evento_ids, true);
 
 ob_end_flush();
 
@@ -236,6 +259,32 @@ require_once 'includes/header.php';
                             <input type="date" class="form-control" id="api_sigaa_frequencia_data_final"
                                    name="api_sigaa_frequencia_data_final"
                                    value="<?php echo htmlspecialchars($api_data_final); ?>" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="api_sigaa_tipo_evento_falta_id" class="form-label">
+                            <strong>Tipo de evento das faltas</strong> <span class="text-danger">*</span>
+                        </label>
+                        <?php if (!$api_tipo_falta_existe): ?>
+                        <div class="alert alert-warning py-2 mb-2">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Nenhum tipo configurado: a coleta não importa faltas até você escolher um.
+                        </div>
+                        <?php endif; ?>
+                        <select class="form-select" id="api_sigaa_tipo_evento_falta_id" name="api_sigaa_tipo_evento_falta_id" required>
+                            <option value="">Selecione…</option>
+                            <?php foreach ($tipos_evento as $t): ?>
+                            <option value="<?php echo (int) $t['id']; ?>" <?php echo ((int) $t['id'] === $api_tipo_falta_id) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($t['nome']); ?>
+                                (<?php echo (int) $t['total_eventos']; ?> evento<?php echo ((int) $t['total_eventos'] === 1) ? '' : 's'; ?>)
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <div class="form-text">
+                            Pode renomear o tipo à vontade. Ao trocar por outro tipo, a próxima coleta relê todas as
+                            faltas nele sem enviar e-mails nem gerar pop-up de alertas; as faltas do tipo antigo
+                            ficam onde estão (exclua o tipo antigo em Tipos de Eventos, se não precisar mais).
                         </div>
                     </div>
 

@@ -25,14 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fromAddress = trim($_POST['email_from_address'] ?? '');
     $fromName = trim($_POST['email_from_name'] ?? 'EduCuidar');
     $enabled = isset($_POST['email_enabled']);
-    $eventosDesde = trim($_POST['email_eventos_desde'] ?? date('Y-m-d'));
 
     if ($enabled && ($host === '' || $fromAddress === '')) {
         $error = 'Com o envio habilitado, informe o host SMTP e o e-mail remetente.';
     } elseif ($enabled && $fromAddress !== '' && !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
         $error = 'Informe um e-mail de remetente válido.';
-    } elseif ($eventosDesde === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $eventosDesde)) {
-        $error = 'Informe a data inicial dos e-mails no formato válido.';
     } else {
         $dados = [
             'enabled' => $enabled,
@@ -42,7 +39,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $username,
             'from_address' => $fromAddress,
             'from_name' => $fromName !== '' ? $fromName : 'EduCuidar',
-            'eventos_desde' => $eventosDesde,
         ];
         if ($password !== '') {
             $dados['password'] = $password;
@@ -56,11 +52,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $email = $configuracao->getEmailConfig();
-$eventos_desde = $configuracao->get('email_eventos_desde');
-if ($eventos_desde === null || $eventos_desde === '') {
-    $configuracao->setEmailEventosDesde(date('Y-m-d'));
-    $eventos_desde = date('Y-m-d');
-}
 ob_end_flush();
 
 $page_title = 'Configuração de e-mail';
@@ -90,10 +81,10 @@ require_once 'includes/header.php';
 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    Aos responsáveis: envio cerca de <strong>2 horas</strong> após o registro,
-                    só para tipos com e-mail em <a href="tipos_eventos.php">Tipos de eventos</a>.
-                    Aos coordenadores: <strong>um resumo diário após as 19:30</strong> com a lista do dia.
-                    Eventos anteriores à data inicial não são notificados.
+                    Todos os dias, <strong>após as 19:30</strong>, cada responsável recebe um resumo dos eventos
+                    <strong>ocorridos no dia</strong> (data do evento) dos seus alunos, e cada coordenador recebe
+                    o resumo dos seus cursos. Só entram tipos com e-mail habilitado em
+                    <a href="tipos_eventos.php">Tipos de eventos</a>. Quem não tem ocorrência no dia não recebe nada.
                 </div>
 
                 <form method="POST" action="">
@@ -104,16 +95,6 @@ require_once 'includes/header.php';
                         <label class="form-check-label" for="email_enabled">
                             Habilitar envio automático de e-mails
                         </label>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="email_eventos_desde" class="form-label">Data inicial dos e-mails</label>
-                        <input type="date" class="form-control" id="email_eventos_desde" name="email_eventos_desde"
-                               required value="<?php echo htmlspecialchars($eventos_desde); ?>" style="max-width: 14rem;">
-                        <div class="form-text">
-                            Só eventos registrados a partir desta data (e com pelo menos 2 horas) serão notificados.
-                            Assim o histórico anterior não gera disparo em massa.
-                        </div>
                     </div>
 
                     <div class="row g-3">
@@ -173,7 +154,7 @@ require_once 'includes/header.php';
 
                 <hr class="my-4">
                 <p class="small text-muted mb-0">
-                    O envio roda ao final da coleta geral.
+                    O envio roda ao final da coleta geral: é preciso haver uma coleta depois das 19:30.
                     Consulte os disparos em <a href="emails_enviados.php">E-mails enviados</a>.
                 </p>
             </div>

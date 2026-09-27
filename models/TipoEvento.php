@@ -142,6 +142,55 @@ class TipoEvento {
         return false;
     }
 
+    /**
+     * Exclui o tipo e todos os seus eventos (anexos e histórico de e-mail
+     * saem por cascata; autorizações perdem o vínculo com o evento).
+     * Não apaga arquivos nem reprocessa alertas — o chamador faz isso.
+     *
+     * @return array{ok: bool, eventos: int, aluno_ids: int[], anexos: string[]}
+     */
+    public function deleteComEventos() {
+        $id = (int) $this->id;
+        $resultado = ['ok' => false, 'eventos' => 0, 'aluno_ids' => [], 'anexos' => []];
+        if ($id <= 0) {
+            return $resultado;
+        }
+
+        try {
+            $this->conn->beginTransaction();
+
+            $stmt = $this->conn->prepare("SELECT DISTINCT aluno_id FROM eventos WHERE tipo_evento_id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $resultado['aluno_ids'] = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+
+            $stmt = $this->conn->prepare("SELECT ea.caminho FROM eventos_anexos ea
+                                          INNER JOIN eventos e ON e.id = ea.evento_id
+                                          WHERE e.tipo_evento_id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $resultado['anexos'] = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $stmt = $this->conn->prepare("DELETE FROM eventos WHERE tipo_evento_id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+            $resultado['eventos'] = $stmt->rowCount();
+
+            $stmt = $this->conn->prepare("DELETE FROM " . $this->table . " WHERE id = :id");
+            $stmt->bindValue(':id', $id, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $this->conn->commit();
+            $resultado['ok'] = true;
+        } catch (Exception $e) {
+            if ($this->conn->inTransaction()) {
+                $this->conn->rollBack();
+            }
+        }
+
+        return $resultado;
+    }
+
     public function getTotalEventos($id = null) {
         $target_id = $id ?? $this->id;
         if (!$target_id) {

@@ -1,8 +1,8 @@
 <?php
 /**
- * CLI: e-mails aos responsáveis (após 2h) e resumo aos coordenadores (após 19:30).
+ * CLI: resumos diários (após 19:30) dos eventos do dia aos responsáveis e coordenadores.
  * Uso: php enviar_emails_eventos_cli.php
- *      php enviar_emails_eventos_cli.php --forcar-resumo
+ *      php enviar_emails_eventos_cli.php --forcar-resumo   (ignora o horário)
  */
 require_once __DIR__ . '/../config/init.php';
 
@@ -11,23 +11,21 @@ $db = $database->getConnection();
 $configuracao = new Configuracao($db);
 $eventoEmail = new EventoEmail($db);
 
-$forcar_resumo = in_array('--forcar-resumo', $argv, true);
+$forcar = in_array('--forcar-resumo', $argv, true);
 
-$stats = $eventoEmail->processarPendentes($configuracao, 200);
-echo 'responsaveis enviados=' . $stats['enviados']
-    . ' falhas=' . $stats['falhas']
-    . ' pulados=' . $stats['pulados'] . "\n";
-foreach ($stats['mensagens'] as $msg) {
-    echo $msg . "\n";
+$falhas = 0;
+$execucoes = [
+    'responsaveis' => $eventoEmail->processarResumosResponsaveis($configuracao, $forcar),
+    'coordenadores' => $eventoEmail->processarResumosCoordenadores($configuracao, $forcar),
+];
+foreach ($execucoes as $nome => $stats) {
+    echo "resumo {$nome}: enviados=" . $stats['enviados']
+        . ' falhas=' . $stats['falhas']
+        . ' pulados=' . $stats['pulados'] . "\n";
+    foreach ($stats['mensagens'] as $msg) {
+        echo $msg . "\n";
+    }
+    $falhas += (int) $stats['falhas'];
 }
 
-$stats_resumo = $eventoEmail->processarResumosCoordenadores($configuracao, $forcar_resumo);
-echo 'resumo enviados=' . $stats_resumo['enviados']
-    . ' falhas=' . $stats_resumo['falhas']
-    . ' pulados=' . $stats_resumo['pulados'] . "\n";
-foreach ($stats_resumo['mensagens'] as $msg) {
-    echo $msg . "\n";
-}
-
-$falhas = (int) $stats['falhas'] + (int) $stats_resumo['falhas'];
 exit($falhas > 0 ? 1 : 0);

@@ -1,8 +1,10 @@
 """Extrai faltas da resposta SIGAA e reconcilia eventos automáticos no EduCuidar.
 
+- O tipo de evento vem de configuracoes.api_sigaa_tipo_evento_falta_id.
 - Insere faltas novas do período consultado.
-- Remove faltas automáticas que sumiram no SIGAA (só tipo automático).
-- Não altera registros manuais do professor.
+- Remove faltas automáticas ([AUTO]) desse tipo que sumiram no SIGAA.
+- Primeira carga num tipo (novo ou trocado) é silenciosa: sem e-mails e sem
+  pop-up de alertas.
 """
 
 from __future__ import annotations
@@ -24,13 +26,8 @@ from paths import (
     ROOT,
 )
 
-TIPO_EVENTO_AUTO = "Falta (registro automático)"
-# Tipos manuais: se existir na data, não cria registro automático naquele dia.
-TIPOS_FALTA_PROFESSOR = (
-    "Ausência da aula",
-    "Ausência na aula estando no campus",
-    "Falta (registro do professor)",
-)
+CHAVE_TIPO_FALTA = "api_sigaa_tipo_evento_falta_id"
+CHAVE_CARGA_OK = "api_sigaa_tipo_evento_falta_carga_ok"
 
 PREFIXO_OBS = "[AUTO]"
 
@@ -164,24 +161,55 @@ def salvar_lista_faltas(faltas: list[dict[str, Any]], caminho: Path | None = Non
     return destino
 
 
-def garantir_tipo_evento_auto(conn) -> int:
+def ler_configuracao(conn, chave: str) -> str:
+    with conn.cursor() as cur:
+        cur.execute("SELECT valor FROM configuracoes WHERE chave = %s LIMIT 1", (chave,))
+        row = cur.fetchone()
+    return str(row["valor"] or "").strip() if row else ""
+
+
+def gravar_configuracao(conn, chave: str, valor: str) -> None:
     with conn.cursor() as cur:
         cur.execute(
-            "SELECT id FROM tipos_eventos WHERE nome = %s LIMIT 1",
-            (TIPO_EVENTO_AUTO,),
-        )
-        row = cur.fetchone()
-        if row:
-            return int(row["id"])
-
-        cur.execute(
             """
-            INSERT INTO tipos_eventos (nome, cor, gera_prontuario, ativo)
-            VALUES (%s, 'danger', 0, 0)
+            INSERT INTO configuracoes (chave, valor) VALUES (%s, %s)
+            ON DUPLICATE KEY UPDATE valor = VALUES(valor)
             """,
-            (TIPO_EVENTO_AUTO,),
+            (chave, valor),
         )
-        return int(cur.lastrowid)
+
+
+def obter_tipo_evento_falta(conn) -> int:
+    """Tipo configurado na tela API SIGAA; não cria tipo novo."""
+    valor = ler_configuracao(conn, CHAVE_TIPO_FALTA)
+    if not valor.isdigit() or int(valor) <= 0:
+        raise RuntimeError(
+            "Tipo de evento das faltas SIGAA não configurado "
+            "(Configurações > API SIGAA). Nenhuma falta importada."
+        )
+    tipo_id = int(valor)
+    with conn.cursor() as cur:
+        cur.execute("SELECT id FROM tipos_eventos WHERE id = %s LIMIT 1", (tipo_id,))
+        if not cur.fetchone():
+            raise RuntimeError(
+                f"Tipo de evento das faltas SIGAA (id={tipo_id}) não existe mais. "
+                "Escolha outro em Configurações > API SIGAA. Nenhuma falta importada."
+            )
+    return tipo_id
+
+
+def carga_inicial_pendente(conn, tipo_id: int) -> bool:
+    return ler_configuracao(conn, CHAVE_CARGA_OK) != str(tipo_id)
+
+
+def garantir_coluna_sem_notificacao(conn) -> None:
+    with conn.cursor() as cur:
+        cur.execute("SHOW COLUMNS FROM eventos LIKE 'sem_notificacao'")
+        if not cur.fetchone():
+            raise RuntimeError(
+                "Coluna eventos.sem_notificacao ausente: rode "
+                "sql/faltas_sigaa_tipo_configuravel.sql. Nenhuma falta importada."
+            )
 
 
 def obter_usuario_sistema(conn, user_id_env: str | None = None) -> int:
@@ -233,35 +261,6 @@ def mapear_alunos_por_cpf(conn) -> dict[str, dict[str, Any]]:
         if len(cpf) == 11:
             mapa[cpf] = row
     return mapa
-
-
-def ids_tipos_falta_professor(conn) -> list[int]:
-    with conn.cursor() as cur:
-        placeholders = ",".join(["%s"] * len(TIPOS_FALTA_PROFESSOR))
-        cur.execute(
-            f"SELECT id FROM tipos_eventos WHERE nome IN ({placeholders})",
-            TIPOS_FALTA_PROFESSOR,
-        )
-        return [int(r["id"]) for r in cur.fetchall()]
-
-
-def ja_existe_falta_professor(conn, aluno_id: int, data: str, tipos_ids: list[int]) -> bool:
-    """Há registro manual de falta do professor para o aluno na data."""
-    if not tipos_ids:
-        return False
-    placeholders = ",".join(["%s"] * len(tipos_ids))
-    with conn.cursor() as cur:
-        cur.execute(
-            f"""
-            SELECT id FROM eventos
-            WHERE aluno_id = %s
-              AND data_evento = %s
-              AND tipo_evento_id IN ({placeholders})
-            LIMIT 1
-            """,
-            [aluno_id, data, *tipos_ids],
-        )
-        return cur.fetchone() is not None
 
 
 def ja_existe_falta_automatica_disciplina(
@@ -334,14 +333,15 @@ def inserir_evento_falta(
     data_evento: str,
     observacoes: str,
     registrado_por: int,
+    sem_notificacao: bool = False,
 ) -> int:
     with conn.cursor() as cur:
         cur.execute(
             """
             INSERT INTO eventos
                 (aluno_id, turma_id, tipo_evento_id, data_evento, hora_evento,
-                 observacoes, prontuario, registrado_por)
-            VALUES (%s, %s, %s, %s, NULL, %s, NULL, %s)
+                 observacoes, prontuario, registrado_por, sem_notificacao)
+            VALUES (%s, %s, %s, %s, NULL, %s, NULL, %s, %s)
             """,
             (
                 aluno_id,
@@ -350,6 +350,7 @@ def inserir_evento_falta(
                 data_evento,
                 observacoes,
                 registrado_por,
+                1 if sem_notificacao else 0,
             ),
         )
         return int(cur.lastrowid)
@@ -437,11 +438,12 @@ def listar_eventos_auto_periodo(
             SELECT id, aluno_id, data_evento, observacoes
             FROM eventos
             WHERE tipo_evento_id = %s
+              AND observacoes LIKE %s
               AND aluno_id IN ({placeholders})
               AND data_evento >= %s
               AND data_evento <= %s
             """,
-            [tipo_auto_id, *ids, data_inicial, data_final],
+            [tipo_auto_id, f"{PREFIXO_OBS}%", *ids, data_inicial, data_final],
         )
         return list(cur.fetchall())
 
@@ -470,8 +472,9 @@ def importar_faltas(
     Reconcilia faltas automáticas com o SIGAA:
     - Insere faltas novas (disciplina/data) que ainda não existem.
     - Remove eventos automáticos do período consultado que sumiram no SIGAA.
-    - Não altera faltas lançadas pelo professor.
+    - Não altera eventos sem o prefixo [AUTO].
     - Só reprocessa alertas dos alunos com inserção ou remoção.
+    - Carga inicial no tipo configurado: insere com sem_notificacao=1.
     """
     respostas_brutas: list[dict[str, Any]] | None = None
     reconciliar = False
@@ -500,23 +503,26 @@ def importar_faltas(
         "inseridos": 0,
         "removidos": 0,
         "pulados_sem_aluno": 0,
-        "pulados_professor": 0,
         "pulados_duplicado": 0,
         "erros": 0,
         "alunos_afetados": [],
         "dry_run": dry_run,
         "reconciliado": False,
+        "silencioso": False,
+        "tipo_evento_id": None,
     }
 
     conn = pymysql.connect(**carregar_config_mysql())
     alunos_afetados: set[int] = set()
     try:
-        tipo_auto_id = garantir_tipo_evento_auto(conn)
+        garantir_coluna_sem_notificacao(conn)
+        tipo_auto_id = obter_tipo_evento_falta(conn)
+        silencioso = carga_inicial_pendente(conn, tipo_auto_id)
+        resumo["tipo_evento_id"] = tipo_auto_id
+        resumo["silencioso"] = silencioso
         registrado_por = obter_usuario_sistema(conn, user_id_env)
-        tipos_professor = ids_tipos_falta_professor(conn)
         alunos_cpf = mapear_alunos_por_cpf(conn)
         turmas_cache: dict[int, int | None] = {}
-        cache_professor: dict[tuple[int, str], bool] = {}
 
         # Chaves presentes no SIGAA nesta leitura
         chaves_sigaa: set[tuple[int, str, str]] = set()
@@ -536,15 +542,6 @@ def importar_faltas(
         for aluno_id, falta in faltas_validas:
             data = falta["data"]
             codigo = str(falta.get("codigo_disciplina") or "").strip()
-
-            chave_prof = (aluno_id, data)
-            if chave_prof not in cache_professor:
-                cache_professor[chave_prof] = ja_existe_falta_professor(
-                    conn, aluno_id, data, tipos_professor
-                )
-            if cache_professor[chave_prof]:
-                resumo["pulados_professor"] += 1
-                continue
 
             if ja_existe_falta_automatica_disciplina(
                 conn, aluno_id, data, tipo_auto_id, codigo
@@ -571,6 +568,7 @@ def importar_faltas(
                     observacoes=falta.get("observacoes")
                     or montar_observacao(codigo, falta.get("disciplina") or ""),
                     registrado_por=registrado_por,
+                    sem_notificacao=silencioso,
                 )
                 resumo["inseridos"] += 1
                 alunos_afetados.add(aluno_id)
@@ -619,6 +617,8 @@ def importar_faltas(
                     resumo["removidos"] = apagar_eventos_auto_por_ids(conn, ids_apagar)
 
         if not dry_run:
+            if silencioso and resumo["erros"] == 0:
+                gravar_configuracao(conn, CHAVE_CARGA_OK, str(tipo_auto_id))
             conn.commit()
         else:
             conn.rollback()
@@ -633,13 +633,17 @@ def importar_faltas(
     return resumo
 
 
-def processar_alertas_alunos(aluno_ids: list[int]) -> None:
+def processar_alertas_alunos(aluno_ids: list[int], silencioso: bool = False) -> None:
+    """silencioso: alertas novos já nascem como notificados (sem pop-up)."""
     if not aluno_ids:
         return
     script = DIR_PYTHON / "processar_alertas_cli.php"
     if not script.is_file():
         return
-    cmd = ["php", str(script), *[str(i) for i in aluno_ids]]
+    cmd = ["php", str(script)]
+    if silencioso:
+        cmd.append("--silencioso")
+    cmd.extend(str(i) for i in aluno_ids)
     try:
         subprocess.run(cmd, cwd=str(ROOT), check=False, capture_output=True, text=True)
     except FileNotFoundError:

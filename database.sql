@@ -231,6 +231,7 @@ CREATE TABLE IF NOT EXISTS eventos (
     observacoes TEXT NULL,
     prontuario TEXT NULL,
     registrado_por INT NOT NULL,
+    sem_notificacao TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
@@ -433,22 +434,17 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Log de e-mails de eventos enviados aos responsáveis
-CREATE TABLE IF NOT EXISTS eventos_email_enviados (
+-- Resumos diários por e-mail (após 19:30)
+CREATE TABLE IF NOT EXISTS email_resumo_responsavel (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    evento_id INT NOT NULL,
-    responsavel_id INT NULL,
-    user_id INT NULL,
+    responsavel_id INT NOT NULL,
+    data_ref DATE NOT NULL,
     email VARCHAR(100) NOT NULL,
+    total_eventos INT NOT NULL DEFAULT 0,
     enviado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY unique_evento_responsavel (evento_id, responsavel_id),
-    UNIQUE KEY unique_evento_user (evento_id, user_id),
-    INDEX idx_evento (evento_id),
-    INDEX idx_responsavel (responsavel_id),
-    INDEX idx_user (user_id),
-    FOREIGN KEY (evento_id) REFERENCES eventos(id) ON DELETE CASCADE,
-    FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    UNIQUE KEY unique_responsavel_data (responsavel_id, data_ref),
+    INDEX idx_data_ref (data_ref),
+    FOREIGN KEY (responsavel_id) REFERENCES responsaveis(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS email_resumo_coordenador (

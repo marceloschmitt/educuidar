@@ -129,6 +129,26 @@ class AlertaRegra {
         }
     }
 
+    /**
+     * Inclui $para_tipo_id em toda regra que já conta $de_tipo_id.
+     * @return int regras alteradas
+     */
+    public function incluirTipoOndeExiste($de_tipo_id, $para_tipo_id) {
+        $de_tipo_id = (int) $de_tipo_id;
+        $para_tipo_id = (int) $para_tipo_id;
+        if ($de_tipo_id <= 0 || $para_tipo_id <= 0 || $de_tipo_id === $para_tipo_id) {
+            return 0;
+        }
+        $stmt = $this->conn->prepare(
+            "INSERT IGNORE INTO alertas_regras_tipos_evento (regra_id, tipo_evento_id)
+             SELECT regra_id, :para FROM alertas_regras_tipos_evento WHERE tipo_evento_id = :de"
+        );
+        $stmt->bindValue(':para', $para_tipo_id, PDO::PARAM_INT);
+        $stmt->bindValue(':de', $de_tipo_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount();
+    }
+
     public function getTiposEventoIds($regra_id) {
         $stmt = $this->conn->prepare("SELECT tipo_evento_id FROM alertas_regras_tipos_evento WHERE regra_id = :regra_id");
         $stmt->bindParam(':regra_id', $regra_id);
