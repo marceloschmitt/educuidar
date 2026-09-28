@@ -344,7 +344,7 @@ $chart_data = [
 <?php else: ?>
 
 <div class="row g-3 mb-4">
-    <div class="col-xl-6">
+    <div class="col-12">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0">
@@ -370,20 +370,21 @@ $chart_data = [
                 <?php elseif ($sigaa_total === 0): ?>
                 <p class="text-muted mb-0">Nenhuma falta do SIGAA com os filtros selecionados.</p>
                 <?php else: ?>
-                <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartSigaa"></canvas></div>
+                <div class="dashboard-chart dashboard-chart-md"><canvas id="chartSigaa"></canvas></div>
                 <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
-    <div class="col-xl-6">
+    <div class="col-12">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0">Evolução mensal dos demais eventos</h6>
                 <?php if (!empty($series_tipo)): ?>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Linhas do gráfico">
-                    <button type="button" class="btn btn-outline-secondary" data-linhas-outros="todas">Todas</button>
-                    <button type="button" class="btn btn-outline-secondary" data-linhas-outros="nenhuma">Nenhuma</button>
+                <div class="small">
+                    <a href="#" class="dashboard-link-suave" data-linhas-outros="todas">Mostrar todas</a>
+                    <span class="text-muted mx-1">·</span>
+                    <a href="#" class="dashboard-link-suave" data-linhas-outros="nenhuma">Ocultar todas</a>
                 </div>
                 <?php endif; ?>
             </div>
@@ -640,7 +641,8 @@ $chart_data = [
     }
 
     document.querySelectorAll('[data-linhas-outros]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
             if (!chartOutros) return;
             var mostrar = btn.getAttribute('data-linhas-outros') === 'todas';
             chartOutros.data.datasets.forEach(function (ds, idx) {
