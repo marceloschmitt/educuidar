@@ -181,7 +181,6 @@ $chart_data = [
     }, $series_turma)),
 ];
 
-$icone_tipo = $tipo_e_sigaa ? '<i class="bi bi-cloud-download"></i> ' : '';
 $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
 
 $filtros_descricao = [$tipo_selecionado_nome];
@@ -210,18 +209,6 @@ if ($apenas_meus_eventos) {
 $titulo_filtros = htmlspecialchars(implode(' · ', array_map('trim', $filtros_descricao)));
 $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 ?>
-
-<div class="d-flex flex-wrap gap-2 mb-3">
-    <a href="eventos.php" class="btn btn-primary">
-        <i class="bi bi-calendar-event"></i> Eventos
-    </a>
-    <a href="eventos_por_tipo.php" class="btn btn-primary">
-        <i class="bi bi-grid-3x3-gap"></i> Eventos por tipo
-    </a>
-    <a href="evento_grupo.php" class="btn btn-primary">
-        <i class="bi bi-people"></i> Evento de grupo
-    </a>
-</div>
 
 <div class="card mb-4">
     <div class="card-body">
@@ -307,7 +294,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?>Evolução mensal por turma em <?php echo $ano_corrente; ?> <span class="text-muted fw-normal">— <?php echo $titulo_filtros; ?></span></h6>
+        <h6 class="mb-0">Evolução mensal por turma em <?php echo $ano_corrente; ?> <span class="text-muted fw-normal">— <?php echo $titulo_filtros; ?></span></h6>
         <?php if ($tipo_selecionado_id !== null): ?>
         <a href="<?php echo htmlspecialchars($url_eventos_por_tipo($tipo_selecionado_id)); ?>" class="btn btn-sm btn-outline-secondary">
             <?php echo number_format($total_selecionado, 0, ',', '.'); ?> no ano <i class="bi bi-box-arrow-up-right"></i>
@@ -317,14 +304,14 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         <?php endif; ?>
     </div>
     <div class="card-body">
-        <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartMensal"></canvas></div>
+        <div class="dashboard-chart" style="height: 280px;"><canvas id="chartMensal"></canvas></div>
         <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
     </div>
 </div>
 
 <div class="card mb-4">
     <div class="card-header">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?>Total de <?php echo strtolower($rotulo_ocorrencias); ?> por turma<?php echo $sufixo_titulo; ?></h6>
+        <h6 class="mb-0">Total de <?php echo strtolower($rotulo_ocorrencias); ?> por turma<?php echo $sufixo_titulo; ?></h6>
     </div>
     <div class="card-body">
         <div class="dashboard-chart" style="height: <?php echo $altura_barras_turma; ?>px;"><canvas id="chartTurmas"></canvas></div>
@@ -332,7 +319,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     </div>
 </div>
 
-<h6 class="mb-3"><?php echo $icone_tipo; ?>Top 5 alunos por turma<?php echo $sufixo_titulo; ?></h6>
+<h6 class="mb-3">Top 5 alunos por turma<?php echo $sufixo_titulo; ?></h6>
 <div class="row g-3 mb-4">
     <?php foreach ($series_turma as $tid => $serie): ?>
     <?php $top = $top_alunos_por_turma[$tid] ?? []; ?>
@@ -380,7 +367,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 
 <div class="card mb-4">
     <div class="card-header">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por dia da semana e turma<?php echo $sufixo_titulo; ?></h6>
+        <h6 class="mb-0"><?php echo $rotulo_ocorrencias; ?> por dia da semana e turma<?php echo $sufixo_titulo; ?></h6>
     </div>
     <div class="card-body">
         <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartDias"></canvas></div>

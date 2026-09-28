@@ -84,7 +84,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <form method="GET" action="" class="row g-3">
+                <form method="GET" action="" class="row g-3 align-items-end">
                     <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
                     <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
                     <div class="col-md-3">
@@ -118,7 +118,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="col-12 d-flex align-items-center flex-wrap gap-4">
+                    <div class="col-md-6 d-flex align-items-center flex-wrap gap-3" style="min-height: 31px;">
                         <div class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" id="incluir_sabados_cb" <?php echo $incluir_sabados ? 'checked' : ''; ?>
                                    onchange="document.getElementById('incluir_sabados_value').value = this.checked ? '1' : '0'; this.form.submit();">
@@ -176,13 +176,8 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
             <div class="card text-white dashboard-tipo-card <?php echo $bg_class; ?> <?php echo $is_selected ? 'border border-light border-3' : ''; ?>" <?php if ($style): ?>style="<?php echo $style; ?>"<?php endif; ?>>
                 <div class="card-body py-2 px-3">
                     <div class="d-flex justify-content-between align-items-start gap-2">
-                        <div class="min-w-0">
-                            <div class="dashboard-tipo-nome"><?php echo htmlspecialchars($tipo['nome']); ?></div>
-                            <div class="dashboard-tipo-total"><?php echo $total; ?></div>
-                        </div>
-                        <div class="align-self-center flex-shrink-0">
-                            <i class="bi bi-calendar-event dashboard-tipo-icon"></i>
-                        </div>
+                        <div class="dashboard-tipo-nome min-w-0"><?php echo htmlspecialchars($tipo['nome']); ?></div>
+                        <div class="dashboard-tipo-total flex-shrink-0"><?php echo $total; ?></div>
                     </div>
                     <?php if ($is_selected): ?>
                     <div class="mt-1">

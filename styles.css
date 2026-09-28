@@ -445,19 +445,13 @@ body {
     font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.25;
-    margin-bottom: 0.15rem;
     word-break: break-word;
 }
 
 .dashboard-tipo-card .dashboard-tipo-total {
-    font-size: 1.35rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    line-height: 1.2;
-}
-
-.dashboard-tipo-card .dashboard-tipo-icon {
-    font-size: 1.35rem;
-    opacity: 0.85;
+    line-height: 1.25;
 }
 
 .dashboard-tipo-card .dashboard-tipo-filtro {
