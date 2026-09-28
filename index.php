@@ -36,6 +36,13 @@ $tipo_sigaa_id = $configuracao->getApiSigaaTipoEventoFaltaId();
 if ($tipo_sigaa_id !== null && !isset($tipos_por_id[(int) $tipo_sigaa_id])) {
     $tipo_sigaa_id = null;
 }
+$tipo_sigaa_configurado = $tipo_sigaa_id !== null;
+if (!$tipo_sigaa_configurado) {
+    $tipo_detectado = (new DashboardEstatisticas($db, []))->tipoDoRegistroAutomatico();
+    if ($tipo_detectado !== null && isset($tipos_por_id[$tipo_detectado])) {
+        $tipo_sigaa_id = $tipo_detectado;
+    }
+}
 
 $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
@@ -66,10 +73,9 @@ $filtros_base = [
 $stats = new DashboardEstatisticas($db, $filtros_base + ['tipo_evento_id' => $tipo_selecionado_id]);
 $stats_todos_tipos = new DashboardEstatisticas($db, $filtros_base);
 
-$por_mes = $stats->porMes();
-$por_dia_semana = $stats->porDiaDaSemana();
-$agrupar_por_turma = (bool) $filtro_curso;
-$por_grupo = array_slice($agrupar_por_turma ? $stats->porTurma() : $stats->porCurso(), 0, 12);
+$por_turma = $stats->porTurma();
+$por_mes_turma = $stats->porMesETurma();
+$por_dia_turma = $stats->porDiaETurma();
 $top_alunos = $stats->topAlunos(10);
 $totais_por_tipo = $stats_todos_tipos->totaisPorTipo();
 
@@ -78,35 +84,50 @@ $ano_atual_real = (int) date('Y');
 $ultimo_mes = $ano_corrente === $ano_atual_real ? (int) date('n') : 12;
 $labels_meses = array_slice($meses_nomes, 0, $ultimo_mes);
 
-$mensal_total = array_fill(0, $ultimo_mes, 0);
-$mensal_alunos = array_fill(0, $ultimo_mes, 0);
+// Paleta categórica: a mesma cor identifica a turma em todos os gráficos.
+$paleta = [
+    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#17becf',
+    '#8c564b', '#bcbd22', '#1f77b4', '#d62728', '#9467bd', '#2ca02c', '#ff7f0e', '#7f7f7f', '#e377c2', '#393b79',
+];
+
+$series_turma = [];
 $total_selecionado = 0;
-foreach ($por_mes as $row) {
+foreach ($por_turma as $i => $row) {
+    $tid = (int) $row['id'];
+    $series_turma[$tid] = [
+        'id' => $tid,
+        'label' => trim($row['curso_nome'] . ' ' . (int) $row['ano_curso'] . 'º'),
+        'cor' => $paleta[$i % count($paleta)],
+        'total' => (int) $row['total'],
+        'mensal' => array_fill(0, $ultimo_mes, 0),
+        'dias' => array_fill(0, 7, 0),
+    ];
     $total_selecionado += (int) $row['total'];
+}
+foreach ($por_mes_turma as $row) {
+    $tid = (int) $row['turma_id'];
     $mes_idx = (int) $row['mes'] - 1;
-    if ($mes_idx >= 0 && $mes_idx < $ultimo_mes) {
-        $mensal_total[$mes_idx] = (int) $row['total'];
-        $mensal_alunos[$mes_idx] = (int) $row['alunos'];
+    if (isset($series_turma[$tid]) && $mes_idx >= 0 && $mes_idx < $ultimo_mes) {
+        $series_turma[$tid]['mensal'][$mes_idx] = (int) $row['total'];
+    }
+}
+$tem_domingo = false;
+foreach ($por_dia_turma as $row) {
+    $tid = (int) $row['turma_id'];
+    $dia = (int) $row['dia'];
+    if (isset($series_turma[$tid])) {
+        $series_turma[$tid]['dias'][$dia] = (int) $row['total'];
+        if ($dia === 6 && (int) $row['total'] > 0) {
+            $tem_domingo = true;
+        }
     }
 }
 
 $dias_nomes = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-$dias_map = [];
-foreach ($por_dia_semana as $row) {
-    $dias_map[(int) $row['dia']] = (int) $row['total'];
-}
-$labels_dias = [];
-$dados_dias = [];
-foreach ($dias_nomes as $idx => $nome) {
-    if ($idx === 5 && !$incluir_sabados) {
-        continue;
-    }
-    if ($idx === 6 && empty($dias_map[6])) {
-        continue;
-    }
-    $labels_dias[] = $nome;
-    $dados_dias[] = $dias_map[$idx] ?? 0;
-}
+$indices_dias = [0, 1, 2, 3, 4];
+if ($incluir_sabados) $indices_dias[] = 5;
+if ($tem_domingo) $indices_dias[] = 6;
+$labels_dias = array_map(function ($i) use ($dias_nomes) { return $dias_nomes[$i]; }, $indices_dias);
 
 $params_base = [];
 if ($filtro_curso) $params_base['filtro_curso'] = $filtro_curso;
@@ -144,31 +165,50 @@ foreach ($totais_por_tipo as $row) {
 $filtros_alterados = $filtro_curso || $filtro_turma || !$tipo_e_padrao || !$incluir_sabados || ($apenas_meus_eventos && !$user->isNivel2());
 
 $chart_data = [
+    'rotulo' => $rotulo_ocorrencias,
     'meses' => $labels_meses,
-    'mensal' => [
-        'rotulo' => $rotulo_ocorrencias,
-        'total' => $mensal_total,
-        'alunos' => $mensal_alunos,
-        'cor' => $tipo_e_sigaa ? '#e15759' : '#4e79a7',
-    ],
+    'dias' => $labels_dias,
     'distribuicao' => $distribuicao,
-    'dias' => ['labels' => $labels_dias, 'dados' => $dados_dias],
-    'grupos' => [
-        'labels' => array_column($por_grupo, 'nome'),
-        'dados' => array_map('intval', array_column($por_grupo, 'total')),
-        'urls' => array_map(function ($g) use ($agrupar_por_turma, $url_dashboard) {
-            if (empty($g['id'])) {
-                return null;
-            }
-            return $agrupar_por_turma
-                ? $url_dashboard(['filtro_turma' => $g['id']])
-                : $url_dashboard(['filtro_curso' => $g['id'], 'filtro_turma' => '']);
-        }, $por_grupo),
-    ],
+    'turmas' => array_values(array_map(function ($s) use ($indices_dias, $url_dashboard) {
+        return [
+            'label' => $s['label'],
+            'cor' => $s['cor'],
+            'total' => $s['total'],
+            'mensal' => $s['mensal'],
+            'dias' => array_map(function ($i) use ($s) { return $s['dias'][$i]; }, $indices_dias),
+            'url' => $url_dashboard(['filtro_turma' => $s['id']]),
+        ];
+    }, $series_turma)),
 ];
 
 $icone_tipo = $tipo_e_sigaa ? '<i class="bi bi-cloud-download"></i> ' : '';
 $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
+
+$filtros_descricao = [$tipo_selecionado_nome];
+if ($filtro_curso) {
+    foreach ($cursos as $c) {
+        if ((string) $c['id'] === (string) $filtro_curso) {
+            $filtros_descricao[] = $c['nome'];
+            break;
+        }
+    }
+} else {
+    $filtros_descricao[] = 'Todos os cursos';
+}
+if ($filtro_turma) {
+    foreach ($turmas_ano_corrente_lista as $t) {
+        if ((string) $t['id'] === (string) $filtro_turma) {
+            $filtros_descricao[] = ($filtro_curso ? '' : ($t['curso_nome'] ?? '') . ' ') . $t['ano_curso'] . 'º Ano';
+            break;
+        }
+    }
+}
+$filtros_descricao[] = $incluir_sabados ? 'com sábados' : 'sem sábados';
+if ($apenas_meus_eventos) {
+    $filtros_descricao[] = 'apenas meus eventos';
+}
+$titulo_filtros = htmlspecialchars(implode(' · ', array_map('trim', $filtros_descricao)));
+$altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 ?>
 
 <div class="d-flex flex-wrap gap-2 mb-3">
@@ -246,10 +286,15 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
     </div>
 </div>
 
-<?php if ($tipo_sigaa_id === null && $user->isAdmin()): ?>
+<?php if (!$tipo_sigaa_configurado && $user->isAdmin()): ?>
 <div class="alert alert-warning">
     <i class="bi bi-exclamation-triangle"></i>
-    O tipo de evento das faltas do SIGAA não está configurado, por isso o dashboard começa com todos os tipos.
+    O tipo de evento das faltas do SIGAA não está configurado.
+    <?php if ($tipo_sigaa_id !== null): ?>
+    O dashboard está usando "<?php echo htmlspecialchars($tipos_por_id[$tipo_sigaa_id]); ?>", identificado pelas faltas automáticas já registradas.
+    <?php else: ?>
+    Por isso o dashboard começa com todos os tipos.
+    <?php endif; ?>
     Configure em <a href="api_sigaa_config.php">Configurações &gt; API SIGAA</a>.
 </div>
 <?php endif; ?>
@@ -262,7 +307,7 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?>Evolução mensal<?php echo $sufixo_titulo; ?></h6>
+        <h6 class="mb-0"><?php echo $icone_tipo; ?>Evolução mensal por turma em <?php echo $ano_corrente; ?> <span class="text-muted fw-normal">— <?php echo $titulo_filtros; ?></span></h6>
         <?php if ($tipo_selecionado_id !== null): ?>
         <a href="<?php echo htmlspecialchars($url_eventos_por_tipo($tipo_selecionado_id)); ?>" class="btn btn-sm btn-outline-secondary">
             <?php echo number_format($total_selecionado, 0, ',', '.'); ?> no ano <i class="bi bi-box-arrow-up-right"></i>
@@ -277,27 +322,23 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por <?php echo $agrupar_por_turma ? 'turma' : 'curso'; ?></h6>
-            </div>
-            <div class="card-body">
-                <div class="dashboard-chart dashboard-chart-md"><canvas id="chartGrupos"></canvas></div>
-                <div class="small text-muted text-center mt-2">Clique em uma barra para filtrar o dashboard.</div>
-            </div>
-        </div>
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><?php echo $icone_tipo; ?>Total de <?php echo strtolower($rotulo_ocorrencias); ?> por turma<?php echo $sufixo_titulo; ?></h6>
     </div>
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por dia da semana</h6>
-            </div>
-            <div class="card-body">
-                <div class="dashboard-chart dashboard-chart-md"><canvas id="chartDias"></canvas></div>
-            </div>
-        </div>
+    <div class="card-body">
+        <div class="dashboard-chart" style="height: <?php echo $altura_barras_turma; ?>px;"><canvas id="chartTurmas"></canvas></div>
+        <div class="small text-muted mt-2">Clique em uma barra para filtrar o dashboard pela turma.</div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por dia da semana e turma<?php echo $sufixo_titulo; ?></h6>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartDias"></canvas></div>
+        <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma turma.</div>
     </div>
 </div>
 
@@ -348,7 +389,7 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
                         <td class="text-end" style="min-width: 160px;">
                             <div class="d-flex align-items-center gap-2 justify-content-end">
                                 <div class="progress flex-grow-1" style="height: 6px; max-width: 120px;">
-                                    <div class="progress-bar" style="width: <?php echo round(((int) $al['total'] / $max_top) * 100); ?>%; background-color: <?php echo $chart_data['mensal']['cor']; ?>;"></div>
+                                    <div class="progress-bar" style="width: <?php echo round(((int) $al['total'] / $max_top) * 100); ?>%; background-color: <?php echo $tipo_e_sigaa ? '#e15759' : '#4e79a7'; ?>;"></div>
                                 </div>
                                 <strong><?php echo (int) $al['total']; ?></strong>
                             </div>
@@ -399,7 +440,7 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
     Chart.defaults.plugins.legend.labels.boxWidth = 12;
 
     var eixoInteiro = { beginAtZero: true, ticks: { precision: 0 } };
-    var cor = dados.mensal.cor;
+    var urlsTurmas = dados.turmas.map(function (t) { return t.url; });
 
     function criarGrafico(id, config) {
         var canvas = document.getElementById(id);
@@ -426,97 +467,131 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
         };
     }
 
+    function somar(valores) {
+        return valores.reduce(function (acc, v) { return acc + v; }, 0);
+    }
+
+    function formatarPercentual(valor, soma) {
+        var pct = soma ? (valor / soma) * 100 : 0;
+        return pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    }
+
+    // Escreve "valor (percentual)" na ponta de cada barra horizontal.
+    function rotulosBarras(soma) {
+        return {
+            id: 'rotulosBarras',
+            afterDatasetsDraw: function (chart) {
+                var ctx = chart.ctx;
+                ctx.save();
+                ctx.font = '600 12px ' + Chart.defaults.font.family;
+                ctx.fillStyle = '#495057';
+                ctx.textBaseline = 'middle';
+                chart.getDatasetMeta(0).data.forEach(function (barra, idx) {
+                    var valor = chart.data.datasets[0].data[idx];
+                    ctx.fillText(valor + '  (' + formatarPercentual(valor, soma) + ')', barra.x + 6, barra.y);
+                });
+                ctx.restore();
+            }
+        };
+    }
+
+    var legendaTurmas = { position: 'bottom', labels: { usePointStyle: true } };
+
     criarGrafico('chartMensal', {
         type: 'line',
         data: {
             labels: dados.meses,
-            datasets: [
-                {
-                    label: dados.mensal.rotulo,
-                    data: dados.mensal.total,
-                    borderColor: cor,
-                    backgroundColor: transparente(cor, 0.12),
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 3,
-                    pointHoverRadius: 5,
-                    borderWidth: 2
-                },
-                {
-                    label: 'Alunos envolvidos',
-                    data: dados.mensal.alunos,
-                    borderColor: '#6c757d',
-                    backgroundColor: '#6c757d',
-                    borderDash: [6, 4],
+            datasets: dados.turmas.map(function (t) {
+                return {
+                    label: t.label,
+                    data: t.mensal,
+                    borderColor: t.cor,
+                    backgroundColor: t.cor,
                     fill: false,
                     tension: 0.3,
                     pointRadius: 3,
                     pointHoverRadius: 5,
                     borderWidth: 2
-                }
-            ]
+                };
+            })
         },
         options: {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             scales: { x: { grid: { display: false } }, y: eixoInteiro },
             plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line' } }
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line' } },
+                tooltip: {
+                    itemSort: function (a, b) { return b.parsed.y - a.parsed.y; }
+                }
             }
         }
     });
 
-    criarGrafico('chartGrupos', {
+    var totaisTurmas = dados.turmas.map(function (t) { return t.total; });
+    var somaTurmas = somar(totaisTurmas);
+    criarGrafico('chartTurmas', {
         type: 'bar',
         data: {
-            labels: dados.grupos.labels,
-            datasets: [{ label: dados.mensal.rotulo, data: dados.grupos.dados, backgroundColor: cor, borderRadius: 3 }]
+            labels: dados.turmas.map(function (t) { return t.label; }),
+            datasets: [{
+                label: dados.rotulo,
+                data: totaisTurmas,
+                backgroundColor: dados.turmas.map(function (t) { return t.cor; }),
+                borderRadius: 3,
+                maxBarThickness: 22
+            }]
         },
+        plugins: [rotulosBarras(somaTurmas)],
         options: {
             indexAxis: 'y',
             maintainAspectRatio: false,
-            scales: { x: eixoInteiro, y: { grid: { display: false } } },
-            plugins: { legend: { display: false } },
-            onClick: cliqueLink(dados.grupos.urls),
-            onHover: cursorLink(dados.grupos.urls)
+            layout: { padding: { right: 110 } },
+            scales: {
+                x: Object.assign({ grid: { color: '#f1f3f5' } }, eixoInteiro),
+                y: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            return ' ' + ctx.parsed.x + ' — ' + formatarPercentual(ctx.parsed.x, somaTurmas);
+                        }
+                    }
+                }
+            },
+            onClick: cliqueLink(urlsTurmas),
+            onHover: cursorLink(urlsTurmas)
         }
     });
 
     criarGrafico('chartDias', {
         type: 'bar',
         data: {
-            labels: dados.dias.labels,
-            datasets: [{ label: dados.mensal.rotulo, data: dados.dias.dados, backgroundColor: cor, borderRadius: 3 }]
+            labels: dados.dias,
+            datasets: dados.turmas.map(function (t) {
+                return { label: t.label, data: t.dias, backgroundColor: t.cor, borderRadius: 2 };
+            })
         },
         options: {
             maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             scales: { x: { grid: { display: false } }, y: eixoInteiro },
-            plugins: { legend: { display: false } }
+            plugins: {
+                legend: legendaTurmas,
+                tooltip: {
+                    itemSort: function (a, b) { return b.parsed.y - a.parsed.y; }
+                }
+            }
         }
     });
 
-    var somaDistribuicao = dados.distribuicao.reduce(function (acc, d) { return acc + d.total; }, 0);
+    var somaDistribuicao = somar(dados.distribuicao.map(function (d) { return d.total; }));
     var algumSelecionado = dados.distribuicao.some(function (d) { return d.selecionado; });
     function percentual(valor) {
-        var pct = somaDistribuicao ? (valor / somaDistribuicao) * 100 : 0;
-        return pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+        return formatarPercentual(valor, somaDistribuicao);
     }
-
-    var rotulosBarras = {
-        id: 'rotulosBarras',
-        afterDatasetsDraw: function (chart) {
-            var ctx = chart.ctx;
-            ctx.save();
-            ctx.font = '600 12px ' + Chart.defaults.font.family;
-            ctx.fillStyle = '#495057';
-            ctx.textBaseline = 'middle';
-            chart.getDatasetMeta(0).data.forEach(function (barra, idx) {
-                var valor = chart.data.datasets[0].data[idx];
-                ctx.fillText(valor + '  (' + percentual(valor) + ')', barra.x + 6, barra.y);
-            });
-            ctx.restore();
-        }
-    };
 
     var urlsDistribuicao = dados.distribuicao.map(function (d) { return d.url; });
     criarGrafico('chartTipos', {
@@ -534,7 +609,7 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
                 maxBarThickness: 22
             }]
         },
-        plugins: [rotulosBarras],
+        plugins: [rotulosBarras(somaDistribuicao)],
         options: {
             indexAxis: 'y',
             maintainAspectRatio: false,

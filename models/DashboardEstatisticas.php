@@ -73,11 +73,19 @@ class DashboardEstatisticas {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function porMes() {
-        return $this->consultar(
-            "MONTH(e.data_evento) AS mes, COUNT(*) AS total, COUNT(DISTINCT e.aluno_id) AS alunos",
-            "GROUP BY MONTH(e.data_evento) ORDER BY mes"
+    /**
+     * Tipo de evento com mais faltas gravadas pela coleta automática (observações com prefixo [AUTO]).
+     */
+    public function tipoDoRegistroAutomatico() {
+        $stmt = $this->conn->query(
+            "SELECT tipo_evento_id FROM eventos
+             WHERE observacoes LIKE '[AUTO]%' AND tipo_evento_id IS NOT NULL
+             GROUP BY tipo_evento_id
+             ORDER BY COUNT(*) DESC
+             LIMIT 1"
         );
+        $id = $stmt ? $stmt->fetchColumn() : false;
+        return $id ? (int) $id : null;
     }
 
     public function totaisPorTipo() {
@@ -87,24 +95,24 @@ class DashboardEstatisticas {
         );
     }
 
-    public function porDiaDaSemana() {
-        return $this->consultar(
-            "WEEKDAY(e.data_evento) AS dia, COUNT(*) AS total",
-            "GROUP BY dia ORDER BY dia"
-        );
-    }
-
-    public function porCurso() {
-        return $this->consultar(
-            "c.id AS id, COALESCE(c.nome, 'Sem curso') AS nome, COUNT(*) AS total",
-            "GROUP BY c.id, c.nome ORDER BY total DESC"
-        );
-    }
-
     public function porTurma() {
         return $this->consultar(
-            "t.id AS id, CONCAT(COALESCE(c.nome, ''), ' - ', t.ano_curso, 'º Ano') AS nome, COUNT(*) AS total",
-            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY total DESC"
+            "t.id AS id, COALESCE(c.nome, '') AS curso_nome, t.ano_curso AS ano_curso, COUNT(*) AS total",
+            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY curso_nome ASC, ano_curso ASC"
+        );
+    }
+
+    public function porMesETurma() {
+        return $this->consultar(
+            "MONTH(e.data_evento) AS mes, t.id AS turma_id, COUNT(*) AS total",
+            "GROUP BY MONTH(e.data_evento), t.id"
+        );
+    }
+
+    public function porDiaETurma() {
+        return $this->consultar(
+            "WEEKDAY(e.data_evento) AS dia, t.id AS turma_id, COUNT(*) AS total",
+            "GROUP BY WEEKDAY(e.data_evento), t.id"
         );
     }
 
