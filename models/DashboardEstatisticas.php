@@ -73,42 +73,6 @@ class DashboardEstatisticas {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function resumo() {
-        $hoje = date('Y-m-d');
-        $inicio_mes = date('Y-m-01');
-        $inicio_mes_anterior = date('Y-m-01', strtotime('first day of last month'));
-        $inicio_7_dias = date('Y-m-d', strtotime('-6 days'));
-
-        $rows = $this->consultar(
-            "COUNT(*) AS total,
-             COUNT(DISTINCT e.aluno_id) AS alunos,
-             SUM(e.data_evento BETWEEN :ini7 AND :hoje1) AS ultimos_7_dias,
-             SUM(e.data_evento BETWEEN :ini_mes AND :hoje2) AS mes_atual,
-             SUM(e.data_evento >= :ini_mes_ant AND e.data_evento < :ini_mes2) AS mes_anterior,
-             SUM(e.data_evento = :hoje3) AS hoje",
-            '',
-            [],
-            [
-                ':ini7' => $inicio_7_dias,
-                ':hoje1' => $hoje,
-                ':ini_mes' => $inicio_mes,
-                ':hoje2' => $hoje,
-                ':ini_mes_ant' => $inicio_mes_anterior,
-                ':ini_mes2' => $inicio_mes,
-                ':hoje3' => $hoje,
-            ]
-        );
-        $r = $rows[0] ?? [];
-        return [
-            'total' => (int) ($r['total'] ?? 0),
-            'alunos' => (int) ($r['alunos'] ?? 0),
-            'ultimos_7_dias' => (int) ($r['ultimos_7_dias'] ?? 0),
-            'mes_atual' => (int) ($r['mes_atual'] ?? 0),
-            'mes_anterior' => (int) ($r['mes_anterior'] ?? 0),
-            'hoje' => (int) ($r['hoje'] ?? 0),
-        ];
-    }
-
     public function porMesETipo() {
         return $this->consultar(
             "MONTH(e.data_evento) AS mes, te.id AS tipo_id, te.nome AS tipo_nome, COUNT(*) AS total",
@@ -125,31 +89,39 @@ class DashboardEstatisticas {
         );
     }
 
-    public function porSemana() {
+    public function porSemana($tipo_evento_id) {
         return $this->consultar(
             "DATE_SUB(e.data_evento, INTERVAL WEEKDAY(e.data_evento) DAY) AS semana, COUNT(*) AS total",
-            "GROUP BY semana ORDER BY semana"
+            "GROUP BY semana ORDER BY semana",
+            ['e.tipo_evento_id = :tipo_semana'],
+            [':tipo_semana' => (int) $tipo_evento_id]
         );
     }
 
-    public function porDiaDaSemana() {
+    public function porDiaDaSemana($tipo_evento_id) {
         return $this->consultar(
             "WEEKDAY(e.data_evento) AS dia, COUNT(*) AS total",
-            "GROUP BY dia ORDER BY dia"
+            "GROUP BY dia ORDER BY dia",
+            ['e.tipo_evento_id = :tipo_dia'],
+            [':tipo_dia' => (int) $tipo_evento_id]
         );
     }
 
-    public function porCurso() {
+    public function porCurso($tipo_evento_id) {
         return $this->consultar(
             "c.id AS id, COALESCE(c.nome, 'Sem curso') AS nome, COUNT(*) AS total",
-            "GROUP BY c.id, c.nome ORDER BY total DESC"
+            "GROUP BY c.id, c.nome ORDER BY total DESC",
+            ['e.tipo_evento_id = :tipo_curso'],
+            [':tipo_curso' => (int) $tipo_evento_id]
         );
     }
 
-    public function porTurma() {
+    public function porTurma($tipo_evento_id) {
         return $this->consultar(
             "t.id AS id, CONCAT(COALESCE(c.nome, ''), ' - ', t.ano_curso, 'º Ano') AS nome, COUNT(*) AS total",
-            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY total DESC"
+            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY total DESC",
+            ['e.tipo_evento_id = :tipo_turma'],
+            [':tipo_turma' => (int) $tipo_evento_id]
         );
     }
 

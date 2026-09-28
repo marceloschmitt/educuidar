@@ -464,30 +464,6 @@ body {
     font-size: 0.7rem;
 }
 
-.dashboard-kpi {
-    border-left: 4px solid #4e79a7;
-}
-
-.dashboard-kpi .dashboard-kpi-label {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
-
-.dashboard-kpi .dashboard-kpi-valor {
-    font-size: 1.9rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin: 0.2rem 0;
-}
-
-.dashboard-kpi .dashboard-kpi-detalhe {
-    font-size: 0.8rem;
-    color: #6c757d;
-}
-
 .dashboard-chart {
     position: relative;
     width: 100%;

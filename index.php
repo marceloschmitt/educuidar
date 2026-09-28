@@ -41,12 +41,7 @@ $stats = new DashboardEstatisticas($db, [
     'incluir_sabados' => $incluir_sabados,
 ]);
 
-$resumo = $stats->resumo();
 $por_mes_tipo = $stats->porMesETipo();
-$por_semana = $stats->porSemana();
-$por_dia_semana = $stats->porDiaDaSemana();
-$agrupar_por_turma = (bool) $filtro_curso;
-$por_grupo = $agrupar_por_turma ? $stats->porTurma() : $stats->porCurso();
 $top_alunos = $stats->topAlunos(10);
 
 $meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -70,6 +65,16 @@ foreach ($todos_tipos as $t) {
 }
 if ($tipo_sigaa_nome === null) {
     $tipo_sigaa_id = null;
+}
+
+$agrupar_por_turma = (bool) $filtro_curso;
+$por_semana = [];
+$por_dia_semana = [];
+$por_grupo = [];
+if ($tipo_sigaa_id !== null) {
+    $por_semana = $stats->porSemana($tipo_sigaa_id);
+    $por_dia_semana = $stats->porDiaDaSemana($tipo_sigaa_id);
+    $por_grupo = $agrupar_por_turma ? $stats->porTurma($tipo_sigaa_id) : $stats->porCurso($tipo_sigaa_id);
 }
 
 $sigaa_faltas = array_fill(0, $ultimo_mes, 0);
@@ -175,11 +180,6 @@ $url_eventos_por_tipo = function ($tipo_id) use ($params_base) {
 $url_dashboard = function (array $sobrescrever) use ($params_base) {
     return 'index.php?' . http_build_query(array_merge($params_base, $sobrescrever));
 };
-
-$variacao_mes = null;
-if ($resumo['mes_anterior'] > 0) {
-    $variacao_mes = (int) round((($resumo['mes_atual'] - $resumo['mes_anterior']) / $resumo['mes_anterior']) * 100);
-}
 
 $tipo_filtrado_nome = null;
 foreach ($todos_tipos as $t) {
@@ -288,56 +288,7 @@ $chart_data = [
     </div>
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3">
-        <div class="card dashboard-kpi h-100">
-            <div class="card-body">
-                <div class="dashboard-kpi-label"><i class="bi bi-calendar3"></i> Eventos em <?php echo $ano_corrente; ?></div>
-                <div class="dashboard-kpi-valor"><?php echo number_format($resumo['total'], 0, ',', '.'); ?></div>
-                <div class="dashboard-kpi-detalhe"><?php echo number_format($resumo['alunos'], 0, ',', '.'); ?> aluno(s) envolvido(s)</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card dashboard-kpi h-100">
-            <div class="card-body">
-                <div class="dashboard-kpi-label"><i class="bi bi-calendar-month"></i> Mês atual</div>
-                <div class="dashboard-kpi-valor"><?php echo number_format($resumo['mes_atual'], 0, ',', '.'); ?></div>
-                <div class="dashboard-kpi-detalhe">
-                    <?php if ($variacao_mes === null): ?>
-                        Mês anterior: <?php echo $resumo['mes_anterior']; ?>
-                    <?php else: ?>
-                        <span class="<?php echo $variacao_mes > 0 ? 'text-danger' : ($variacao_mes < 0 ? 'text-success' : 'text-muted'); ?>">
-                            <i class="bi bi-arrow-<?php echo $variacao_mes > 0 ? 'up' : ($variacao_mes < 0 ? 'down' : 'right'); ?>"></i>
-                            <?php echo ($variacao_mes > 0 ? '+' : '') . $variacao_mes; ?>%
-                        </span>
-                        vs. mês anterior (<?php echo $resumo['mes_anterior']; ?>)
-                    <?php endif; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card dashboard-kpi h-100">
-            <div class="card-body">
-                <div class="dashboard-kpi-label"><i class="bi bi-calendar-week"></i> Últimos 7 dias</div>
-                <div class="dashboard-kpi-valor"><?php echo number_format($resumo['ultimos_7_dias'], 0, ',', '.'); ?></div>
-                <div class="dashboard-kpi-detalhe">Hoje: <?php echo $resumo['hoje']; ?></div>
-            </div>
-        </div>
-    </div>
-    <div class="col-6 col-lg-3">
-        <div class="card dashboard-kpi h-100">
-            <div class="card-body">
-                <div class="dashboard-kpi-label"><i class="bi bi-graph-up"></i> Média mensal</div>
-                <div class="dashboard-kpi-valor"><?php echo $ultimo_mes > 0 ? number_format($resumo['total'] / $ultimo_mes, 1, ',', '.') : '0'; ?></div>
-                <div class="dashboard-kpi-detalhe">de janeiro a <?php echo strtolower($meses_nomes[$ultimo_mes - 1]); ?></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<?php if ($resumo['total'] === 0): ?>
+<?php if (empty($por_mes_tipo)): ?>
 <div class="alert alert-info">
     <i class="bi bi-info-circle"></i> Nenhum evento encontrado em <?php echo $ano_corrente; ?> com os filtros selecionados.
 </div>
@@ -413,11 +364,12 @@ $chart_data = [
 </div>
 <?php endif; ?>
 
+<?php if ($tipo_sigaa_id !== null && $sigaa_total > 0): ?>
 <div class="row g-3 mb-4">
     <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h6 class="mb-0">Eventos por semana</h6>
+                <h6 class="mb-0"><i class="bi bi-cloud-download"></i> Faltas do SIGAA por semana</h6>
             </div>
             <div class="card-body">
                 <div class="dashboard-chart dashboard-chart-md"><canvas id="chartSemanal"></canvas></div>
@@ -430,7 +382,7 @@ $chart_data = [
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
-                <h6 class="mb-0"><?php echo $agrupar_por_turma ? 'Eventos por turma' : 'Eventos por curso'; ?></h6>
+                <h6 class="mb-0"><i class="bi bi-cloud-download"></i> <?php echo $agrupar_por_turma ? 'Faltas do SIGAA por turma' : 'Faltas do SIGAA por curso'; ?></h6>
             </div>
             <div class="card-body">
                 <div class="dashboard-chart dashboard-chart-md"><canvas id="chartGrupos"></canvas></div>
@@ -441,7 +393,7 @@ $chart_data = [
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-header">
-                <h6 class="mb-0">Eventos por dia da semana</h6>
+                <h6 class="mb-0"><i class="bi bi-cloud-download"></i> Faltas do SIGAA por dia da semana</h6>
             </div>
             <div class="card-body">
                 <div class="dashboard-chart dashboard-chart-md"><canvas id="chartDias"></canvas></div>
@@ -449,6 +401,7 @@ $chart_data = [
         </div>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="card mb-4">
     <div class="card-header">
@@ -728,10 +681,10 @@ $chart_data = [
         data: {
             labels: dados.semanas.labels,
             datasets: [{
-                label: 'Eventos na semana',
+                label: 'Faltas na semana',
                 data: dados.semanas.dados,
-                borderColor: '#4e79a7',
-                backgroundColor: 'rgba(78, 121, 167, 0.15)',
+                borderColor: '#e15759',
+                backgroundColor: 'rgba(225, 87, 89, 0.12)',
                 fill: true,
                 tension: 0.3,
                 pointRadius: 2
@@ -755,7 +708,7 @@ $chart_data = [
         type: 'bar',
         data: {
             labels: dados.grupos.labels,
-            datasets: [{ label: 'Eventos', data: dados.grupos.dados, backgroundColor: '#59a14f', borderRadius: 3 }]
+            datasets: [{ label: 'Faltas', data: dados.grupos.dados, backgroundColor: '#e15759', borderRadius: 3 }]
         },
         options: {
             indexAxis: 'y',
@@ -778,7 +731,7 @@ $chart_data = [
         type: 'bar',
         data: {
             labels: dados.dias.labels,
-            datasets: [{ label: 'Eventos', data: dados.dias.dados, backgroundColor: '#f28e2b', borderRadius: 3 }]
+            datasets: [{ label: 'Faltas', data: dados.dias.dados, backgroundColor: '#e15759', borderRadius: 3 }]
         },
         options: {
             maintainAspectRatio: false,
