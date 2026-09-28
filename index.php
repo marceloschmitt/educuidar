@@ -76,7 +76,7 @@ $stats_todos_tipos = new DashboardEstatisticas($db, $filtros_base);
 $por_turma = $stats->porTurma();
 $por_mes_turma = $stats->porMesETurma();
 $por_dia_turma = $stats->porDiaETurma();
-$top_alunos = $stats->topAlunos(10);
+$top_alunos_por_turma = $stats->topAlunosPorTurma(5);
 $totais_por_tipo = $stats_todos_tipos->totaisPorTipo();
 
 $meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -357,51 +357,50 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 <?php endif; ?>
 
 <?php if ($total_selecionado > 0): ?>
-<div class="card mb-4">
-    <div class="card-header">
-        <h6 class="mb-0">Alunos com mais <?php echo strtolower($rotulo_ocorrencias); ?> em <?php echo $ano_corrente; ?><?php echo $sufixo_titulo; ?></h6>
-    </div>
-    <div class="card-body p-0">
-        <?php if (empty($top_alunos)): ?>
-        <p class="text-muted text-center my-3">Nenhum aluno encontrado.</p>
-        <?php else: ?>
-        <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
-                <thead>
-                    <tr>
-                        <th style="width: 3rem;">#</th>
-                        <th>Aluno</th>
-                        <th>Curso / Turma</th>
-                        <th class="text-end"><?php echo $rotulo_ocorrencias; ?></th>
-                        <th>Último registro</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php $max_top = max(1, (int) $top_alunos[0]['total']); ?>
-                    <?php foreach ($top_alunos as $pos => $al): ?>
-                    <tr class="dashboard-top-aluno" data-aluno-id="<?php echo (int) $al['id']; ?>" style="cursor: pointer;" title="Ver ficha do aluno">
-                        <td class="text-muted"><?php echo $pos + 1; ?></td>
-                        <td><?php echo htmlspecialchars($al['nome'] ?? '-'); ?></td>
-                        <td>
-                            <div><?php echo htmlspecialchars($al['curso_nome'] ?? '-'); ?></div>
-                            <div class="small text-muted"><?php echo !empty($al['ano_curso']) ? (int) $al['ano_curso'] . 'º Ano' : '-'; ?></div>
-                        </td>
-                        <td class="text-end" style="min-width: 160px;">
-                            <div class="d-flex align-items-center gap-2 justify-content-end">
-                                <div class="progress flex-grow-1" style="height: 6px; max-width: 120px;">
-                                    <div class="progress-bar" style="width: <?php echo round(((int) $al['total'] / $max_top) * 100); ?>%; background-color: <?php echo $tipo_e_sigaa ? '#e15759' : '#4e79a7'; ?>;"></div>
+<h6 class="mb-3"><?php echo $icone_tipo; ?>Top 5 alunos por turma<?php echo $sufixo_titulo; ?></h6>
+<div class="row g-3 mb-4">
+    <?php foreach ($series_turma as $tid => $serie): ?>
+    <?php $top = $top_alunos_por_turma[$tid] ?? []; ?>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center gap-2">
+                <h6 class="mb-0 d-flex align-items-center gap-2">
+                    <span class="dashboard-turma-cor" style="background-color: <?php echo $serie['cor']; ?>;"></span>
+                    <?php echo htmlspecialchars($serie['label']); ?>
+                </h6>
+                <span class="text-muted small"><?php echo number_format($serie['total'], 0, ',', '.'); ?> <?php echo strtolower($rotulo_ocorrencias); ?></span>
+            </div>
+            <div class="card-body p-0">
+                <?php if (empty($top)): ?>
+                <p class="text-muted text-center my-3">Nenhum aluno encontrado.</p>
+                <?php else: ?>
+                <table class="table table-hover table-sm mb-0 align-middle">
+                    <tbody>
+                        <?php $max_top = max(1, (int) $top[0]['total']); ?>
+                        <?php foreach ($top as $pos => $al): ?>
+                        <tr class="dashboard-top-aluno" data-aluno-id="<?php echo (int) $al['id']; ?>" style="cursor: pointer;" title="Ver ficha do aluno">
+                            <td class="text-muted ps-3" style="width: 2rem;"><?php echo $pos + 1; ?></td>
+                            <td>
+                                <div><?php echo htmlspecialchars($al['nome'] ?? '-'); ?></div>
+                                <div class="small text-muted">Último: <?php echo !empty($al['ultimo_evento']) ? date('d/m/Y', strtotime($al['ultimo_evento'])) : '-'; ?></div>
+                            </td>
+                            <td class="text-end pe-3" style="width: 150px;">
+                                <div class="d-flex align-items-center gap-2 justify-content-end">
+                                    <div class="progress flex-grow-1" style="height: 6px; max-width: 90px;">
+                                        <div class="progress-bar" style="width: <?php echo round(((int) $al['total'] / $max_top) * 100); ?>%; background-color: <?php echo $serie['cor']; ?>;"></div>
+                                    </div>
+                                    <strong><?php echo (int) $al['total']; ?></strong>
                                 </div>
-                                <strong><?php echo (int) $al['total']; ?></strong>
-                            </div>
-                        </td>
-                        <td><?php echo !empty($al['ultimo_evento']) ? date('d/m/Y', strtotime($al['ultimo_evento'])) : '-'; ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php endif; ?>
+            </div>
         </div>
-        <?php endif; ?>
     </div>
+    <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
@@ -495,7 +494,26 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         };
     }
 
-    var legendaTurmas = { position: 'bottom', labels: { boxWidth: 28, boxHeight: 8, padding: 14 } };
+    // Mesma marca de cor nos gráficos de linha e de barra: bloco sólido, sem a borda que só as linhas desenham.
+    var legendaTurmas = {
+        position: 'bottom',
+        labels: {
+            boxWidth: 28,
+            boxHeight: 8,
+            padding: 14,
+            generateLabels: function (chart) {
+                return Chart.defaults.plugins.legend.labels.generateLabels(chart).map(function (item) {
+                    var ds = chart.data.datasets[item.datasetIndex];
+                    var corTurma = ds.borderColor || ds.backgroundColor;
+                    item.fillStyle = corTurma;
+                    item.strokeStyle = corTurma;
+                    item.lineWidth = 0;
+                    item.lineDash = [];
+                    return item;
+                });
+            }
+        }
+    };
 
     criarGrafico('chartMensal', {
         type: 'line',

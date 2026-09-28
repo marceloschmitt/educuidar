@@ -116,13 +116,23 @@ class DashboardEstatisticas {
         );
     }
 
-    public function topAlunos($limite = 10) {
+    /**
+     * Os $limite alunos com mais registros em cada turma, agrupados por turma_id.
+     */
+    public function topAlunosPorTurma($limite = 5) {
         $limite = max(1, (int) $limite);
-        return $this->consultar(
-            "a.id AS id, MAX(a.nome) AS nome, MAX(c.nome) AS curso_nome, MAX(t.ano_curso) AS ano_curso,
-             COUNT(*) AS total, MAX(e.data_evento) AS ultimo_evento",
-            "GROUP BY a.id ORDER BY total DESC, nome ASC LIMIT $limite",
+        $rows = $this->consultar(
+            "t.id AS turma_id, a.id AS id, MAX(a.nome) AS nome, COUNT(*) AS total, MAX(e.data_evento) AS ultimo_evento",
+            "GROUP BY t.id, a.id ORDER BY t.id, total DESC, nome ASC",
             ['e.aluno_id IS NOT NULL']
         );
+        $por_turma = [];
+        foreach ($rows as $row) {
+            $tid = (int) $row['turma_id'];
+            if (count($por_turma[$tid] ?? []) < $limite) {
+                $por_turma[$tid][] = $row;
+            }
+        }
+        return $por_turma;
     }
 }

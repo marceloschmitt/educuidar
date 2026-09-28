@@ -477,6 +477,14 @@ body {
     height: 260px;
 }
 
+.dashboard-turma-cor {
+    display: inline-block;
+    width: 28px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
 @media (max-width: 767.98px) {
     .main-content {
         padding-top: 60px;
