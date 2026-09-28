@@ -73,55 +73,45 @@ class DashboardEstatisticas {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function porMesETipo() {
+    public function porMes() {
         return $this->consultar(
-            "MONTH(e.data_evento) AS mes, te.id AS tipo_id, te.nome AS tipo_nome, COUNT(*) AS total",
-            "GROUP BY MONTH(e.data_evento), te.id, te.nome ORDER BY mes"
+            "MONTH(e.data_evento) AS mes, COUNT(*) AS total, COUNT(DISTINCT e.aluno_id) AS alunos",
+            "GROUP BY MONTH(e.data_evento) ORDER BY mes"
         );
     }
 
-    public function alunosDistintosPorMes($tipo_evento_id) {
+    public function totaisPorTipo() {
         return $this->consultar(
-            "MONTH(e.data_evento) AS mes, COUNT(DISTINCT e.aluno_id) AS total",
-            "GROUP BY MONTH(e.data_evento) ORDER BY mes",
-            ['e.tipo_evento_id = :tipo_alunos_mes'],
-            [':tipo_alunos_mes' => (int) $tipo_evento_id]
+            "te.id AS tipo_id, COALESCE(te.nome, 'Sem tipo') AS tipo_nome, COUNT(*) AS total",
+            "GROUP BY te.id, te.nome ORDER BY total DESC, tipo_nome ASC"
         );
     }
 
-    public function porSemana($tipo_evento_id) {
+    public function porSemana() {
         return $this->consultar(
             "DATE_SUB(e.data_evento, INTERVAL WEEKDAY(e.data_evento) DAY) AS semana, COUNT(*) AS total",
-            "GROUP BY semana ORDER BY semana",
-            ['e.tipo_evento_id = :tipo_semana'],
-            [':tipo_semana' => (int) $tipo_evento_id]
+            "GROUP BY semana ORDER BY semana"
         );
     }
 
-    public function porDiaDaSemana($tipo_evento_id) {
+    public function porDiaDaSemana() {
         return $this->consultar(
             "WEEKDAY(e.data_evento) AS dia, COUNT(*) AS total",
-            "GROUP BY dia ORDER BY dia",
-            ['e.tipo_evento_id = :tipo_dia'],
-            [':tipo_dia' => (int) $tipo_evento_id]
+            "GROUP BY dia ORDER BY dia"
         );
     }
 
-    public function porCurso($tipo_evento_id) {
+    public function porCurso() {
         return $this->consultar(
             "c.id AS id, COALESCE(c.nome, 'Sem curso') AS nome, COUNT(*) AS total",
-            "GROUP BY c.id, c.nome ORDER BY total DESC",
-            ['e.tipo_evento_id = :tipo_curso'],
-            [':tipo_curso' => (int) $tipo_evento_id]
+            "GROUP BY c.id, c.nome ORDER BY total DESC"
         );
     }
 
-    public function porTurma($tipo_evento_id) {
+    public function porTurma() {
         return $this->consultar(
             "t.id AS id, CONCAT(COALESCE(c.nome, ''), ' - ', t.ano_curso, 'º Ano') AS nome, COUNT(*) AS total",
-            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY total DESC",
-            ['e.tipo_evento_id = :tipo_turma'],
-            [':tipo_turma' => (int) $tipo_evento_id]
+            "GROUP BY t.id, c.nome, t.ano_curso ORDER BY total DESC"
         );
     }
 
