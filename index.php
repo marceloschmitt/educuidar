@@ -332,31 +332,6 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por dia da semana e turma<?php echo $sufixo_titulo; ?></h6>
-    </div>
-    <div class="card-body">
-        <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartDias"></canvas></div>
-        <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma turma.</div>
-    </div>
-</div>
-
-<?php endif; ?>
-
-<?php if (!empty($distribuicao)): ?>
-<div class="card mb-4">
-    <div class="card-header">
-        <h6 class="mb-0">Distribuição dos demais eventos</h6>
-    </div>
-    <div class="card-body">
-        <div class="dashboard-chart" style="height: <?php echo max(120, count($distribuicao) * 30 + 30); ?>px;"><canvas id="chartTipos"></canvas></div>
-        <div class="small text-muted mt-2">Clique em uma barra para ver a evolução daquele tipo no dashboard.</div>
-    </div>
-</div>
-<?php endif; ?>
-
-<?php if ($total_selecionado > 0): ?>
 <h6 class="mb-3"><?php echo $icone_tipo; ?>Top 5 alunos por turma<?php echo $sufixo_titulo; ?></h6>
 <div class="row g-3 mb-4">
     <?php foreach ($series_turma as $tid => $serie): ?>
@@ -401,6 +376,29 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         </div>
     </div>
     <?php endforeach; ?>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por dia da semana e turma<?php echo $sufixo_titulo; ?></h6>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartDias"></canvas></div>
+        <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma turma.</div>
+    </div>
+</div>
+
+<?php endif; ?>
+
+<?php if (!empty($distribuicao)): ?>
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">Distribuição dos demais eventos</h6>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-chart" style="height: <?php echo max(120, count($distribuicao) * 30 + 30); ?>px;"><canvas id="chartTipos"></canvas></div>
+        <div class="small text-muted mt-2">Clique em uma barra para ver a evolução daquele tipo no dashboard.</div>
+    </div>
 </div>
 <?php endif; ?>
 
