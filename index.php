@@ -55,52 +55,72 @@ $ultimo_mes = $ano_corrente === $ano_atual_real ? (int) date('n') : 12;
 $labels_meses = array_slice($meses_nomes, 0, $ultimo_mes);
 
 // Paleta categórica própria: as cores dos tipos são classes Bootstrap e se repetem muito.
-$paleta = ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f'];
-$cor_outros = '#bab0ac';
-$max_tipos_individuais = count($paleta);
+$paleta = [
+    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#17becf',
+    '#8c564b', '#bcbd22', '#1f77b4', '#d62728', '#9467bd', '#2ca02c', '#ff7f0e', '#7f7f7f', '#e377c2', '#393b79',
+];
+
+$tipo_sigaa_id = $configuracao->getApiSigaaTipoEventoFaltaId();
+$tipo_sigaa_nome = null;
+foreach ($todos_tipos as $t) {
+    if ((int) $t['id'] === (int) $tipo_sigaa_id) {
+        $tipo_sigaa_nome = $t['nome'];
+        break;
+    }
+}
+if ($tipo_sigaa_nome === null) {
+    $tipo_sigaa_id = null;
+}
+
+$sigaa_faltas = array_fill(0, $ultimo_mes, 0);
+$sigaa_alunos = array_fill(0, $ultimo_mes, 0);
+$sigaa_total = 0;
 
 $totais_tipo = [];
 $nomes_tipo = [];
+$mensal_tipo = [];
 foreach ($por_mes_tipo as $row) {
     $tid = (int) $row['tipo_id'];
-    $totais_tipo[$tid] = ($totais_tipo[$tid] ?? 0) + (int) $row['total'];
+    $mes_idx = (int) $row['mes'] - 1;
+    $qtd = (int) $row['total'];
+    if ($tipo_sigaa_id !== null && $tid === (int) $tipo_sigaa_id) {
+        $sigaa_total += $qtd;
+        if ($mes_idx >= 0 && $mes_idx < $ultimo_mes) {
+            $sigaa_faltas[$mes_idx] += $qtd;
+        }
+        continue;
+    }
+    $totais_tipo[$tid] = ($totais_tipo[$tid] ?? 0) + $qtd;
     $nomes_tipo[$tid] = $row['tipo_nome'] ?? 'Sem tipo';
+    if (!isset($mensal_tipo[$tid])) {
+        $mensal_tipo[$tid] = array_fill(0, $ultimo_mes, 0);
+    }
+    if ($mes_idx >= 0 && $mes_idx < $ultimo_mes) {
+        $mensal_tipo[$tid][$mes_idx] += $qtd;
+    }
 }
 arsort($totais_tipo);
 
-$tipos_individuais = array_slice(array_keys($totais_tipo), 0, $max_tipos_individuais);
-$tem_outros = count($totais_tipo) > $max_tipos_individuais;
+if ($tipo_sigaa_id !== null && $sigaa_total > 0) {
+    foreach ($stats->alunosDistintosPorMes($tipo_sigaa_id) as $row) {
+        $mes_idx = (int) $row['mes'] - 1;
+        if ($mes_idx >= 0 && $mes_idx < $ultimo_mes) {
+            $sigaa_alunos[$mes_idx] = (int) $row['total'];
+        }
+    }
+}
 
 $series_tipo = [];
-foreach ($tipos_individuais as $i => $tid) {
-    $series_tipo[$tid] = [
+$i = 0;
+foreach ($totais_tipo as $tid => $total) {
+    $series_tipo[] = [
         'id' => $tid,
         'label' => $nomes_tipo[$tid],
-        'cor' => $paleta[$i],
-        'dados' => array_fill(0, $ultimo_mes, 0),
-        'total' => $totais_tipo[$tid],
+        'cor' => $paleta[$i % count($paleta)],
+        'dados' => $mensal_tipo[$tid],
+        'total' => $total,
     ];
-}
-if ($tem_outros) {
-    $series_tipo['outros'] = [
-        'id' => null,
-        'label' => 'Outros',
-        'cor' => $cor_outros,
-        'dados' => array_fill(0, $ultimo_mes, 0),
-        'total' => 0,
-    ];
-}
-foreach ($por_mes_tipo as $row) {
-    $mes_idx = (int) $row['mes'] - 1;
-    if ($mes_idx < 0 || $mes_idx >= $ultimo_mes) {
-        continue;
-    }
-    $tid = (int) $row['tipo_id'];
-    $chave = isset($series_tipo[$tid]) ? $tid : 'outros';
-    $series_tipo[$chave]['dados'][$mes_idx] += (int) $row['total'];
-    if ($chave === 'outros') {
-        $series_tipo['outros']['total'] += (int) $row['total'];
-    }
+    $i++;
 }
 
 $semanas_map = [];
@@ -171,7 +191,12 @@ foreach ($todos_tipos as $t) {
 
 $chart_data = [
     'meses' => $labels_meses,
-    'seriesTipo' => array_values(array_map(function ($s) use ($url_eventos_por_tipo) {
+    'sigaa' => [
+        'faltas' => $sigaa_faltas,
+        'alunos' => $sigaa_alunos,
+        'total' => $sigaa_total,
+    ],
+    'seriesTipo' => array_map(function ($s) use ($url_eventos_por_tipo) {
         return [
             'label' => $s['label'],
             'cor' => $s['cor'],
@@ -179,7 +204,7 @@ $chart_data = [
             'total' => $s['total'],
             'url' => $s['id'] ? $url_eventos_por_tipo($s['id']) : null,
         ];
-    }, $series_tipo)),
+    }, $series_tipo),
     'semanas' => ['labels' => $labels_semanas, 'dados' => $dados_semanas],
     'dias' => ['labels' => $labels_dias, 'dados' => $dados_dias],
     'grupos' => [
@@ -318,29 +343,71 @@ $chart_data = [
 </div>
 <?php else: ?>
 
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0">
+            <i class="bi bi-cloud-download"></i> Evolução mensal das faltas (coleta automática do SIGAA)
+            <?php if ($tipo_sigaa_nome !== null): ?>
+            <span class="text-muted fw-normal">— <?php echo htmlspecialchars($tipo_sigaa_nome); ?></span>
+            <?php endif; ?>
+        </h6>
+        <?php if ($tipo_sigaa_id !== null && $sigaa_total > 0): ?>
+        <a href="<?php echo htmlspecialchars($url_eventos_por_tipo($tipo_sigaa_id)); ?>" class="btn btn-sm btn-outline-secondary">
+            <?php echo number_format($sigaa_total, 0, ',', '.'); ?> falta(s) no ano <i class="bi bi-box-arrow-up-right"></i>
+        </a>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <?php if ($tipo_sigaa_id === null): ?>
+        <p class="text-muted mb-0">
+            O tipo de evento das faltas do SIGAA não está configurado.
+            <?php if ($user->isAdmin()): ?>
+            Configure em <a href="api_sigaa_config.php">Configurações &gt; API SIGAA</a>.
+            <?php endif; ?>
+        </p>
+        <?php elseif ($sigaa_total === 0): ?>
+        <p class="text-muted mb-0">Nenhuma falta do SIGAA com os filtros selecionados.</p>
+        <?php else: ?>
+        <div class="dashboard-chart dashboard-chart-md"><canvas id="chartSigaa"></canvas></div>
+        <div class="small text-muted text-center mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
+        <?php endif; ?>
+    </div>
+</div>
+
 <div class="row g-3 mb-4">
     <div class="col-xl-8">
         <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Evolução mensal por tipo de evento</h6>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Modo do gráfico mensal">
-                    <button type="button" class="btn btn-outline-secondary active" data-modo-mensal="empilhado">Empilhado</button>
-                    <button type="button" class="btn btn-outline-secondary" data-modo-mensal="linhas">Linhas</button>
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0">Evolução mensal dos demais eventos</h6>
+                <?php if (!empty($series_tipo)): ?>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Linhas do gráfico">
+                    <button type="button" class="btn btn-outline-secondary" data-linhas-outros="todas">Todas</button>
+                    <button type="button" class="btn btn-outline-secondary" data-linhas-outros="nenhuma">Nenhuma</button>
                 </div>
+                <?php endif; ?>
             </div>
             <div class="card-body">
-                <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartMensal"></canvas></div>
+                <?php if (empty($series_tipo)): ?>
+                <p class="text-muted mb-0">Nenhum outro evento com os filtros selecionados.</p>
+                <?php else: ?>
+                <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartOutros"></canvas></div>
+                <div class="small text-muted text-center mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
     <div class="col-xl-4">
         <div class="card h-100">
             <div class="card-header">
-                <h6 class="mb-0">Distribuição por tipo</h6>
+                <h6 class="mb-0">Distribuição dos demais eventos</h6>
             </div>
             <div class="card-body">
+                <?php if (empty($series_tipo)): ?>
+                <p class="text-muted mb-0">Sem dados.</p>
+                <?php else: ?>
                 <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartTipos"></canvas></div>
                 <div class="small text-muted text-center mt-2">Clique em um tipo para ver os eventos.</div>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -458,7 +525,7 @@ $chart_data = [
         });
     });
 
-    if (typeof Chart === 'undefined' || !document.getElementById('chartMensal')) {
+    if (typeof Chart === 'undefined') {
         return;
     }
 
@@ -468,61 +535,75 @@ $chart_data = [
 
     var eixoInteiro = { beginAtZero: true, ticks: { precision: 0 } };
 
-    function datasetsMensais(modo) {
-        return dados.seriesTipo.map(function (s) {
-            var base = { label: s.label, data: s.dados, backgroundColor: s.cor, borderColor: s.cor };
-            if (modo === 'linhas') {
-                base.type = 'line';
-                base.tension = 0.3;
-                base.fill = false;
-                base.pointRadius = 3;
-                base.borderWidth = 2;
-            } else {
-                base.type = 'bar';
-                base.borderWidth = 0;
-                base.borderRadius = 2;
-            }
-            return base;
-        });
+    function criarGrafico(id, config) {
+        var canvas = document.getElementById(id);
+        return canvas ? new Chart(canvas, config) : null;
     }
 
-    var chartMensal = new Chart(document.getElementById('chartMensal'), {
-        type: 'bar',
-        data: { labels: dados.meses, datasets: datasetsMensais('empilhado') },
-        options: {
+    function linha(label, valores, cor, extras) {
+        return Object.assign({
+            label: label,
+            data: valores,
+            borderColor: cor,
+            backgroundColor: cor,
+            tension: 0.3,
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            borderWidth: 2
+        }, extras || {});
+    }
+
+    function opcoesLinhas() {
+        return {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
-            scales: {
-                x: { stacked: true, grid: { display: false } },
-                y: Object.assign({ stacked: true }, eixoInteiro)
-            },
+            scales: { x: { grid: { display: false } }, y: eixoInteiro },
             plugins: {
-                legend: { position: 'bottom' },
+                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line' } },
                 tooltip: {
-                    callbacks: {
-                        footer: function (itens) {
-                            var total = itens.reduce(function (acc, it) { return acc + it.parsed.y; }, 0);
-                            return 'Total: ' + total;
-                        }
-                    }
+                    itemSort: function (a, b) { return b.parsed.y - a.parsed.y; }
                 }
             }
-        }
+        };
+    }
+
+    criarGrafico('chartSigaa', {
+        type: 'line',
+        data: {
+            labels: dados.meses,
+            datasets: [
+                linha('Faltas registradas', dados.sigaa.faltas, '#e15759', {
+                    fill: true,
+                    backgroundColor: 'rgba(225, 87, 89, 0.12)'
+                }),
+                linha('Alunos com falta', dados.sigaa.alunos, '#4e79a7', { borderDash: [6, 4] })
+            ]
+        },
+        options: opcoesLinhas()
     });
 
-    document.querySelectorAll('[data-modo-mensal]').forEach(function (btn) {
+    var chartOutros = criarGrafico('chartOutros', {
+        type: 'line',
+        data: {
+            labels: dados.meses,
+            datasets: dados.seriesTipo.map(function (s) { return linha(s.label, s.dados, s.cor); })
+        },
+        options: opcoesLinhas()
+    });
+
+    document.querySelectorAll('[data-linhas-outros]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-            var modo = btn.getAttribute('data-modo-mensal');
-            document.querySelectorAll('[data-modo-mensal]').forEach(function (b) { b.classList.toggle('active', b === btn); });
-            var empilhado = modo === 'empilhado';
-            chartMensal.data.datasets = datasetsMensais(modo);
-            chartMensal.options.scales.x.stacked = empilhado;
-            chartMensal.options.scales.y.stacked = empilhado;
-            chartMensal.update();
+            if (!chartOutros) return;
+            var mostrar = btn.getAttribute('data-linhas-outros') === 'todas';
+            chartOutros.data.datasets.forEach(function (ds, idx) {
+                chartOutros.setDatasetVisibility(idx, mostrar);
+            });
+            chartOutros.update();
         });
     });
 
-    new Chart(document.getElementById('chartTipos'), {
+    criarGrafico('chartTipos', {
         type: 'doughnut',
         data: {
             labels: dados.seriesTipo.map(function (s) { return s.label; }),
@@ -559,7 +640,7 @@ $chart_data = [
         }
     });
 
-    new Chart(document.getElementById('chartSemanal'), {
+    criarGrafico('chartSemanal', {
         type: 'line',
         data: {
             labels: dados.semanas.labels,
@@ -587,7 +668,7 @@ $chart_data = [
         }
     });
 
-    new Chart(document.getElementById('chartGrupos'), {
+    criarGrafico('chartGrupos', {
         type: 'bar',
         data: {
             labels: dados.grupos.labels,
@@ -610,7 +691,7 @@ $chart_data = [
         }
     });
 
-    new Chart(document.getElementById('chartDias'), {
+    criarGrafico('chartDias', {
         type: 'bar',
         data: {
             labels: dados.dias.labels,

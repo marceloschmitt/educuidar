@@ -116,6 +116,15 @@ class DashboardEstatisticas {
         );
     }
 
+    public function alunosDistintosPorMes($tipo_evento_id) {
+        return $this->consultar(
+            "MONTH(e.data_evento) AS mes, COUNT(DISTINCT e.aluno_id) AS total",
+            "GROUP BY MONTH(e.data_evento) ORDER BY mes",
+            ['e.tipo_evento_id = :tipo_alunos_mes'],
+            [':tipo_alunos_mes' => (int) $tipo_evento_id]
+        );
+    }
+
     public function porSemana() {
         return $this->consultar(
             "DATE_SUB(e.data_evento, INTERVAL WEEKDAY(e.data_evento) DAY) AS semana, COUNT(*) AS total",
