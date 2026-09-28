@@ -67,7 +67,6 @@ $stats = new DashboardEstatisticas($db, $filtros_base + ['tipo_evento_id' => $ti
 $stats_todos_tipos = new DashboardEstatisticas($db, $filtros_base);
 
 $por_mes = $stats->porMes();
-$por_semana = $stats->porSemana();
 $por_dia_semana = $stats->porDiaDaSemana();
 $agrupar_por_turma = (bool) $filtro_curso;
 $por_grupo = array_slice($agrupar_por_turma ? $stats->porTurma() : $stats->porCurso(), 0, 12);
@@ -88,22 +87,6 @@ foreach ($por_mes as $row) {
     if ($mes_idx >= 0 && $mes_idx < $ultimo_mes) {
         $mensal_total[$mes_idx] = (int) $row['total'];
         $mensal_alunos[$mes_idx] = (int) $row['alunos'];
-    }
-}
-
-$semanas_map = [];
-foreach ($por_semana as $row) {
-    $semanas_map[$row['semana']] = (int) $row['total'];
-}
-$labels_semanas = [];
-$dados_semanas = [];
-if (!empty($semanas_map)) {
-    $inicio = new DateTime(min(array_keys($semanas_map)));
-    $fim_ref = $ano_corrente === $ano_atual_real ? new DateTime('today') : new DateTime(max(array_keys($semanas_map)));
-    $fim = (clone $fim_ref)->modify('-' . ((int) $fim_ref->format('N') - 1) . ' days');
-    for ($d = clone $inicio; $d <= $fim; $d->modify('+7 days')) {
-        $labels_semanas[] = $d->format('d/m');
-        $dados_semanas[] = $semanas_map[$d->format('Y-m-d')] ?? 0;
     }
 }
 
@@ -169,7 +152,6 @@ $chart_data = [
         'cor' => $tipo_e_sigaa ? '#e15759' : '#4e79a7',
     ],
     'distribuicao' => $distribuicao,
-    'semanas' => ['labels' => $labels_semanas, 'dados' => $dados_semanas],
     'dias' => ['labels' => $labels_dias, 'dados' => $dados_dias],
     'grupos' => [
         'labels' => array_column($por_grupo, 'nome'),
@@ -292,15 +274,6 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
     <div class="card-body">
         <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartMensal"></canvas></div>
         <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h6 class="mb-0"><?php echo $icone_tipo; ?><?php echo $rotulo_ocorrencias; ?> por semana<?php echo $sufixo_titulo; ?></h6>
-    </div>
-    <div class="card-body">
-        <div class="dashboard-chart dashboard-chart-md"><canvas id="chartSemanal"></canvas></div>
     </div>
 </div>
 
@@ -489,34 +462,6 @@ $sufixo_titulo = ' — ' . htmlspecialchars($tipo_selecionado_nome);
             scales: { x: { grid: { display: false } }, y: eixoInteiro },
             plugins: {
                 legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line' } }
-            }
-        }
-    });
-
-    criarGrafico('chartSemanal', {
-        type: 'line',
-        data: {
-            labels: dados.semanas.labels,
-            datasets: [{
-                label: dados.mensal.rotulo + ' na semana',
-                data: dados.semanas.dados,
-                borderColor: cor,
-                backgroundColor: transparente(cor, 0.12),
-                fill: true,
-                tension: 0.3,
-                pointRadius: 2
-            }]
-        },
-        options: {
-            maintainAspectRatio: false,
-            scales: { x: { grid: { display: false } }, y: eixoInteiro },
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        title: function (itens) { return 'Semana de ' + itens[0].label; }
-                    }
-                }
             }
         }
     });

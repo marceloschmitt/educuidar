@@ -87,13 +87,6 @@ class DashboardEstatisticas {
         );
     }
 
-    public function porSemana() {
-        return $this->consultar(
-            "DATE_SUB(e.data_evento, INTERVAL WEEKDAY(e.data_evento) DAY) AS semana, COUNT(*) AS total",
-            "GROUP BY semana ORDER BY semana"
-        );
-    }
-
     public function porDiaDaSemana() {
         return $this->consultar(
             "WEEKDAY(e.data_evento) AS dia, COUNT(*) AS total",
