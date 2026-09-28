@@ -460,7 +460,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         return pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     }
 
-    // Escreve "valor (percentual)" na ponta de cada barra horizontal.
+    // Escreve "valor (percentual)" na ponta de cada barra horizontal; sem soma, apenas o valor.
     function rotulosBarras(soma) {
         return {
             id: 'rotulosBarras',
@@ -472,7 +472,8 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 ctx.textBaseline = 'middle';
                 chart.getDatasetMeta(0).data.forEach(function (barra, idx) {
                     var valor = chart.data.datasets[0].data[idx];
-                    ctx.fillText(valor + '  (' + formatarPercentual(valor, soma) + ')', barra.x + 6, barra.y);
+                    var texto = soma ? valor + '  (' + formatarPercentual(valor, soma) + ')' : String(valor);
+                    ctx.fillText(texto, barra.x + 6, barra.y);
                 });
                 ctx.restore();
             }
@@ -532,7 +533,6 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     });
 
     var totaisTurmas = dados.turmas.map(function (t) { return t.total; });
-    var somaTurmas = somar(totaisTurmas);
     criarGrafico('chartTurmas', {
         type: 'bar',
         data: {
@@ -545,11 +545,11 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 maxBarThickness: 22
             }]
         },
-        plugins: [rotulosBarras(somaTurmas)],
+        plugins: [rotulosBarras(null)],
         options: {
             indexAxis: 'y',
             maintainAspectRatio: false,
-            layout: { padding: { right: 110 } },
+            layout: { padding: { right: 50 } },
             scales: {
                 x: Object.assign({ grid: { color: '#f1f3f5' } }, eixoInteiro),
                 y: { grid: { display: false } }
@@ -559,7 +559,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 tooltip: {
                     callbacks: {
                         label: function (ctx) {
-                            return ' ' + ctx.parsed.x + ' — ' + formatarPercentual(ctx.parsed.x, somaTurmas);
+                            return ' ' + ctx.parsed.x;
                         }
                     }
                 }
