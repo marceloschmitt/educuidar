@@ -31,6 +31,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'eventos_por_tipo.php' ? 'active' : ''; ?>" href="eventos_por_tipo.php">
+            <i class="bi bi-grid-3x3-gap"></i> Eventos por tipo
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'evento_grupo.php' ? 'active' : ''; ?>" href="evento_grupo.php">
             <i class="bi bi-people"></i> Evento de grupo
         </a>

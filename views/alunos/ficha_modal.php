@@ -1,4 +1,4 @@
-<!-- Modal para Ver Ficha do Aluno (partial: usado em alunos.php e index.php) -->
+<!-- Modal para Ver Ficha do Aluno (partial: usado em alunos.php e eventos_por_tipo.php) -->
 <?php $user_ficha = isset($user) ? $user : null; ?>
 <div class="modal fade" id="modalFichaAluno" tabindex="-1" aria-labelledby="modalFichaAlunoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-xl">
