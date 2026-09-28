@@ -343,39 +343,40 @@ $chart_data = [
 </div>
 <?php else: ?>
 
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h6 class="mb-0">
-            <i class="bi bi-cloud-download"></i> Evolução mensal das faltas (coleta automática do SIGAA)
-            <?php if ($tipo_sigaa_nome !== null): ?>
-            <span class="text-muted fw-normal">— <?php echo htmlspecialchars($tipo_sigaa_nome); ?></span>
-            <?php endif; ?>
-        </h6>
-        <?php if ($tipo_sigaa_id !== null && $sigaa_total > 0): ?>
-        <a href="<?php echo htmlspecialchars($url_eventos_por_tipo($tipo_sigaa_id)); ?>" class="btn btn-sm btn-outline-secondary">
-            <?php echo number_format($sigaa_total, 0, ',', '.'); ?> falta(s) no ano <i class="bi bi-box-arrow-up-right"></i>
-        </a>
-        <?php endif; ?>
-    </div>
-    <div class="card-body">
-        <?php if ($tipo_sigaa_id === null): ?>
-        <p class="text-muted mb-0">
-            O tipo de evento das faltas do SIGAA não está configurado.
-            <?php if ($user->isAdmin()): ?>
-            Configure em <a href="api_sigaa_config.php">Configurações &gt; API SIGAA</a>.
-            <?php endif; ?>
-        </p>
-        <?php elseif ($sigaa_total === 0): ?>
-        <p class="text-muted mb-0">Nenhuma falta do SIGAA com os filtros selecionados.</p>
-        <?php else: ?>
-        <div class="dashboard-chart dashboard-chart-md"><canvas id="chartSigaa"></canvas></div>
-        <div class="small text-muted text-center mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
-        <?php endif; ?>
-    </div>
-</div>
-
 <div class="row g-3 mb-4">
-    <div class="col-xl-8">
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h6 class="mb-0">
+                    <i class="bi bi-cloud-download"></i> Evolução mensal das faltas do SIGAA
+                    <?php if ($tipo_sigaa_nome !== null): ?>
+                    <span class="text-muted fw-normal">— <?php echo htmlspecialchars($tipo_sigaa_nome); ?></span>
+                    <?php endif; ?>
+                </h6>
+                <?php if ($tipo_sigaa_id !== null && $sigaa_total > 0): ?>
+                <a href="<?php echo htmlspecialchars($url_eventos_por_tipo($tipo_sigaa_id)); ?>" class="btn btn-sm btn-outline-secondary">
+                    <?php echo number_format($sigaa_total, 0, ',', '.'); ?> no ano <i class="bi bi-box-arrow-up-right"></i>
+                </a>
+                <?php endif; ?>
+            </div>
+            <div class="card-body">
+                <?php if ($tipo_sigaa_id === null): ?>
+                <p class="text-muted mb-0">
+                    O tipo de evento das faltas do SIGAA não está configurado.
+                    <?php if ($user->isAdmin()): ?>
+                    Configure em <a href="api_sigaa_config.php">Configurações &gt; API SIGAA</a>.
+                    <?php endif; ?>
+                </p>
+                <?php elseif ($sigaa_total === 0): ?>
+                <p class="text-muted mb-0">Nenhuma falta do SIGAA com os filtros selecionados.</p>
+                <?php else: ?>
+                <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartSigaa"></canvas></div>
+                <div class="small text-muted mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-6">
         <div class="card h-100">
             <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h6 class="mb-0">Evolução mensal dos demais eventos</h6>
@@ -391,27 +392,25 @@ $chart_data = [
                 <p class="text-muted mb-0">Nenhum outro evento com os filtros selecionados.</p>
                 <?php else: ?>
                 <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartOutros"></canvas></div>
-                <div class="small text-muted text-center mt-2">Clique na legenda para ligar ou desligar uma linha.</div>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-    <div class="col-xl-4">
-        <div class="card h-100">
-            <div class="card-header">
-                <h6 class="mb-0">Distribuição dos demais eventos</h6>
-            </div>
-            <div class="card-body">
-                <?php if (empty($series_tipo)): ?>
-                <p class="text-muted mb-0">Sem dados.</p>
-                <?php else: ?>
-                <div class="dashboard-chart dashboard-chart-lg"><canvas id="chartTipos"></canvas></div>
-                <div class="small text-muted text-center mt-2">Clique em um tipo para ver os eventos.</div>
+                <div id="legendaOutros" class="dashboard-legenda mt-3"></div>
+                <div class="small text-muted mt-2">Clique em um tipo para ligar ou desligar a linha.</div>
                 <?php endif; ?>
             </div>
         </div>
     </div>
 </div>
+
+<?php if (!empty($series_tipo)): ?>
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0">Distribuição dos demais eventos</h6>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-chart" style="height: <?php echo max(120, count($series_tipo) * 30 + 30); ?>px;"><canvas id="chartTipos"></canvas></div>
+        <div class="small text-muted mt-2">Clique em uma barra para ver os eventos do tipo.</div>
+    </div>
+</div>
+<?php endif; ?>
 
 <div class="row g-3 mb-4">
     <div class="col-12">
@@ -583,14 +582,62 @@ $chart_data = [
         options: opcoesLinhas()
     });
 
+    var opcoesOutros = opcoesLinhas();
+    opcoesOutros.plugins.legend = { display: false };
+
     var chartOutros = criarGrafico('chartOutros', {
         type: 'line',
         data: {
             labels: dados.meses,
-            datasets: dados.seriesTipo.map(function (s) { return linha(s.label, s.dados, s.cor); })
+            datasets: dados.seriesTipo.map(function (s) {
+                return linha(s.label, s.dados, s.cor, {
+                    pointRadius: function (ctx) { return ctx.raw ? 3 : 0; }
+                });
+            })
         },
-        options: opcoesLinhas()
+        options: opcoesOutros
     });
+
+    var legendaOutros = document.getElementById('legendaOutros');
+    if (chartOutros && legendaOutros) {
+        dados.seriesTipo.forEach(function (s, idx) {
+            var item = document.createElement('button');
+            item.type = 'button';
+            item.className = 'dashboard-legenda-item';
+            item.setAttribute('data-idx', idx);
+            var cor = document.createElement('span');
+            cor.className = 'dashboard-legenda-cor';
+            cor.style.backgroundColor = s.cor;
+            var nome = document.createElement('span');
+            nome.className = 'dashboard-legenda-nome';
+            nome.textContent = s.label;
+            var total = document.createElement('span');
+            total.className = 'dashboard-legenda-total';
+            total.textContent = s.total;
+            item.appendChild(cor);
+            item.appendChild(nome);
+            item.appendChild(total);
+
+            item.addEventListener('click', function () {
+                var visivel = !chartOutros.isDatasetVisible(idx);
+                chartOutros.setDatasetVisibility(idx, visivel);
+                item.classList.toggle('desligado', !visivel);
+                chartOutros.update();
+            });
+            item.addEventListener('mouseenter', function () {
+                if (!chartOutros.isDatasetVisible(idx)) return;
+                chartOutros.data.datasets.forEach(function (ds, i) {
+                    ds.borderWidth = i === idx ? 4 : 1;
+                });
+                chartOutros.update('none');
+            });
+            item.addEventListener('mouseleave', function () {
+                chartOutros.data.datasets.forEach(function (ds) { ds.borderWidth = 2; });
+                chartOutros.update('none');
+            });
+            legendaOutros.appendChild(item);
+        });
+    }
 
     document.querySelectorAll('[data-linhas-outros]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -599,31 +646,65 @@ $chart_data = [
             chartOutros.data.datasets.forEach(function (ds, idx) {
                 chartOutros.setDatasetVisibility(idx, mostrar);
             });
+            if (legendaOutros) {
+                legendaOutros.querySelectorAll('.dashboard-legenda-item').forEach(function (item) {
+                    item.classList.toggle('desligado', !mostrar);
+                });
+            }
             chartOutros.update();
         });
     });
 
+    var somaOutros = dados.seriesTipo.reduce(function (acc, s) { return acc + s.total; }, 0);
+    function percentual(valor) {
+        var pct = somaOutros ? (valor / somaOutros) * 100 : 0;
+        return pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    }
+
+    var rotulosBarras = {
+        id: 'rotulosBarras',
+        afterDatasetsDraw: function (chart) {
+            var ctx = chart.ctx;
+            var meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = '600 12px ' + Chart.defaults.font.family;
+            ctx.fillStyle = '#495057';
+            ctx.textBaseline = 'middle';
+            meta.data.forEach(function (barra, idx) {
+                var valor = chart.data.datasets[0].data[idx];
+                ctx.fillText(valor + '  (' + percentual(valor) + ')', barra.x + 6, barra.y);
+            });
+            ctx.restore();
+        }
+    };
+
     criarGrafico('chartTipos', {
-        type: 'doughnut',
+        type: 'bar',
         data: {
             labels: dados.seriesTipo.map(function (s) { return s.label; }),
             datasets: [{
+                label: 'Eventos',
                 data: dados.seriesTipo.map(function (s) { return s.total; }),
                 backgroundColor: dados.seriesTipo.map(function (s) { return s.cor; }),
-                borderWidth: 1
+                borderRadius: 3,
+                maxBarThickness: 22
             }]
         },
+        plugins: [rotulosBarras],
         options: {
+            indexAxis: 'y',
             maintainAspectRatio: false,
-            cutout: '60%',
+            layout: { padding: { right: 110 } },
+            scales: {
+                x: Object.assign({ grid: { color: '#f1f3f5' } }, eixoInteiro),
+                y: { grid: { display: false } }
+            },
             plugins: {
-                legend: { position: 'bottom' },
+                legend: { display: false },
                 tooltip: {
                     callbacks: {
                         label: function (ctx) {
-                            var soma = ctx.dataset.data.reduce(function (a, b) { return a + b; }, 0);
-                            var pct = soma ? Math.round((ctx.parsed / soma) * 100) : 0;
-                            return ' ' + ctx.label + ': ' + ctx.parsed + ' (' + pct + '%)';
+                            return ' ' + ctx.parsed.x + ' evento(s) — ' + percentual(ctx.parsed.x);
                         }
                     }
                 }
