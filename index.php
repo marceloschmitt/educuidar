@@ -222,6 +222,18 @@ $chart_data = [
 ];
 ?>
 
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="eventos.php" class="btn btn-primary">
+        <i class="bi bi-calendar-event"></i> Eventos
+    </a>
+    <a href="eventos_por_tipo.php" class="btn btn-primary">
+        <i class="bi bi-grid-3x3-gap"></i> Eventos por tipo
+    </a>
+    <a href="evento_grupo.php" class="btn btn-primary">
+        <i class="bi bi-people"></i> Evento de grupo
+    </a>
+</div>
+
 <div class="card mb-4">
     <div class="card-body">
         <form method="GET" action="" class="row g-3 align-items-end">
