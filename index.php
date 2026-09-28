@@ -495,7 +495,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         };
     }
 
-    var legendaTurmas = { position: 'bottom', labels: { usePointStyle: true } };
+    var legendaTurmas = { position: 'bottom', labels: { boxWidth: 28, boxHeight: 8, padding: 14 } };
 
     criarGrafico('chartMensal', {
         type: 'line',
@@ -520,7 +520,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
             interaction: { mode: 'index', intersect: false },
             scales: { x: { grid: { display: false } }, y: eixoInteiro },
             plugins: {
-                legend: { position: 'bottom', labels: { usePointStyle: true, pointStyle: 'line' } },
+                legend: legendaTurmas,
                 tooltip: {
                     itemSort: function (a, b) { return b.parsed.y - a.parsed.y; }
                 }
