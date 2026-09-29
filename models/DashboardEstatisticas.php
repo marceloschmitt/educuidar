@@ -3,6 +3,7 @@
  * Consultas agregadas para os gráficos do dashboard.
  *
  * Filtros aceitos: ano, curso_id, turma_id, tipo_evento_id, registrado_por, incluir_sabados.
+ * faltasPorDisciplina() lê frequencia_disciplina (SIGAA) e ignora tipo, registrado_por e sábados.
  */
 class DashboardEstatisticas {
     private $conn;
@@ -114,6 +115,67 @@ class DashboardEstatisticas {
             "WEEKDAY(e.data_evento) AS dia, t.id AS turma_id, COUNT(*) AS total",
             "GROUP BY WEEKDAY(e.data_evento), t.id"
         );
+    }
+
+    /** Disciplinas cursadas por menos alunos da turma (dependências) distorcem o percentual. */
+    public const MIN_ALUNOS_DISCIPLINA = 5;
+
+    /**
+     * Percentual de faltas (faltas / aulas do SIGAA) por turma e disciplina, maior primeiro.
+     * Usa só ano, curso_id e turma_id; sem a tabela frequencia_disciplina, devolve [].
+     * @return array{linhas: list<array>, atualizado_em: ?string}
+     */
+    public function faltasPorDisciplina() {
+        $where = ["fd.ano = :ano_freq", "t.ano_civil = :ano", "COALESCE(a.desistente, 0) = 0"];
+        $params = [
+            ':ano_freq' => (int) $this->filtros['ano'],
+            ':ano' => (int) $this->filtros['ano'],
+            ':min_alunos' => self::MIN_ALUNOS_DISCIPLINA,
+        ];
+        if (!empty($this->filtros['curso_id'])) {
+            $where[] = "t.curso_id = :curso_id";
+            $params[':curso_id'] = (int) $this->filtros['curso_id'];
+        }
+        if (!empty($this->filtros['turma_id'])) {
+            $where[] = "t.id = :turma_id";
+            $params[':turma_id'] = (int) $this->filtros['turma_id'];
+        }
+
+        $query = "SELECT t.id AS turma_id, COALESCE(c.nome, '') AS curso_nome, t.ano_curso,
+                         fd.cod_disciplina, MAX(fd.disciplina_nome) AS disciplina_nome,
+                         SUM(fd.aulas) AS aulas, SUM(fd.faltas) AS faltas,
+                         COUNT(DISTINCT fd.aluno_id) AS alunos, MAX(fd.atualizado_em) AS atualizado_em
+                  FROM frequencia_disciplina fd
+                  INNER JOIN alunos a ON a.id = fd.aluno_id
+                  INNER JOIN aluno_turmas at ON at.aluno_id = fd.aluno_id
+                  INNER JOIN turmas t ON t.id = at.turma_id
+                  LEFT JOIN cursos c ON c.id = t.curso_id
+                  WHERE " . implode(' AND ', $where) . "
+                  GROUP BY t.id, c.nome, t.ano_curso, fd.cod_disciplina
+                  HAVING SUM(fd.aulas) > 0 AND COUNT(DISTINCT fd.aluno_id) >= :min_alunos
+                  ORDER BY SUM(fd.faltas) / SUM(fd.aulas) DESC, disciplina_nome ASC";
+
+        try {
+            $stmt = $this->conn->prepare($query);
+            foreach ($params as $chave => $valor) {
+                $stmt->bindValue($chave, $valor, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $linhas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return ['linhas' => [], 'atualizado_em' => null];
+        }
+
+        $atualizado_em = null;
+        foreach ($linhas as &$linha) {
+            $linha['percentual'] = round(((int) $linha['faltas'] / (int) $linha['aulas']) * 100, 1);
+            if ($linha['atualizado_em'] !== null && ($atualizado_em === null || $linha['atualizado_em'] > $atualizado_em)) {
+                $atualizado_em = $linha['atualizado_em'];
+            }
+        }
+        unset($linha);
+
+        return ['linhas' => $linhas, 'atualizado_em' => $atualizado_em];
     }
 
     /**

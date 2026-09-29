@@ -470,6 +470,20 @@ def main() -> int:
         except Exception as error:
             log(f"Aviso: falha ao importar faltas: {error}", erro=True)
 
+        log()
+        log("Gravando frequência por disciplina...")
+        try:
+            from frequencias_disciplinas import gravar_frequencias
+
+            resumo_freq = gravar_frequencias(resultados)
+            log(
+                f"Frequência por disciplina: {resumo_freq['alunos']} aluno(s), "
+                f"{resumo_freq['disciplinas']} disciplina(s), "
+                f"{resumo_freq['removidas']} removida(s)"
+            )
+        except Exception as error:
+            log(f"Aviso: falha ao gravar frequência por disciplina: {error}", erro=True)
+
     if not args.sem_emails:
         log()
         log("Enviando e-mails de eventos aos responsáveis...")

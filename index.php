@@ -78,6 +78,7 @@ $por_mes_turma = $stats->porMesETurma();
 $por_dia_turma = $stats->porDiaETurma();
 $top_alunos_por_turma = $stats->topAlunosPorTurma(5);
 $totais_por_tipo = $stats_todos_tipos->totaisPorTipo();
+$freq_disciplinas = $stats_todos_tipos->faltasPorDisciplina();
 
 $meses_nomes = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 $ano_atual_real = (int) date('Y');
@@ -162,6 +163,48 @@ foreach ($totais_por_tipo as $row) {
     ];
 }
 
+// SIGAA manda os nomes em maiúsculas: "EDUCAÇÃO FÍSICA II" vira "Educação Física II".
+function nome_disciplina_legivel($nome) {
+    $palavras = explode(' ', mb_convert_case(mb_strtolower(trim((string) $nome), 'UTF-8'), MB_CASE_TITLE, 'UTF-8'));
+    $conectivos = ['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com'];
+    foreach ($palavras as $i => $palavra) {
+        $minuscula = mb_strtolower($palavra, 'UTF-8');
+        if ($i > 0 && in_array($minuscula, $conectivos, true)) {
+            $palavras[$i] = $minuscula;
+        } elseif (preg_match('/^(i|ii|iii|iv|v|vi|vii|viii|ix|x)$/i', $palavra)) {
+            $palavras[$i] = strtoupper($palavra);
+        }
+    }
+    return implode(' ', $palavras);
+}
+
+$limite_disciplinas = 15;
+$total_disciplinas_freq = count($freq_disciplinas['linhas']);
+$linhas_freq = $filtro_turma ? $freq_disciplinas['linhas'] : array_slice($freq_disciplinas['linhas'], 0, $limite_disciplinas);
+$cores_extras = [];
+$disciplinas_chart = [];
+foreach ($linhas_freq as $row) {
+    $tid = (int) $row['turma_id'];
+    if (isset($series_turma[$tid])) {
+        $cor = $series_turma[$tid]['cor'];
+    } else {
+        if (!isset($cores_extras[$tid])) {
+            $cores_extras[$tid] = $paleta[(count($series_turma) + count($cores_extras)) % count($paleta)];
+        }
+        $cor = $cores_extras[$tid];
+    }
+    $nome = nome_disciplina_legivel($row['disciplina_nome']);
+    $disciplinas_chart[] = [
+        'label' => $filtro_turma ? $nome : $nome . ' · ' . trim($row['curso_nome'] . ' ' . (int) $row['ano_curso'] . 'º'),
+        'cor' => $cor,
+        'percentual' => (float) $row['percentual'],
+        'faltas' => (int) $row['faltas'],
+        'aulas' => (int) $row['aulas'],
+        'alunos' => (int) $row['alunos'],
+        'url' => $filtro_turma ? null : $url_dashboard(['filtro_turma' => $tid]),
+    ];
+}
+
 $filtros_alterados = $filtro_curso || $filtro_turma || !$tipo_e_padrao || !$incluir_sabados || ($apenas_meus_eventos && !$user->isNivel2());
 
 $chart_data = [
@@ -169,6 +212,7 @@ $chart_data = [
     'meses' => $labels_meses,
     'dias' => $labels_dias,
     'distribuicao' => $distribuicao,
+    'disciplinas' => $disciplinas_chart,
     'turmas' => array_values(array_map(function ($s) use ($indices_dias, $url_dashboard) {
         return [
             'label' => $s['label'],
@@ -202,6 +246,7 @@ if ($filtro_turma) {
         }
     }
 }
+$titulo_escopo = htmlspecialchars(implode(' · ', array_map('trim', array_slice($filtros_descricao, 1))));
 $filtros_descricao[] = $incluir_sabados ? 'com sábados' : 'sem sábados';
 if ($apenas_meus_eventos) {
     $filtros_descricao[] = 'apenas meus eventos';
@@ -377,6 +422,28 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 
 <?php endif; ?>
 
+<?php if (!empty($disciplinas_chart)): ?>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h6 class="mb-0">Percentual de faltas por disciplina em <?php echo $ano_corrente; ?> <span class="text-muted fw-normal">— <?php echo $titulo_escopo; ?></span></h6>
+        <?php if (!empty($freq_disciplinas['atualizado_em'])): ?>
+        <span class="text-muted small">SIGAA, atualizado em <?php echo date('d/m/Y H:i', strtotime($freq_disciplinas['atualizado_em'])); ?></span>
+        <?php endif; ?>
+    </div>
+    <div class="card-body">
+        <div class="dashboard-chart" style="height: <?php echo max(120, count($disciplinas_chart) * 28 + 40); ?>px;"><canvas id="chartDisciplinas"></canvas></div>
+        <div class="small text-muted mt-2">
+            Faltas divididas pelas aulas dadas (períodos) no ano, somando os alunos da turma.
+            Disciplinas com menos de <?php echo DashboardEstatisticas::MIN_ALUNOS_DISCIPLINA; ?> alunos na turma (dependências) ficam de fora.
+            <?php if (!$filtro_turma && $total_disciplinas_freq > count($disciplinas_chart)): ?>
+            Mostrando as <?php echo count($disciplinas_chart); ?> maiores de <?php echo $total_disciplinas_freq; ?>; filtre por turma para ver todas.
+            <?php endif; ?>
+            <?php if (!$filtro_turma): ?>Clique em uma barra para filtrar o dashboard pela turma.<?php endif; ?>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <?php if (!empty($distribuicao)): ?>
 <div class="card mb-4">
     <div class="card-header">
@@ -460,8 +527,12 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         return pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     }
 
+    function formatarDecimal(valor) {
+        return valor.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    }
+
     // Escreve "valor (percentual)" na ponta de cada barra horizontal; sem soma, apenas o valor.
-    function rotulosBarras(soma) {
+    function rotulosBarras(soma, formatar) {
         return {
             id: 'rotulosBarras',
             afterDatasetsDraw: function (chart) {
@@ -472,7 +543,8 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 ctx.textBaseline = 'middle';
                 chart.getDatasetMeta(0).data.forEach(function (barra, idx) {
                     var valor = chart.data.datasets[0].data[idx];
-                    var texto = soma ? valor + '  (' + formatarPercentual(valor, soma) + ')' : String(valor);
+                    var texto = formatar ? formatar(valor)
+                        : (soma ? valor + '  (' + formatarPercentual(valor, soma) + ')' : String(valor));
                     ctx.fillText(texto, barra.x + 6, barra.y);
                 });
                 ctx.restore();
@@ -587,6 +659,50 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                     itemSort: function (a, b) { return b.parsed.y - a.parsed.y; }
                 }
             }
+        }
+    });
+
+    var disciplinas = dados.disciplinas || [];
+    var urlsDisciplinas = disciplinas.map(function (d) { return d.url; });
+    criarGrafico('chartDisciplinas', {
+        type: 'bar',
+        data: {
+            labels: disciplinas.map(function (d) { return d.label; }),
+            datasets: [{
+                label: '% de faltas',
+                data: disciplinas.map(function (d) { return d.percentual; }),
+                backgroundColor: disciplinas.map(function (d) { return d.cor; }),
+                borderRadius: 3,
+                maxBarThickness: 20
+            }]
+        },
+        plugins: [rotulosBarras(null, formatarDecimal)],
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            layout: { padding: { right: 60 } },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f3f5' },
+                    ticks: { callback: function (v) { return v + '%'; } }
+                },
+                y: { grid: { display: false } }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function (ctx) {
+                            var d = disciplinas[ctx.dataIndex];
+                            return ' ' + formatarDecimal(d.percentual) + ' — ' + d.faltas.toLocaleString('pt-BR')
+                                + ' faltas em ' + d.aulas.toLocaleString('pt-BR') + ' aulas · ' + d.alunos + ' alunos';
+                        }
+                    }
+                }
+            },
+            onClick: cliqueLink(urlsDisciplinas),
+            onHover: cursorLink(urlsDisciplinas)
         }
     });
 
