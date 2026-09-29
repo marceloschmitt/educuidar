@@ -27,8 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         if ($ano_corrente < 2000 || $ano_corrente > 2100) {
             $error = 'Por favor, informe um ano entre 2000 e 2100!';
         } else {
-            if ($configuracao->setAnoCorrente($ano_corrente)) {
-                $success = 'Ano corrente atualizado com sucesso!';
+            if ($configuracao->setAnoCorrente($ano_corrente)
+                && $configuracao->setDashboardTipoEventoPadraoId($_POST['dashboard_tipo_padrao'] ?? '')) {
+                $success = 'Configurações atualizadas com sucesso!';
             } else {
                 $error = 'Erro ao atualizar ano corrente. Tente novamente.';
             }
@@ -37,6 +38,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $ano_corrente_atual = $configuracao->getAnoCorrente();
+$dashboard_tipo_padrao = $configuracao->getDashboardTipoEventoPadraoId();
+$tipos_eventos = (new TipoEvento($db))->getAll(false);
 
 require_once 'includes/header.php';
 ?>
@@ -82,6 +85,24 @@ require_once 'includes/header.php';
                         <div class="form-text">
                             Ano atual: <strong><?php echo date('Y'); ?></strong>
                         </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dashboard_tipo_padrao" class="form-label">
+                            <strong>Tipo de evento padrão do dashboard</strong>
+                        </label>
+                        <p class="text-muted small mb-2">
+                            Tipo de evento com que o dashboard abre e para o qual volta em "Filtros padrão".
+                            Cada usuário ainda pode escolher outro tipo no filtro do dashboard.
+                        </p>
+                        <select class="form-select" id="dashboard_tipo_padrao" name="dashboard_tipo_padrao">
+                            <option value="" <?php echo $dashboard_tipo_padrao === null ? 'selected' : ''; ?>>Todos os tipos</option>
+                            <?php foreach ($tipos_eventos as $te): ?>
+                            <option value="<?php echo (int) $te['id']; ?>" <?php echo $dashboard_tipo_padrao === (int) $te['id'] ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($te['nome']); ?><?php echo empty($te['ativo']) ? ' (inativo)' : ''; ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     
                     <div class="mb-4">

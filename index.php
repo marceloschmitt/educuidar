@@ -36,8 +36,7 @@ $tipo_sigaa_id = $configuracao->getApiSigaaTipoEventoFaltaId();
 if ($tipo_sigaa_id !== null && !isset($tipos_por_id[(int) $tipo_sigaa_id])) {
     $tipo_sigaa_id = null;
 }
-$tipo_sigaa_configurado = $tipo_sigaa_id !== null;
-if (!$tipo_sigaa_configurado) {
+if ($tipo_sigaa_id === null) {
     $tipo_detectado = (new DashboardEstatisticas($db, []))->tipoDoRegistroAutomatico();
     if ($tipo_detectado !== null && isset($tipos_por_id[$tipo_detectado])) {
         $tipo_sigaa_id = $tipo_detectado;
@@ -48,16 +47,20 @@ $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
 $apenas_meus_eventos = $user->isNivel2() || ($_GET['apenas_meus_eventos'] ?? '') === '1';
 
-// Sem parâmetro, o filtro de tipo começa no tipo do registro automático (SIGAA); "todos" remove o filtro.
+// Sem parâmetro, o filtro de tipo começa no tipo configurado em Configurações; "todos" remove o filtro.
+$tipo_padrao_id = $configuracao->getDashboardTipoEventoPadraoId();
+if ($tipo_padrao_id !== null && !isset($tipos_por_id[$tipo_padrao_id])) {
+    $tipo_padrao_id = null;
+}
+
 $filtro_tipo_param = $_GET['filtro_tipo_evento'] ?? '';
 if ($filtro_tipo_param === 'todos') {
     $tipo_selecionado_id = null;
 } elseif ($filtro_tipo_param !== '' && isset($tipos_por_id[(int) $filtro_tipo_param])) {
     $tipo_selecionado_id = (int) $filtro_tipo_param;
 } else {
-    $tipo_selecionado_id = $tipo_sigaa_id;
+    $tipo_selecionado_id = $tipo_padrao_id;
 }
-$tipo_padrao_id = $tipo_sigaa_id;
 $tipo_e_padrao = $tipo_selecionado_id === $tipo_padrao_id;
 $tipo_e_sigaa = $tipo_selecionado_id !== null && $tipo_selecionado_id === $tipo_sigaa_id;
 $tipo_selecionado_nome = $tipo_selecionado_id !== null ? $tipos_por_id[$tipo_selecionado_id] : 'Todos os tipos';
@@ -308,19 +311,6 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legend
         </form>
     </div>
 </div>
-
-<?php if (!$tipo_sigaa_configurado && $user->isAdmin()): ?>
-<div class="alert alert-warning">
-    <i class="bi bi-exclamation-triangle"></i>
-    O tipo de evento das faltas do SIGAA não está configurado.
-    <?php if ($tipo_sigaa_id !== null): ?>
-    O dashboard está usando "<?php echo htmlspecialchars($tipos_por_id[$tipo_sigaa_id]); ?>", identificado pelas faltas automáticas já registradas.
-    <?php else: ?>
-    Por isso o dashboard começa com todos os tipos.
-    <?php endif; ?>
-    Configure em <a href="api_sigaa_config.php">Configurações &gt; API SIGAA</a>.
-</div>
-<?php endif; ?>
 
 <?php if ($total_selecionado === 0): ?>
 <div class="alert alert-info">

@@ -195,6 +195,17 @@ class Configuracao {
         return $this->set('api_sigaa_tipo_evento_falta_id', $valor, 'tipos_eventos.id usado nas faltas lidas do SIGAA');
     }
 
+    /** @return int|null tipos_eventos.id com que o dashboard abre; null = todos os tipos */
+    public function getDashboardTipoEventoPadraoId() {
+        $valor = (string) $this->get('dashboard_tipo_evento_padrao');
+        return (ctype_digit($valor) && (int) $valor > 0) ? (int) $valor : null;
+    }
+
+    public function setDashboardTipoEventoPadraoId($tipo_id) {
+        $valor = (ctype_digit((string) $tipo_id) && (int) $tipo_id > 0) ? (string) (int) $tipo_id : '';
+        return $this->set('dashboard_tipo_evento_padrao', $valor, 'tipos_eventos.id com que o dashboard abre (vazio = todos os tipos)');
+    }
+
     // System installation status
     public function isSistemaInstalado() {
         $valor = $this->get('sistema_instalado');
