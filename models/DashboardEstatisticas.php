@@ -179,6 +179,35 @@ class DashboardEstatisticas {
     }
 
     /**
+     * Frequência de cada aluno (não desistente) da turma em uma disciplina, maior percentual de faltas primeiro.
+     */
+    public function faltasAlunosDisciplina($turma_id, $cod_disciplina) {
+        $query = "SELECT a.id, COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
+                         fd.disciplina_nome, fd.aulas, fd.faltas, fd.presencas, fd.ultima_aula,
+                         ROUND(fd.faltas * 100 / fd.aulas, 1) AS percentual
+                  FROM frequencia_disciplina fd
+                  INNER JOIN alunos a ON a.id = fd.aluno_id
+                  INNER JOIN aluno_turmas at ON at.aluno_id = fd.aluno_id AND at.turma_id = :turma_id
+                  INNER JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano
+                  WHERE fd.ano = :ano_freq
+                    AND fd.cod_disciplina = :cod
+                    AND fd.aulas > 0
+                    AND COALESCE(a.desistente, 0) = 0
+                  ORDER BY fd.faltas / fd.aulas DESC, nome ASC";
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':turma_id', (int) $turma_id, PDO::PARAM_INT);
+            $stmt->bindValue(':ano', (int) $this->filtros['ano'], PDO::PARAM_INT);
+            $stmt->bindValue(':ano_freq', (int) $this->filtros['ano'], PDO::PARAM_INT);
+            $stmt->bindValue(':cod', (string) $cod_disciplina, PDO::PARAM_STR);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
      * Os $limite alunos com mais registros em cada turma, agrupados por turma_id.
      */
     public function topAlunosPorTurma($limite = 5) {

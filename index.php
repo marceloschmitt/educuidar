@@ -194,14 +194,17 @@ foreach ($linhas_freq as $row) {
         $cor = $cores_extras[$tid];
     }
     $nome = nome_disciplina_legivel($row['disciplina_nome']);
+    $nome_turma = trim($row['curso_nome'] . ' ' . (int) $row['ano_curso'] . 'º');
     $disciplinas_chart[] = [
-        'label' => $filtro_turma ? $nome : $nome . ' · ' . trim($row['curso_nome'] . ' ' . (int) $row['ano_curso'] . 'º'),
+        'label' => $filtro_turma ? $nome : $nome . ' · ' . $nome_turma,
+        'titulo' => $nome . ' · ' . $nome_turma,
+        'turma_id' => $tid,
+        'cod' => $row['cod_disciplina'],
         'cor' => $cor,
         'percentual' => (float) $row['percentual'],
         'faltas' => (int) $row['faltas'],
         'aulas' => (int) $row['aulas'],
         'alunos' => (int) $row['alunos'],
-        'url' => $filtro_turma ? null : $url_dashboard(['filtro_turma' => $tid]),
     ];
 }
 
@@ -438,7 +441,31 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
             <?php if (!$filtro_turma && $total_disciplinas_freq > count($disciplinas_chart)): ?>
             Mostrando as <?php echo count($disciplinas_chart); ?> maiores de <?php echo $total_disciplinas_freq; ?>; filtre por turma para ver todas.
             <?php endif; ?>
-            <?php if (!$filtro_turma): ?>Clique em uma barra para filtrar o dashboard pela turma.<?php endif; ?>
+            Clique em uma barra para ver o percentual de cada aluno.
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalFrequenciaDisciplina" tabindex="-1" aria-labelledby="modalFrequenciaDisciplinaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title d-flex align-items-center gap-2" id="modalFrequenciaDisciplinaLabel">
+                    <span class="dashboard-turma-cor" id="freqDisciplinaCor"></span>
+                    <span id="freqDisciplinaTitulo"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="px-3 py-2 small text-muted border-bottom" id="freqDisciplinaResumo"></div>
+                <div id="freqDisciplinaConteudo"></div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <span class="small text-muted">
+                    Em vermelho, acima de 25% de faltas (frequência abaixo de 75%). Clique em um aluno para abrir a ficha.
+                </span>
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -464,21 +491,24 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 (function () {
     var dados = <?php echo json_encode($chart_data, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 
+    function abrirFichaAluno(alunoId) {
+        fetch('api/get_aluno_ficha.php?id=' + encodeURIComponent(alunoId))
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                viewFichaAluno(data);
+            })
+            .catch(function () {
+                alert('Erro ao carregar dados do aluno.');
+            });
+    }
+
     document.querySelectorAll('.dashboard-top-aluno').forEach(function (tr) {
         tr.addEventListener('click', function () {
-            var alunoId = tr.getAttribute('data-aluno-id');
-            fetch('api/get_aluno_ficha.php?id=' + encodeURIComponent(alunoId))
-                .then(function (res) { return res.json(); })
-                .then(function (data) {
-                    if (data.error) {
-                        alert(data.error);
-                        return;
-                    }
-                    viewFichaAluno(data);
-                })
-                .catch(function () {
-                    alert('Erro ao carregar dados do aluno.');
-                });
+            abrirFichaAluno(tr.getAttribute('data-aluno-id'));
         });
     });
 
@@ -663,7 +693,75 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     });
 
     var disciplinas = dados.disciplinas || [];
-    var urlsDisciplinas = disciplinas.map(function (d) { return d.url; });
+    var modalFreq = document.getElementById('modalFrequenciaDisciplina');
+    var requisicaoFreq = 0;
+
+    function escaparHtml(texto) {
+        var div = document.createElement('div');
+        div.textContent = texto == null ? '' : String(texto);
+        return div.innerHTML;
+    }
+
+    function linhaAlunoFrequencia(aluno, posicao, maximo, cor) {
+        var critico = aluno.percentual > 25;
+        var corBarra = critico ? '#dc3545' : cor;
+        return '<tr class="freq-aluno" data-aluno-id="' + aluno.id + '" style="cursor: pointer;" title="Ver ficha do aluno">'
+            + '<td class="text-muted ps-3" style="width: 2.5rem;">' + posicao + '</td>'
+            + '<td>' + escaparHtml(aluno.nome) + '</td>'
+            + '<td class="text-end text-nowrap small text-muted">' + aluno.faltas + ' de ' + aluno.aulas + ' aulas</td>'
+            + '<td class="pe-3" style="width: 190px;"><div class="d-flex align-items-center gap-2 justify-content-end">'
+            + '<div class="progress flex-grow-1" style="height: 6px; max-width: 100px;">'
+            + '<div class="progress-bar" style="width: ' + Math.round((aluno.percentual / maximo) * 100) + '%; background-color: ' + corBarra + ';"></div>'
+            + '</div><strong class="text-end' + (critico ? ' text-danger' : '') + '" style="min-width: 3.5rem;">'
+            + formatarDecimal(aluno.percentual) + '</strong></div></td></tr>';
+    }
+
+    function abrirFrequenciaDisciplina(d) {
+        if (!modalFreq || typeof bootstrap === 'undefined') return;
+        var conteudo = document.getElementById('freqDisciplinaConteudo');
+        var requisicao = ++requisicaoFreq;
+
+        document.getElementById('freqDisciplinaTitulo').textContent = d.titulo;
+        document.getElementById('freqDisciplinaCor').style.backgroundColor = d.cor;
+        document.getElementById('freqDisciplinaResumo').textContent = 'Turma: ' + formatarDecimal(d.percentual)
+            + ' de faltas (' + d.faltas.toLocaleString('pt-BR') + ' em ' + d.aulas.toLocaleString('pt-BR') + ' aulas, '
+            + d.alunos + ' alunos). Do pior para o melhor.';
+        conteudo.innerHTML = '<p class="text-muted text-center my-4">Carregando...</p>';
+        bootstrap.Modal.getOrCreateInstance(modalFreq).show();
+
+        fetch('api/get_frequencia_disciplina.php?turma_id=' + encodeURIComponent(d.turma_id)
+            + '&cod_disciplina=' + encodeURIComponent(d.cod))
+            .then(function (res) { return res.json(); })
+            .then(function (alunos) {
+                if (requisicao !== requisicaoFreq) return;
+                if (alunos.error || !alunos.length) {
+                    conteudo.innerHTML = '<p class="text-muted text-center my-4">'
+                        + escaparHtml(alunos.error || 'Nenhum aluno encontrado.') + '</p>';
+                    return;
+                }
+                var maximo = Math.max.apply(null, alunos.map(function (a) { return a.percentual; })) || 1;
+                conteudo.innerHTML = '<table class="table table-hover table-sm mb-0 align-middle">'
+                    + '<thead><tr><th class="ps-3">#</th><th>Aluno</th><th class="text-end">Faltas</th>'
+                    + '<th class="text-end pe-3">% de faltas</th></tr></thead><tbody>'
+                    + alunos.map(function (a, i) { return linhaAlunoFrequencia(a, i + 1, maximo, d.cor); }).join('')
+                    + '</tbody></table>';
+                conteudo.querySelectorAll('.freq-aluno').forEach(function (tr) {
+                    tr.addEventListener('click', function () {
+                        var alunoId = tr.getAttribute('data-aluno-id');
+                        // Fecha esta janela antes de abrir a ficha: o Bootstrap não empilha modais.
+                        modalFreq.addEventListener('hidden.bs.modal', function () {
+                            abrirFichaAluno(alunoId);
+                        }, { once: true });
+                        bootstrap.Modal.getInstance(modalFreq).hide();
+                    });
+                });
+            })
+            .catch(function () {
+                if (requisicao !== requisicaoFreq) return;
+                conteudo.innerHTML = '<p class="text-danger text-center my-4">Erro ao carregar os alunos.</p>';
+            });
+    }
+
     criarGrafico('chartDisciplinas', {
         type: 'bar',
         data: {
@@ -701,8 +799,12 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                     }
                 }
             },
-            onClick: cliqueLink(urlsDisciplinas),
-            onHover: cursorLink(urlsDisciplinas)
+            onClick: function (evt, elementos) {
+                if (elementos.length) abrirFrequenciaDisciplina(disciplinas[elementos[0].index]);
+            },
+            onHover: function (evt, elementos) {
+                evt.native.target.style.cursor = elementos.length ? 'pointer' : 'default';
+            }
         }
     });
 
