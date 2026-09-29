@@ -163,21 +163,6 @@ foreach ($totais_por_tipo as $row) {
     ];
 }
 
-// SIGAA manda os nomes em maiúsculas: "EDUCAÇÃO FÍSICA II" vira "Educação Física II".
-function nome_disciplina_legivel($nome) {
-    $palavras = explode(' ', mb_convert_case(mb_strtolower(trim((string) $nome), 'UTF-8'), MB_CASE_TITLE, 'UTF-8'));
-    $conectivos = ['a', 'o', 'e', 'de', 'da', 'do', 'das', 'dos', 'em', 'na', 'no', 'para', 'com'];
-    foreach ($palavras as $i => $palavra) {
-        $minuscula = mb_strtolower($palavra, 'UTF-8');
-        if ($i > 0 && in_array($minuscula, $conectivos, true)) {
-            $palavras[$i] = $minuscula;
-        } elseif (preg_match('/^(i|ii|iii|iv|v|vi|vii|viii|ix|x)$/i', $palavra)) {
-            $palavras[$i] = strtoupper($palavra);
-        }
-    }
-    return implode(' ', $palavras);
-}
-
 $limite_disciplinas = 15;
 $total_disciplinas_freq = count($freq_disciplinas['linhas']);
 $linhas_freq = $filtro_turma ? $freq_disciplinas['linhas'] : array_slice($freq_disciplinas['linhas'], 0, $limite_disciplinas);
@@ -193,7 +178,7 @@ foreach ($linhas_freq as $row) {
         }
         $cor = $cores_extras[$tid];
     }
-    $nome = nome_disciplina_legivel($row['disciplina_nome']);
+    $nome = FrequenciaDisciplina::nomeLegivel($row['disciplina_nome']);
     $nome_turma = trim($row['curso_nome'] . ' ' . (int) $row['ano_curso'] . 'º');
     $disciplinas_chart[] = [
         'label' => $filtro_turma ? $nome : $nome . ' · ' . $nome_turma,
@@ -462,7 +447,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
             </div>
             <div class="modal-footer justify-content-between">
                 <span class="small text-muted">
-                    Em vermelho, acima de 25% de faltas (frequência abaixo de 75%). Clique em um aluno para abrir a ficha.
+                    Em vermelho, acima de <?php echo FrequenciaDisciplina::LIMITE_FALTAS; ?>% de faltas (frequência abaixo de <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%). Clique em um aluno para abrir a ficha.
                 </span>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
             </div>
@@ -707,7 +692,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     }
 
     function linhaAlunoFrequencia(aluno, posicao, maximo, cor) {
-        var critico = aluno.percentual > 25;
+        var critico = aluno.percentual > <?php echo FrequenciaDisciplina::LIMITE_FALTAS; ?>;
         var corBarra = critico ? '#dc3545' : cor;
         return '<tr class="freq-aluno" data-aluno-id="' + aluno.id + '" style="cursor: pointer;" title="Ver ficha do aluno">'
             + '<td class="text-muted ps-3" style="width: 2.5rem;">' + posicao + '</td>'

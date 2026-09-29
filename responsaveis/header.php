@@ -81,6 +81,11 @@
             align-items: flex-start;
         }
         .resp-event:last-child { border-bottom: 0; }
+        .resp-freq {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #ececec;
+        }
+        .resp-freq:last-child { border-bottom: 0; }
         .resp-event-date {
             min-width: 4.2rem;
             text-align: center;

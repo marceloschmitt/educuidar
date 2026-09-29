@@ -26,6 +26,8 @@ if (count($alunos) === 1) {
 }
 
 $eventos = [];
+$frequencias = [];
+$frequencia_atualizada_em = null;
 $aluno_sel = null;
 if ($aluno_id) {
     foreach ($alunos as $a) {
@@ -35,6 +37,12 @@ if ($aluno_id) {
         }
     }
     $eventos = $evento->getParaResponsavel($aluno_id, $ano_corrente);
+    $frequencias = (new FrequenciaDisciplina($db))->getPorAluno($aluno_id, $ano_corrente);
+    foreach ($frequencias as $f) {
+        if ($frequencia_atualizada_em === null || $f['atualizado_em'] > $frequencia_atualizada_em) {
+            $frequencia_atualizada_em = $f['atualizado_em'];
+        }
+    }
 }
 
 $page_title = 'Ocorrências — Responsável';
@@ -63,12 +71,45 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
             <h2 class="h5 mb-0"><?php echo htmlspecialchars($nome); ?></h2>
-            <div class="small text-muted">Ocorrências de <?php echo (int) $ano_corrente; ?></div>
+            <div class="small text-muted"><?php echo !empty($frequencias) ? 'Frequência e ocorrências' : 'Ocorrências'; ?> de <?php echo (int) $ano_corrente; ?></div>
         </div>
         <?php if (count($alunos) > 1): ?>
         <a href="index.php" class="btn btn-outline-secondary btn-sm btn-touch">Trocar</a>
         <?php endif; ?>
     </div>
+
+    <?php if (!empty($frequencias)): ?>
+    <h3 class="h6 mb-1">Frequência por disciplina</h3>
+    <div class="small text-muted mb-2">
+        Percentual de faltas em cada disciplina, segundo o SIGAA<?php echo $frequencia_atualizada_em ? ' (atualizado em ' . date('d/m/Y', strtotime($frequencia_atualizada_em)) . ')' : ''; ?>.
+        A frequência mínima exigida é <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%.
+    </div>
+    <div class="card resp-card mb-4">
+        <?php foreach ($frequencias as $f): ?>
+        <?php
+        $pct = (float) $f['percentual'];
+        $critico = $pct > FrequenciaDisciplina::LIMITE_FALTAS;
+        $frequencia = $f['percentual_frequencia'] !== null ? (float) $f['percentual_frequencia'] : 100 - $pct;
+        ?>
+        <div class="resp-freq">
+            <div class="d-flex justify-content-between align-items-baseline gap-2">
+                <span class="fw-semibold"><?php echo htmlspecialchars(FrequenciaDisciplina::nomeLegivel($f['disciplina_nome'])); ?></span>
+                <span class="fw-bold text-nowrap<?php echo $critico ? ' text-danger' : ''; ?>"><?php echo number_format($pct, 1, ',', '.'); ?>% faltas</span>
+            </div>
+            <div class="progress my-1" style="height: 6px;" role="progressbar" aria-valuenow="<?php echo $pct; ?>" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" style="width: <?php echo min(100, $pct); ?>%; background-color: <?php echo $critico ? '#dc3545' : 'var(--resp-accent)'; ?>;"></div>
+            </div>
+            <div class="small text-muted">
+                <?php echo (int) $f['faltas']; ?> falta<?php echo (int) $f['faltas'] === 1 ? '' : 's'; ?>
+                em <?php echo (int) $f['aulas']; ?> período<?php echo (int) $f['aulas'] === 1 ? '' : 's'; ?>
+                · frequência <?php echo number_format($frequencia, 1, ',', '.'); ?>%
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+
+    <h3 class="h6 mb-2">Ocorrências</h3>
+    <?php endif; ?>
 
     <div class="card resp-card">
         <?php if (empty($eventos)): ?>
