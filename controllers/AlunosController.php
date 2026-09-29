@@ -174,7 +174,8 @@ class AlunosController extends Controller {
             'filtro_nome' => $filtro_nome,
             'return_to' => $return_to,
             'aluno_edit' => $aluno_edit,
-            'user' => $this->user
+            'user' => $this->user,
+            'alunos_limite_faltas' => $is_desistentes_page ? [] : (new FrequenciaDisciplina($this->db))->alunosNoLimite($ano_corrente),
         ];
         
         // Include header

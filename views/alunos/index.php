@@ -147,6 +147,13 @@ window.ALUNOS_FILTROS = {
                                     <?php else: ?>
                                         <?php echo htmlspecialchars($a['nome']); ?>
                                     <?php endif; ?>
+                                    <?php if (!empty($alunos_limite_faltas[(int) $a['id']])): ?>
+                                        <?php $limite_aluno = $alunos_limite_faltas[(int) $a['id']]; ?>
+                                        <?php $dica_limite = $limite_aluno['disciplinas'] . ($limite_aluno['disciplinas'] === 1 ? ' disciplina' : ' disciplinas')
+                                            . ' com mais de ' . FrequenciaDisciplina::LIMITE_FALTAS . '% de faltas (maior: '
+                                            . number_format($limite_aluno['maior'], 1, ',', '') . '%)'; ?>
+                                        <i class="bi bi-exclamation-triangle-fill text-danger ms-1" title="<?php echo htmlspecialchars($dica_limite); ?>" aria-label="<?php echo htmlspecialchars($dica_limite); ?>"></i>
+                                    <?php endif; ?>
                                 </td>
                                 <td><?php echo htmlspecialchars($a['email'] ?? '-'); ?></td>
                                 <td><?php echo htmlspecialchars($a['telefone_celular'] ?? '-'); ?></td>

@@ -51,6 +51,35 @@ class FrequenciaDisciplina {
     }
 
     /**
+     * Alunos com alguma disciplina no ano acima de LIMITE_FALTAS% de faltas, numa única consulta.
+     * @return array aluno_id => ['disciplinas' => int, 'maior' => float]
+     */
+    public function alunosNoLimite($ano) {
+        $query = "SELECT fd.aluno_id, COUNT(*) AS disciplinas, MAX(ROUND(fd.faltas * 100 / fd.aulas, 1)) AS maior
+                  FROM frequencia_disciplina fd
+                  WHERE fd.ano = :ano
+                    AND fd.aulas > 0
+                    AND fd.faltas * 100 > :limite * fd.aulas
+                  GROUP BY fd.aluno_id";
+        try {
+            $stmt = $this->conn->prepare($query);
+            $stmt->bindValue(':ano', (int) $ano, PDO::PARAM_INT);
+            $stmt->bindValue(':limite', self::LIMITE_FALTAS, PDO::PARAM_INT);
+            $stmt->execute();
+            $por_aluno = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $linha) {
+                $por_aluno[(int) $linha['aluno_id']] = [
+                    'disciplinas' => (int) $linha['disciplinas'],
+                    'maior' => (float) $linha['maior'],
+                ];
+            }
+            return $por_aluno;
+        } catch (PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
      * Disciplinas do aluno no ano, maior percentual de faltas primeiro.
      * Sem a tabela (coleta ainda não rodou), devolve [].
      */
