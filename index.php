@@ -436,7 +436,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     <div class="card-body">
         <div class="dashboard-chart" style="height: <?php echo max(120, count($disciplinas_chart) * 28 + 40); ?>px;"><canvas id="chartDisciplinas"></canvas></div>
         <div class="small text-muted mt-2">
-            Faltas divididas pelas aulas dadas (períodos) no ano, somando os alunos da turma.
+            Faltas divididas pelos períodos dados no ano, somando os alunos da turma.
             Disciplinas com menos de <?php echo DashboardEstatisticas::MIN_ALUNOS_DISCIPLINA; ?> alunos na turma (dependências) ficam de fora.
             <?php if (!$filtro_turma && $total_disciplinas_freq > count($disciplinas_chart)): ?>
             Mostrando as <?php echo count($disciplinas_chart); ?> maiores de <?php echo $total_disciplinas_freq; ?>; filtre por turma para ver todas.
@@ -696,6 +696,10 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     var modalFreq = document.getElementById('modalFrequenciaDisciplina');
     var requisicaoFreq = 0;
 
+    function periodos(n) {
+        return n.toLocaleString('pt-BR') + (n === 1 ? ' período' : ' períodos');
+    }
+
     function escaparHtml(texto) {
         var div = document.createElement('div');
         div.textContent = texto == null ? '' : String(texto);
@@ -708,7 +712,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         return '<tr class="freq-aluno" data-aluno-id="' + aluno.id + '" style="cursor: pointer;" title="Ver ficha do aluno">'
             + '<td class="text-muted ps-3" style="width: 2.5rem;">' + posicao + '</td>'
             + '<td>' + escaparHtml(aluno.nome) + '</td>'
-            + '<td class="text-end text-nowrap small text-muted">' + aluno.faltas + ' de ' + aluno.aulas + ' aulas</td>'
+            + '<td class="text-end text-nowrap small text-muted">' + aluno.faltas + ' de ' + periodos(aluno.aulas) + '</td>'
             + '<td class="pe-3" style="width: 190px;"><div class="d-flex align-items-center gap-2 justify-content-end">'
             + '<div class="progress flex-grow-1" style="height: 6px; max-width: 100px;">'
             + '<div class="progress-bar" style="width: ' + Math.round((aluno.percentual / maximo) * 100) + '%; background-color: ' + corBarra + ';"></div>'
@@ -724,7 +728,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         document.getElementById('freqDisciplinaTitulo').textContent = d.titulo;
         document.getElementById('freqDisciplinaCor').style.backgroundColor = d.cor;
         document.getElementById('freqDisciplinaResumo').textContent = 'Turma: ' + formatarDecimal(d.percentual)
-            + ' de faltas (' + d.faltas.toLocaleString('pt-BR') + ' em ' + d.aulas.toLocaleString('pt-BR') + ' aulas, '
+            + ' de faltas (' + d.faltas.toLocaleString('pt-BR') + ' em ' + periodos(d.aulas) + ', '
             + d.alunos + ' alunos). Do pior para o melhor.';
         conteudo.innerHTML = '<p class="text-muted text-center my-4">Carregando...</p>';
         bootstrap.Modal.getOrCreateInstance(modalFreq).show();
@@ -794,7 +798,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                         label: function (ctx) {
                             var d = disciplinas[ctx.dataIndex];
                             return ' ' + formatarDecimal(d.percentual) + ' — ' + d.faltas.toLocaleString('pt-BR')
-                                + ' faltas em ' + d.aulas.toLocaleString('pt-BR') + ' aulas · ' + d.alunos + ' alunos';
+                                + ' faltas em ' + periodos(d.aulas) + ' · ' + d.alunos + ' alunos';
                         }
                     }
                 }
