@@ -1156,6 +1156,17 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    document.querySelectorAll('.btn-view-frequencia').forEach(function(button) {
+        button.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var alunoData = this.getAttribute('data-aluno') ? JSON.parse(this.getAttribute('data-aluno')) : null;
+            if (alunoData && typeof window.viewFrequenciaAluno === 'function') {
+                window.viewFrequenciaAluno(alunoData);
+            }
+            hideContextMenu();
+        });
+    });
+
     // Menu contextual ao clicar na linha do aluno (ou no nome na tela de alertas)
     var alunoRows = document.querySelectorAll('.aluno-row, .alerta-aluno-nome, .alerta-aluno-foto');
     var contextMenu = document.getElementById('alunoContextMenu');
@@ -1189,6 +1200,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // Preencher dados do aluno no menu
             var btnViewFicha = contextMenu.querySelector('.btn-view-ficha');
             btnViewFicha.setAttribute('data-aluno', JSON.stringify(alunoData));
+            var btnViewFrequencia = contextMenu.querySelector('.btn-view-frequencia');
+            if (btnViewFrequencia) {
+                btnViewFrequencia.setAttribute('data-aluno', JSON.stringify(alunoData));
+            }
             
             var linkVerEventos = document.getElementById('contextMenuVerEventos');
             linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();

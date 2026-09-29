@@ -479,6 +479,20 @@ body {
     flex-shrink: 0;
 }
 
+.freq-linha {
+    padding: 0.55rem 1rem;
+    border-bottom: 1px solid #ececec;
+    font-size: 0.95rem;
+}
+
+.freq-linha:last-child {
+    border-bottom: 0;
+}
+
+.freq-geral {
+    background: #eef7f2;
+}
+
 @media (max-width: 767.98px) {
     .main-content {
         padding-top: 60px;

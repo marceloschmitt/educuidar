@@ -199,6 +199,11 @@ window.ALUNOS_FILTROS = {
     <button class="dropdown-item btn-view-ficha" type="button">
         <i class="bi bi-file-text text-info"></i> Ver Ficha
     </button>
+    <?php if (empty($is_desistentes_page)): ?>
+    <button class="dropdown-item btn-view-frequencia" type="button">
+        <i class="bi bi-calendar-check text-success"></i> Ver Frequência
+    </button>
+    <?php endif; ?>
     <a class="dropdown-item" href="#" id="contextMenuVerEventos">
         <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
     </a>
@@ -521,3 +526,6 @@ window.ALUNOS_FILTROS = {
 
 <!-- Modal para Ver Ficha do Aluno -->
 <?php require_once __DIR__ . '/ficha_modal.php'; ?>
+<?php if (empty($is_desistentes_page)): ?>
+<?php require_once __DIR__ . '/frequencia_modal.php'; ?>
+<?php endif; ?>
