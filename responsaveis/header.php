@@ -90,6 +90,13 @@
             background: #eef7f2;
             border-radius: 1rem 1rem 0 0;
         }
+        @media (min-width: 992px) {
+            .resp-colunas { font-size: 0.9rem; }
+            .resp-colunas .resp-freq { padding: 0.55rem 0.9rem; }
+            .resp-colunas .resp-event { padding: 0.7rem 0.9rem; gap: 0.7rem; }
+            .resp-colunas .resp-event-date { min-width: 3.2rem; }
+            .resp-colunas .resp-event-date .day { font-size: 1.15rem; }
+        }
         .resp-event-date {
             min-width: 4.2rem;
             text-align: center;
@@ -133,4 +140,4 @@
     </nav>
 </header>
 <?php endif; ?>
-<main class="container<?php echo empty($layout_full) ? ' py-3' : ''; ?>"<?php echo empty($layout_full) ? ' style="max-width: 640px;"' : ''; ?>>
+<main class="container<?php echo empty($layout_full) ? ' py-3' : ''; ?>"<?php echo empty($layout_full) ? ' style="max-width: ' . htmlspecialchars($main_max_width ?? '640px') . ';"' : ''; ?>>

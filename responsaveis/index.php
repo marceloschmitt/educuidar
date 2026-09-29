@@ -48,6 +48,10 @@ if ($aluno_id) {
 }
 
 $page_title = 'Ocorrências — Responsável';
+// Frequência e ocorrências lado a lado em telas largas.
+if (!empty($frequencias)) {
+    $main_max_width = '1140px';
+}
 $show_header = true;
 $responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 require __DIR__ . '/header.php';
@@ -80,13 +84,15 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
         <?php endif; ?>
     </div>
 
+    <div class="row g-4 resp-colunas">
     <?php if (!empty($frequencias)): ?>
+    <div class="col-lg-5">
     <h3 class="h6 mb-1">Frequência por disciplina</h3>
     <div class="small text-muted mb-2">
         Percentual de faltas em cada disciplina, segundo o SIGAA<?php echo $frequencia_atualizada_em ? ' (atualizado em ' . date('d/m/Y', strtotime($frequencia_atualizada_em)) . ')' : ''; ?>.
         A frequência mínima exigida é <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%.
     </div>
-    <div class="card resp-card mb-4">
+    <div class="card resp-card">
         <?php if ($frequencia_geral !== null): ?>
         <?php $geral_critica = $frequencia_geral['frequencia'] < 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>
         <div class="resp-freq resp-freq-geral">
@@ -122,10 +128,13 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
         </div>
         <?php endforeach; ?>
     </div>
-
-    <h3 class="h6 mb-2">Ocorrências</h3>
+    </div>
     <?php endif; ?>
 
+    <div class="<?php echo !empty($frequencias) ? 'col-lg-7' : 'col-12'; ?>">
+    <?php if (!empty($frequencias)): ?>
+    <h3 class="h6 mb-2">Ocorrências</h3>
+    <?php endif; ?>
     <div class="card resp-card">
         <?php if (empty($eventos)): ?>
         <div class="p-4 text-muted text-center">Nenhum evento para exibir.</div>
@@ -157,6 +166,8 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
             </div>
             <?php endforeach; ?>
         <?php endif; ?>
+    </div>
+    </div>
     </div>
 <?php endif; ?>
 
