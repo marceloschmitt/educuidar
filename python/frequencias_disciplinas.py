@@ -126,7 +126,14 @@ def gravar_frequencias(
         if not isinstance(respostas, list):
             raise ValueError("resposta_alunos.json deve ser uma lista")
 
-    resumo = {"alunos": 0, "disciplinas": 0, "removidas": 0, "sem_aluno": 0, "dry_run": dry_run}
+    resumo = {
+        "alunos": 0,
+        "disciplinas": 0,
+        "removidas": 0,
+        "sem_aluno": 0,
+        "desistentes": 0,
+        "dry_run": dry_run,
+    }
 
     conn = pymysql.connect(**carregar_config_mysql())
     try:
@@ -136,10 +143,16 @@ def gravar_frequencias(
         alunos_cpf = mapear_alunos_por_cpf(conn)
 
         with conn.cursor() as cur:
+            cur.execute("SELECT id FROM alunos WHERE COALESCE(desistente, 0) = 0")
+            alunos_ativos = {int(row["id"]) for row in cur.fetchall()}
+
             for entrada in extrair_frequencias(respostas, ano_padrao):
                 aluno_id = resolver_aluno_id(entrada, alunos_cpf)
                 if not aluno_id:
                     resumo["sem_aluno"] += 1
+                    continue
+                if aluno_id not in alunos_ativos:
+                    resumo["desistentes"] += 1
                     continue
                 resumo["alunos"] += 1
                 codigos = list(entrada["disciplinas"].keys())
@@ -178,6 +191,15 @@ def gravar_frequencias(
                 cur.execute(sql_remover, params)
                 resumo["removidas"] += int(cur.rowcount)
 
+            cur.execute(
+                """
+                DELETE fd FROM frequencia_disciplina fd
+                INNER JOIN alunos a ON a.id = fd.aluno_id
+                WHERE COALESCE(a.desistente, 0) <> 0
+                """
+            )
+            resumo["removidas"] += int(cur.rowcount)
+
         if dry_run:
             conn.rollback()
         else:
@@ -206,7 +228,7 @@ def main() -> int:
     print(
         f"{prefixo}Frequência por disciplina: {resumo['alunos']} aluno(s), "
         f"{resumo['disciplinas']} disciplina(s) gravada(s), {resumo['removidas']} removida(s), "
-        f"{resumo['sem_aluno']} sem vínculo no banco."
+        f"{resumo['sem_aluno']} sem vínculo no banco, {resumo['desistentes']} desistente(s) ignorado(s)."
     )
     return 0
 
