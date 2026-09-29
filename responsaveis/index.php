@@ -27,6 +27,7 @@ if (count($alunos) === 1) {
 
 $eventos = [];
 $frequencias = [];
+$frequencia_geral = null;
 $frequencia_atualizada_em = null;
 $aluno_sel = null;
 if ($aluno_id) {
@@ -38,6 +39,7 @@ if ($aluno_id) {
     }
     $eventos = $evento->getParaResponsavel($aluno_id, $ano_corrente);
     $frequencias = (new FrequenciaDisciplina($db))->getPorAluno($aluno_id, $ano_corrente);
+    $frequencia_geral = FrequenciaDisciplina::resumoGeral($frequencias);
     foreach ($frequencias as $f) {
         if ($frequencia_atualizada_em === null || $f['atualizado_em'] > $frequencia_atualizada_em) {
             $frequencia_atualizada_em = $f['atualizado_em'];
@@ -85,6 +87,19 @@ $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago
         A frequência mínima exigida é <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%.
     </div>
     <div class="card resp-card mb-4">
+        <?php if ($frequencia_geral !== null): ?>
+        <?php $geral_critica = $frequencia_geral['frequencia'] < 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>
+        <div class="resp-freq resp-freq-geral">
+            <div class="d-flex justify-content-between align-items-baseline gap-2">
+                <span class="fw-bold">Frequência geral</span>
+                <span class="fs-5 fw-bold text-nowrap<?php echo $geral_critica ? ' text-danger' : ''; ?>"><?php echo number_format($frequencia_geral['frequencia'], 1, ',', '.'); ?>%</span>
+            </div>
+            <div class="small text-muted">
+                <?php echo (int) $frequencia_geral['faltas']; ?> falta<?php echo (int) $frequencia_geral['faltas'] === 1 ? '' : 's'; ?>
+                em <?php echo number_format($frequencia_geral['aulas'], 0, ',', '.'); ?> períodos, somando todas as disciplinas
+            </div>
+        </div>
+        <?php endif; ?>
         <?php foreach ($frequencias as $f): ?>
         <?php
         $pct = (float) $f['percentual'];

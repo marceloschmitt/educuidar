@@ -86,6 +86,10 @@
             border-bottom: 1px solid #ececec;
         }
         .resp-freq:last-child { border-bottom: 0; }
+        .resp-freq-geral {
+            background: #eef7f2;
+            border-radius: 1rem 1rem 0 0;
+        }
         .resp-event-date {
             min-width: 4.2rem;
             text-align: center;

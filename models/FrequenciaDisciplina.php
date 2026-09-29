@@ -29,6 +29,28 @@ class FrequenciaDisciplina {
     }
 
     /**
+     * Frequência geral a partir das disciplinas de getPorAluno(): a soma bate com o total do SIGAA
+     * (sem descontar ausências justificadas).
+     * @return array{aulas: int, faltas: int, frequencia: float}|null
+     */
+    public static function resumoGeral(array $linhas) {
+        $aulas = 0;
+        $faltas = 0;
+        foreach ($linhas as $linha) {
+            $aulas += (int) $linha['aulas'];
+            $faltas += (int) $linha['faltas'];
+        }
+        if ($aulas === 0) {
+            return null;
+        }
+        return [
+            'aulas' => $aulas,
+            'faltas' => $faltas,
+            'frequencia' => round((($aulas - $faltas) / $aulas) * 100, 1),
+        ];
+    }
+
+    /**
      * Disciplinas do aluno no ano, maior percentual de faltas primeiro.
      * Sem a tabela (coleta ainda não rodou), devolve [].
      */
