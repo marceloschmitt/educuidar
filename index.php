@@ -373,7 +373,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                     <tbody>
                         <?php $max_top = max(1, (int) $top[0]['total']); ?>
                         <?php foreach ($top as $pos => $al): ?>
-                        <tr class="dashboard-top-aluno" data-aluno-id="<?php echo (int) $al['id']; ?>" style="cursor: pointer;" title="Ver ficha do aluno">
+                        <tr class="dashboard-top-aluno" data-aluno-id="<?php echo (int) $al['id']; ?>" data-aluno-nome="<?php echo htmlspecialchars($al['nome'] ?? ''); ?>" style="cursor: pointer;" title="Ver ficha ou frequência do aluno">
                             <td class="text-muted ps-3" style="width: 2rem;"><?php echo $pos + 1; ?></td>
                             <td>
                                 <div><?php echo htmlspecialchars($al['nome'] ?? '-'); ?></div>
@@ -447,7 +447,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
             </div>
             <div class="modal-footer justify-content-between">
                 <span class="small text-muted">
-                    Em vermelho, acima de <?php echo FrequenciaDisciplina::LIMITE_FALTAS; ?>% de faltas (frequência abaixo de <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%). Clique em um aluno para abrir a ficha.
+                    Em vermelho, acima de <?php echo FrequenciaDisciplina::LIMITE_FALTAS; ?>% de faltas (frequência abaixo de <?php echo 100 - FrequenciaDisciplina::LIMITE_FALTAS; ?>%). Clique em um aluno para ver a ficha ou a frequência.
                 </span>
                 <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Fechar</button>
             </div>
@@ -470,6 +470,17 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
 
 <?php require_once __DIR__ . '/views/eventos/view_modal.php'; ?>
 <?php require_once __DIR__ . '/views/alunos/ficha_modal.php'; ?>
+<?php require_once __DIR__ . '/views/alunos/frequencia_modal.php'; ?>
+
+<div class="dropdown-menu" id="dashboardAlunoMenu" style="position: fixed; z-index: 1070;">
+    <h6 class="dropdown-header text-truncate" id="dashboardAlunoMenuNome" style="max-width: 280px;"></h6>
+    <button class="dropdown-item" type="button" data-acao="ficha">
+        <i class="bi bi-file-text text-info"></i> Ver Ficha
+    </button>
+    <button class="dropdown-item" type="button" data-acao="frequencia">
+        <i class="bi bi-calendar-check text-success"></i> Ver Frequência
+    </button>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
@@ -491,9 +502,56 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
             });
     }
 
+    var menuAluno = document.getElementById('dashboardAlunoMenu');
+    var alunoDoMenu = null;
+
+    function fecharMenuAluno() {
+        if (!alunoDoMenu) return;
+        menuAluno.classList.remove('show');
+        alunoDoMenu = null;
+    }
+
+    function abrirMenuAluno(evento, aluno, modalOrigem) {
+        evento.preventDefault();
+        evento.stopPropagation();
+        alunoDoMenu = { aluno: aluno, modalOrigem: modalOrigem || null };
+        document.getElementById('dashboardAlunoMenuNome').textContent = aluno.nome;
+        menuAluno.classList.add('show');
+        menuAluno.style.left = Math.max(8, Math.min(evento.clientX, window.innerWidth - menuAluno.offsetWidth - 8)) + 'px';
+        menuAluno.style.top = Math.max(8, Math.min(evento.clientY, window.innerHeight - menuAluno.offsetHeight - 8)) + 'px';
+    }
+
+    menuAluno.addEventListener('click', function (e) {
+        var botao = e.target.closest('[data-acao]');
+        if (!botao || !alunoDoMenu) return;
+        var aluno = alunoDoMenu.aluno;
+        var modalOrigem = alunoDoMenu.modalOrigem;
+        var abrir = botao.getAttribute('data-acao') === 'frequencia'
+            ? function () { window.viewFrequenciaAluno(aluno); }
+            : function () { abrirFichaAluno(aluno.id); };
+        fecharMenuAluno();
+        var instancia = modalOrigem && typeof bootstrap !== 'undefined' ? bootstrap.Modal.getInstance(modalOrigem) : null;
+        if (instancia && modalOrigem.classList.contains('show')) {
+            // O Bootstrap não empilha modais: fecha a janela de origem antes de abrir a do aluno.
+            modalOrigem.addEventListener('hidden.bs.modal', abrir, { once: true });
+            instancia.hide();
+        } else {
+            abrir();
+        }
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!menuAluno.contains(e.target)) fecharMenuAluno();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') fecharMenuAluno();
+    });
+    window.addEventListener('scroll', fecharMenuAluno, true);
+    window.addEventListener('resize', fecharMenuAluno);
+
     document.querySelectorAll('.dashboard-top-aluno').forEach(function (tr) {
-        tr.addEventListener('click', function () {
-            abrirFichaAluno(tr.getAttribute('data-aluno-id'));
+        tr.addEventListener('click', function (e) {
+            abrirMenuAluno(e, { id: tr.getAttribute('data-aluno-id'), nome: tr.getAttribute('data-aluno-nome') });
         });
     });
 
@@ -694,7 +752,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
     function linhaAlunoFrequencia(aluno, posicao, maximo, cor) {
         var critico = aluno.percentual > <?php echo FrequenciaDisciplina::LIMITE_FALTAS; ?>;
         var corBarra = critico ? '#dc3545' : cor;
-        return '<tr class="freq-aluno" data-aluno-id="' + aluno.id + '" style="cursor: pointer;" title="Ver ficha do aluno">'
+        return '<tr class="freq-aluno" data-aluno-id="' + aluno.id + '" style="cursor: pointer;" title="Ver ficha ou frequência do aluno">'
             + '<td class="text-muted ps-3" style="width: 2.5rem;">' + posicao + '</td>'
             + '<td>' + escaparHtml(aluno.nome) + '</td>'
             + '<td class="text-end text-nowrap small text-muted">' + aluno.faltas + ' de ' + periodos(aluno.aulas) + '</td>'
@@ -734,14 +792,9 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                     + '<th class="text-end pe-3">% de faltas</th></tr></thead><tbody>'
                     + alunos.map(function (a, i) { return linhaAlunoFrequencia(a, i + 1, maximo, d.cor); }).join('')
                     + '</tbody></table>';
-                conteudo.querySelectorAll('.freq-aluno').forEach(function (tr) {
-                    tr.addEventListener('click', function () {
-                        var alunoId = tr.getAttribute('data-aluno-id');
-                        // Fecha esta janela antes de abrir a ficha: o Bootstrap não empilha modais.
-                        modalFreq.addEventListener('hidden.bs.modal', function () {
-                            abrirFichaAluno(alunoId);
-                        }, { once: true });
-                        bootstrap.Modal.getInstance(modalFreq).hide();
+                conteudo.querySelectorAll('.freq-aluno').forEach(function (tr, i) {
+                    tr.addEventListener('click', function (e) {
+                        abrirMenuAluno(e, { id: alunos[i].id, nome: alunos[i].nome }, modalFreq);
                     });
                 });
             })
