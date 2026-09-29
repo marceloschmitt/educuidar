@@ -1,6 +1,7 @@
 <?php
 /**
- * CLI: resumos diários (após 19:30) dos eventos do dia aos responsáveis e coordenadores.
+ * CLI: resumos diários dos eventos do dia aos responsáveis e coordenadores
+ * (cada um a partir do seu horário em Configuração de e-mail).
  * Uso: php enviar_emails_eventos_cli.php
  *      php enviar_emails_eventos_cli.php --forcar-resumo   (ignora o horário)
  */

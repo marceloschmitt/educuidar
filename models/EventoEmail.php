@@ -1,23 +1,21 @@
 <?php
 /**
- * Resumos diários por e-mail (após 19:30) dos eventos ocorridos no dia
- * (data_evento = hoje): um por responsável e um por coordenador de curso.
+ * Resumos diários por e-mail dos eventos ocorridos no dia (data_evento = hoje):
+ * um por responsável e um por coordenador de curso, cada um com seu
+ * interruptor e horário em Configuração de e-mail.
  */
 class EventoEmail {
     private $conn;
     private $table_resumo_coord = 'email_resumo_coordenador';
     private $table_resumo_resp = 'email_resumo_responsavel';
 
-    /** Horário (HH:MM) a partir do qual os resumos do dia podem ser enviados. */
-    public const HORA_RESUMO = '19:30';
-
     public function __construct($db) {
         $this->conn = $db;
     }
 
-    public static function podeEnviarResumoAgora($agora = null) {
+    public static function podeEnviarResumoAgora($hora_resumo, $agora = null) {
         $agora = $agora ?: date('H:i');
-        return $agora >= self::HORA_RESUMO;
+        return $agora >= $hora_resumo;
     }
 
     /**
@@ -322,9 +320,9 @@ class EventoEmail {
     // ------------------------------------------------------------------
 
     /** @return string|null motivo para não enviar, ou null se pode enviar */
-    private function motivoBloqueio(Configuracao $configuracao, $forcar) {
-        if (!$configuracao->isEmailEnabled()) {
-            return 'envio desabilitado (email_enabled).';
+    private function motivoBloqueio(Configuracao $configuracao, $forcar, $habilitado, $hora_resumo) {
+        if (!$habilitado) {
+            return 'envio desabilitado em Configuração de e-mail.';
         }
         if (!$configuracao->permiteEnvioEmail()) {
             return 'bloqueado pela variável EMAIL_SEND.';
@@ -332,21 +330,26 @@ class EventoEmail {
         if (!$configuracao->isEmailConfigured()) {
             return 'SMTP incompleto (host, porta e remetente).';
         }
-        if (!$forcar && !self::podeEnviarResumoAgora()) {
-            return 'ainda não são ' . self::HORA_RESUMO . ' (hora atual ' . date('H:i') . ').';
+        if (!$forcar && !self::podeEnviarResumoAgora($hora_resumo)) {
+            return 'ainda não são ' . $hora_resumo . ' (hora atual ' . date('H:i') . ').';
         }
         return null;
     }
 
     /**
-     * Um e-mail por responsável, após 19:30, com os eventos do dia dos seus alunos.
+     * Um e-mail por responsável, a partir do horário configurado, com os eventos do dia dos seus alunos.
      * Responsável sem evento no dia não recebe nada.
      * @return array{enviados: int, falhas: int, pulados: int, mensagens: list<string>}
      */
     public function processarResumosResponsaveis(Configuracao $configuracao, $forcar = false) {
         $stats = ['enviados' => 0, 'falhas' => 0, 'pulados' => 0, 'mensagens' => []];
 
-        $bloqueio = $this->motivoBloqueio($configuracao, $forcar);
+        $bloqueio = $this->motivoBloqueio(
+            $configuracao,
+            $forcar,
+            $configuracao->isEmailEnabled(),
+            $configuracao->getHoraResumoResponsaveis()
+        );
         if ($bloqueio !== null) {
             $stats['mensagens'][] = 'Responsáveis: ' . $bloqueio;
             return $stats;
@@ -402,13 +405,18 @@ class EventoEmail {
     }
 
     /**
-     * Um e-mail por coordenador, após 19:30, com os eventos do dia dos seus cursos.
+     * Um e-mail por coordenador, a partir do horário configurado, com os eventos do dia dos seus cursos.
      * @return array{enviados: int, falhas: int, pulados: int, mensagens: list<string>}
      */
     public function processarResumosCoordenadores(Configuracao $configuracao, $forcar = false) {
         $stats = ['enviados' => 0, 'falhas' => 0, 'pulados' => 0, 'mensagens' => []];
 
-        $bloqueio = $this->motivoBloqueio($configuracao, $forcar);
+        $bloqueio = $this->motivoBloqueio(
+            $configuracao,
+            $forcar,
+            $configuracao->isEmailCoordenadoresEnabled(),
+            $configuracao->getHoraResumoCoordenadores()
+        );
         if ($bloqueio !== null) {
             $stats['mensagens'][] = 'Coordenadores: ' . $bloqueio;
             return $stats;

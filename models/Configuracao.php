@@ -238,17 +238,55 @@ class Configuracao {
     }
 
     // E-mail SMTP (mesmos parâmetros do projeto MAPA)
+    public const HORA_RESUMO_PADRAO = '19:30';
+
+    private static function valorVerdadeiro($valor) {
+        return in_array(strtolower((string) $valor), ['1', 'true', 'yes', 'on'], true);
+    }
+
+    private static function normalizarHora($valor) {
+        $valor = trim((string) $valor);
+        return preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $valor) ? $valor : null;
+    }
+
+    /** Resumo diário aos responsáveis habilitado (chave histórica email_enabled). */
     public function isEmailEnabled() {
-        $valor = strtolower((string) ($this->get('email_enabled') ?? '0'));
-        return in_array($valor, ['1', 'true', 'yes', 'on'], true);
+        return self::valorVerdadeiro($this->get('email_enabled') ?? '0');
     }
 
     public function setEmailEnabled($enabled) {
         return $this->set(
             'email_enabled',
             $enabled ? '1' : '0',
-            'Enviar e-mails automáticos de eventos aos responsáveis'
+            'Enviar resumo diário de eventos aos responsáveis'
         );
+    }
+
+    /** Sem valor salvo, segue email_enabled (quando havia um único interruptor para os dois). */
+    public function isEmailCoordenadoresEnabled() {
+        $valor = $this->get('email_coordenadores_enabled');
+        if ($valor === null || $valor === '') {
+            return $this->isEmailEnabled();
+        }
+        return self::valorVerdadeiro($valor);
+    }
+
+    public function setEmailCoordenadoresEnabled($enabled) {
+        return $this->set(
+            'email_coordenadores_enabled',
+            $enabled ? '1' : '0',
+            'Enviar resumo diário de eventos aos coordenadores'
+        );
+    }
+
+    /** Horário (HH:MM) a partir do qual o resumo do dia aos responsáveis pode ser enviado. */
+    public function getHoraResumoResponsaveis() {
+        return self::normalizarHora($this->get('email_hora_resumo_responsaveis')) ?? self::HORA_RESUMO_PADRAO;
+    }
+
+    /** Horário (HH:MM) a partir do qual o resumo do dia aos coordenadores pode ser enviado. */
+    public function getHoraResumoCoordenadores() {
+        return self::normalizarHora($this->get('email_hora_resumo_coordenadores')) ?? self::HORA_RESUMO_PADRAO;
     }
 
     /**
@@ -275,6 +313,9 @@ class Configuracao {
 
         return [
             'enabled' => $this->isEmailEnabled(),
+            'enabled_coordenadores' => $this->isEmailCoordenadoresEnabled(),
+            'hora_responsaveis' => $this->getHoraResumoResponsaveis(),
+            'hora_coordenadores' => $this->getHoraResumoCoordenadores(),
             'host' => (string) ($this->get('email_host') ?: ''),
             'port' => $port,
             'encryption' => $encryption,
@@ -293,6 +334,18 @@ class Configuracao {
     public function saveEmailConfig(array $dados) {
         $ok = true;
         $ok = $this->setEmailEnabled(!empty($dados['enabled'])) && $ok;
+        if (array_key_exists('enabled_coordenadores', $dados)) {
+            $ok = $this->setEmailCoordenadoresEnabled(!empty($dados['enabled_coordenadores'])) && $ok;
+        }
+        foreach ([
+            'hora_responsaveis' => ['email_hora_resumo_responsaveis', 'Horário do resumo diário aos responsáveis (HH:MM)'],
+            'hora_coordenadores' => ['email_hora_resumo_coordenadores', 'Horário do resumo diário aos coordenadores (HH:MM)'],
+        ] as $campo => [$chave, $descricao]) {
+            if (array_key_exists($campo, $dados)) {
+                $hora = self::normalizarHora($dados[$campo]) ?? self::HORA_RESUMO_PADRAO;
+                $ok = $this->set($chave, $hora, $descricao) && $ok;
+            }
+        }
         $ok = $this->set('email_host', trim((string) ($dados['host'] ?? '')), 'Host SMTP') && $ok;
         $ok = $this->set('email_port', (string) (int) ($dados['port'] ?? 587), 'Porta SMTP') && $ok;
         $enc = strtolower(trim((string) ($dados['encryption'] ?? 'tls')));

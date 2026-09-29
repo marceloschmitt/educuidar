@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Envia, após 19:30, o resumo dos eventos do dia aos responsáveis e coordenadores.
+Envia o resumo dos eventos do dia aos responsáveis e coordenadores, cada um a
+partir do seu horário em Configuração de e-mail.
 
 Chamado automaticamente ao final de consulta_alunos.py (a menos que --sem-emails).
 Também pode rodar sozinho:

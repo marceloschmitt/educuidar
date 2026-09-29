@@ -25,14 +25,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fromAddress = trim($_POST['email_from_address'] ?? '');
     $fromName = trim($_POST['email_from_name'] ?? 'EduCuidar');
     $enabled = isset($_POST['email_enabled']);
+    $enabledCoordenadores = isset($_POST['email_coordenadores_enabled']);
+    $horaResponsaveis = trim($_POST['email_hora_resumo_responsaveis'] ?? '');
+    $horaCoordenadores = trim($_POST['email_hora_resumo_coordenadores'] ?? '');
+    $algumEnvio = $enabled || $enabledCoordenadores;
+    $horaValida = static function ($hora) {
+        return (bool) preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora);
+    };
 
-    if ($enabled && ($host === '' || $fromAddress === '')) {
-        $error = 'Com o envio habilitado, informe o host SMTP e o e-mail remetente.';
-    } elseif ($enabled && $fromAddress !== '' && !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
+    if (!$horaValida($horaResponsaveis) || !$horaValida($horaCoordenadores)) {
+        $error = 'Informe os horários dos resumos no formato HH:MM.';
+    } elseif ($algumEnvio && ($host === '' || $fromAddress === '')) {
+        $error = 'Com algum envio habilitado, informe o host SMTP e o e-mail remetente.';
+    } elseif ($algumEnvio && $fromAddress !== '' && !filter_var($fromAddress, FILTER_VALIDATE_EMAIL)) {
         $error = 'Informe um e-mail de remetente válido.';
     } else {
         $dados = [
             'enabled' => $enabled,
+            'enabled_coordenadores' => $enabledCoordenadores,
+            'hora_responsaveis' => $horaResponsaveis,
+            'hora_coordenadores' => $horaCoordenadores,
             'host' => $host,
             'port' => $port > 0 ? $port : 587,
             'encryption' => $encryption,
@@ -62,7 +74,7 @@ require_once 'includes/header.php';
     <div class="col-md-10 mx-auto">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-envelope"></i> E-mail aos responsáveis</h5>
+                <h5 class="mb-0"><i class="bi bi-envelope"></i> Configuração de e-mail</h5>
             </div>
             <div class="card-body">
                 <?php if ($success): ?>
@@ -81,22 +93,64 @@ require_once 'includes/header.php';
 
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    Todos os dias, <strong>após as 19:30</strong>, cada responsável recebe um resumo dos eventos
+                    Uma vez por dia, a partir do horário configurado, cada responsável recebe um resumo dos eventos
                     <strong>ocorridos no dia</strong> (data do evento) dos seus alunos, e cada coordenador recebe
                     o resumo dos seus cursos. Só entram tipos com e-mail habilitado em
                     <a href="tipos_eventos.php">Tipos de eventos</a>. Quem não tem ocorrência no dia não recebe nada.
                 </div>
 
                 <form method="POST" action="">
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch"
-                               id="email_enabled" name="email_enabled" value="1"
-                               <?php echo !empty($email['enabled']) ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="email_enabled">
-                            Habilitar envio automático de e-mails
-                        </label>
+                    <?php
+                    $envios = [
+                        [
+                            'titulo' => 'Responsáveis',
+                            'icone' => 'bi-people',
+                            'descricao' => 'Eventos do dia dos alunos vinculados a cada responsável aprovado.',
+                            'switch' => 'email_enabled',
+                            'ligado' => !empty($email['enabled']),
+                            'hora_campo' => 'email_hora_resumo_responsaveis',
+                            'hora' => $_POST['email_hora_resumo_responsaveis'] ?? $email['hora_responsaveis'],
+                        ],
+                        [
+                            'titulo' => 'Coordenadores',
+                            'icone' => 'bi-person-badge',
+                            'descricao' => 'Eventos do dia dos cursos que cada coordenador coordena.',
+                            'switch' => 'email_coordenadores_enabled',
+                            'ligado' => !empty($email['enabled_coordenadores']),
+                            'hora_campo' => 'email_hora_resumo_coordenadores',
+                            'hora' => $_POST['email_hora_resumo_coordenadores'] ?? $email['hora_coordenadores'],
+                        ],
+                    ];
+                    if ($error && $_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $envios[0]['ligado'] = isset($_POST['email_enabled']);
+                        $envios[1]['ligado'] = isset($_POST['email_coordenadores_enabled']);
+                    }
+                    ?>
+                    <h6 class="text-muted mb-2">Resumo diário</h6>
+                    <div class="row g-3 mb-4">
+                        <?php foreach ($envios as $envio): ?>
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="form-check form-switch mb-1">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="<?php echo $envio['switch']; ?>" name="<?php echo $envio['switch']; ?>" value="1"
+                                           <?php echo $envio['ligado'] ? 'checked' : ''; ?>>
+                                    <label class="form-check-label fw-semibold" for="<?php echo $envio['switch']; ?>">
+                                        <i class="bi <?php echo $envio['icone']; ?>"></i>
+                                        Enviar aos <?php echo strtolower($envio['titulo']); ?>
+                                    </label>
+                                </div>
+                                <div class="small text-muted mb-2"><?php echo $envio['descricao']; ?></div>
+                                <label for="<?php echo $envio['hora_campo']; ?>" class="form-label small mb-1">A partir de</label>
+                                <input type="time" class="form-control form-control-sm" style="max-width: 140px;"
+                                       id="<?php echo $envio['hora_campo']; ?>" name="<?php echo $envio['hora_campo']; ?>"
+                                       value="<?php echo htmlspecialchars($envio['hora']); ?>" required>
+                            </div>
+                        </div>
+                        <?php endforeach; ?>
                     </div>
 
+                    <h6 class="text-muted mb-2">Servidor de envio (SMTP)</h6>
                     <div class="row g-3">
                         <div class="col-md-8">
                             <label for="email_host" class="form-label">Host SMTP</label>
@@ -154,7 +208,8 @@ require_once 'includes/header.php';
 
                 <hr class="my-4">
                 <p class="small text-muted mb-0">
-                    O envio roda ao final da coleta geral: é preciso haver uma coleta depois das 19:30.
+                    O envio roda ao final da coleta geral: cada resumo sai na primeira coleta depois do seu horário.
+                    Eventos registrados depois disso não entram no resumo daquele dia.
                     Consulte os disparos em <a href="emails_enviados.php">E-mails enviados</a>.
                 </p>
             </div>

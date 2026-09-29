@@ -94,7 +94,7 @@ require_once 'includes/header.php';
                             <i class="bi bi-cloud"></i> Configuração API SIGAA
                         </a>
                         <a href="email_config.php" class="btn btn-outline-primary me-2 mb-2">
-                            <i class="bi bi-envelope"></i> E-mail aos responsáveis
+                            <i class="bi bi-envelope"></i> Configuração de e-mail
                         </a>
                         <a href="admin_responsaveis.php" class="btn btn-outline-primary mb-2">
                             <i class="bi bi-people"></i> Responsáveis

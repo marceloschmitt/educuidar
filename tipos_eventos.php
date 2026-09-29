@@ -244,8 +244,8 @@ $tipo_sigaa_id = (new Configuracao($db))->getApiSigaaTipoEventoFaltaId();
                                 Incluir no resumo diário por e-mail
                             </label>
                             <small class="text-muted d-block">
-                                Eventos ocorridos no dia entram no resumo enviado após as 19:30
-                                aos responsáveis aprovados do aluno e aos coordenadores do curso.
+                                Eventos ocorridos no dia entram no resumo diário aos responsáveis aprovados
+                                do aluno e aos coordenadores do curso (horários em Configuração de e-mail).
                             </small>
                         </div>
                     </div>
