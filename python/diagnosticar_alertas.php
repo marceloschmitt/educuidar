@@ -7,10 +7,16 @@
 require_once __DIR__ . '/../config/init.php';
 
 $db = (new Database())->getConnection();
-$ano = (new Configuracao($db))->getAnoCorrente();
+$configuracao = new Configuracao($db);
+$ano = $configuracao->getAnoCorrente();
+$tipo_falta_id = (int) $configuracao->getApiSigaaTipoEventoFaltaId();
+if ($tipo_falta_id <= 0) {
+    fwrite(STDERR, "Tipo de evento das faltas do SIGAA não configurado (Configurações > API SIGAA).\n");
+    exit(1);
+}
 $detector = new AlertaDetector($db);
 
-echo "ano_corrente={$ano}\n\n";
+echo "ano_corrente={$ano} tipo_falta_id={$tipo_falta_id}\n\n";
 
 echo "=== Alertas gravados por curso (detalhe) ===\n";
 foreach ($db->query(
@@ -45,7 +51,7 @@ $st = $db->prepare(
             COUNT(DISTINCT e.aluno_id) AS alunos, COUNT(*) AS eventos
      FROM eventos e
      INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-       AND te.nome = 'Falta (registro automático)'
+       AND te.id = {$tipo_falta_id}
      LEFT JOIN turmas t ON t.id = e.turma_id
      LEFT JOIN cursos c ON c.id = t.curso_id
      WHERE YEAR(e.data_evento) = ?
@@ -63,7 +69,7 @@ $st = $db->prepare(
             COUNT(DISTINCT e.aluno_id) AS alunos, COUNT(*) AS eventos
      FROM eventos e
      INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-       AND te.nome = 'Falta (registro automático)'
+       AND te.id = {$tipo_falta_id}
      INNER JOIN alunos a ON a.id = e.aluno_id AND COALESCE(a.desistente, 0) = 0
      LEFT JOIN aluno_turmas at ON at.aluno_id = a.id
      LEFT JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = ?
@@ -85,7 +91,7 @@ $st = $db->prepare(
             COUNT(DISTINCT e.data_evento) AS dias
      FROM eventos e
      INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-       AND te.nome = 'Falta (registro automático)'
+       AND te.id = {$tipo_falta_id}
      INNER JOIN alunos a ON a.id = e.aluno_id AND COALESCE(a.desistente, 0) = 0
      LEFT JOIN aluno_turmas at ON at.aluno_id = a.id
      LEFT JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = ?
@@ -127,7 +133,7 @@ foreach ($candidatos as $r) {
                 "SELECT DISTINCT e.data_evento
                  FROM eventos e
                  INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
-                   AND te.nome = 'Falta (registro automático)'
+                   AND te.id = {$tipo_falta_id}
                  WHERE e.aluno_id = ?
                    AND YEAR(e.data_evento) = ?
                  ORDER BY e.data_evento"

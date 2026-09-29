@@ -62,9 +62,8 @@ if ($filtro_tipo_param === 'todos') {
     $tipo_selecionado_id = $tipo_padrao_id;
 }
 $tipo_e_padrao = $tipo_selecionado_id === $tipo_padrao_id;
-$tipo_e_sigaa = $tipo_selecionado_id !== null && $tipo_selecionado_id === $tipo_sigaa_id;
 $tipo_selecionado_nome = $tipo_selecionado_id !== null ? $tipos_por_id[$tipo_selecionado_id] : 'Todos os tipos';
-$rotulo_ocorrencias = $tipo_e_sigaa ? 'Faltas' : 'Eventos';
+$rotulo_ocorrencias = 'Eventos';
 
 $filtros_base = [
     'ano' => $ano_corrente,
@@ -260,7 +259,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legend
                     <option value="todos" <?php echo $tipo_selecionado_id === null ? 'selected' : ''; ?>>Todos os tipos</option>
                     <?php foreach ($todos_tipos as $t): ?>
                     <option value="<?php echo (int) $t['id']; ?>" <?php echo $tipo_selecionado_id === (int) $t['id'] ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($t['nome']); ?><?php echo (int) $t['id'] === $tipo_sigaa_id ? ' (registro automático)' : ''; ?>
+                        <?php echo htmlspecialchars($t['nome']); ?>
                     </option>
                     <?php endforeach; ?>
                 </select>

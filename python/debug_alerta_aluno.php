@@ -163,13 +163,13 @@ $st = $db->prepare(
      FROM eventos e
      INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
      WHERE e.aluno_id = ?
-       AND te.nome = 'Falta (registro automático)'
+       AND te.id = ?
        AND e.data_evento >= ? AND e.data_evento < ?
      ORDER BY e.data_evento"
 );
 $ini_ago = sprintf('%04d-08-01', $ano);
 $fim_ago = sprintf('%04d-09-01', $ano);
-$st->execute([$aluno_id, $ini_ago, $fim_ago]);
+$st->execute([$aluno_id, (int) $config->getApiSigaaTipoEventoFaltaId(), $ini_ago, $fim_ago]);
 $datas_ago = $st->fetchAll(PDO::FETCH_COLUMN);
 dbg('datas agosto: ' . (empty($datas_ago) ? '(nenhuma)' : implode(', ', $datas_ago)));
 dbg('qtd dias distintos em agosto = ' . count($datas_ago));

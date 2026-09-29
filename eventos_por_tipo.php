@@ -144,7 +144,6 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
 <?php endif; ?>
 
 <div class="row">
-    <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
     <?php 
     // Create a map of statistics by tipo_evento_id
     $estatisticas_map = [];
@@ -189,46 +188,6 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
         </a>
     </div>
     <?php endforeach; ?>
-    <?php else: ?>
-    <div class="col-12 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Minhas Estatísticas</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <?php
-                    $tipos = [
-                        'chegada_atrasada' => ['label' => 'Atrasos', 'icon' => 'clock-history', 'color' => 'primary'],
-                        'saida_antecipada' => ['label' => 'Saídas Antecipadas', 'icon' => 'arrow-left-circle', 'color' => 'warning'],
-                        'falta' => ['label' => 'Faltas', 'icon' => 'x-circle', 'color' => 'danger'],
-                        'atendimento' => ['label' => 'Atendimentos', 'icon' => 'person-check', 'color' => 'success']
-                    ];
-                    
-                    foreach ($tipos as $tipo => $info):
-                        $total = 0;
-                        foreach ($estatisticas as $stat) {
-                            if ($stat['tipo_evento'] == $tipo) {
-                                $total = $stat['total'];
-                                break;
-                            }
-                        }
-                    ?>
-                    <div class="col-md-3 mb-3">
-                        <div class="card border-<?php echo $info['color']; ?>">
-                            <div class="card-body text-center">
-                                <i class="bi bi-<?php echo $info['icon']; ?> text-<?php echo $info['color']; ?>" style="font-size: 2rem;"></i>
-                                <h5 class="mt-2"><?php echo $total; ?></h5>
-                                <small class="text-muted"><?php echo $info['label']; ?></small>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                </div>
-            </div>
-        </div>
-    </div>
-    <?php endif; ?>
 </div>
 
 <div class="row mt-4">
