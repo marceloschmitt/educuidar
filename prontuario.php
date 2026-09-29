@@ -51,6 +51,50 @@ if (!empty($voltar_params)) $voltar_alunos_url .= '?' . implode('&', $voltar_par
 $voltar_registrar_url = 'registrar_evento.php?aluno_id=' . urlencode($aluno_id);
 if (!empty($voltar_params)) $voltar_registrar_url .= '&' . implode('&', $voltar_params);
 
+$registro_prontuario = new ProntuarioRegistro($db);
+$pode_registrar = ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2())
+    && $registro_prontuario->tipoUsuarioTemProntuario($user_type_id);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'novo_registro') {
+    $data_registro = $_POST['data_registro'] ?? '';
+    $hora_registro = $_POST['hora_registro'] ?? '';
+    $descricao = trim($_POST['descricao'] ?? '');
+    $data_valida = DateTime::createFromFormat('!Y-m-d', $data_registro);
+    $hora_valida = $hora_registro === '' || preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', $hora_registro);
+    $ano_redirecionar = null;
+
+    if (!$pode_registrar) {
+        $_SESSION['error'] = 'Você não tem permissão para registrar neste prontuário.';
+    } elseif (!$data_valida || $data_valida->format('Y-m-d') !== $data_registro || !$hora_valida || $descricao === '') {
+        $_SESSION['error'] = 'Informe uma data válida e a descrição do registro.';
+    } else {
+        $registro_id = $registro_prontuario->criar($aluno_id, $user_type_id, $data_registro, $hora_registro, $descricao, $_SESSION['user_id']);
+        if ($registro_id) {
+            $erros_anexos = [];
+            if (!empty($_FILES['anexos'])) {
+                $registro_prontuario->salvarAnexos($registro_id, $_FILES['anexos'], $erros_anexos);
+            }
+            $_SESSION['success'] = 'Registro adicionado ao prontuário.';
+            if (!empty($erros_anexos)) {
+                $_SESSION['error'] = implode(' ', $erros_anexos);
+            }
+            $ano_redirecionar = $data_valida->format('Y');
+        } else {
+            $_SESSION['error'] = 'Erro ao salvar o registro. Tente novamente.';
+        }
+    }
+
+    $url = 'prontuario.php?aluno_id=' . urlencode($aluno_id)
+        . '&filtro_ano=' . urlencode($ano_redirecionar ?? ($_GET['filtro_ano'] ?? ''));
+    if (!empty($voltar_params)) $url .= '&' . implode('&', $voltar_params);
+    header('Location: ' . $url);
+    exit;
+}
+
+$mensagem_sucesso = $_SESSION['success'] ?? '';
+$mensagem_erro = $_SESSION['error'] ?? '';
+unset($_SESSION['success'], $_SESSION['error']);
+
 // Get ano corrente e filtro de ano
 $ano_corrente = $configuracao->getAnoCorrente();
 $filtro_ano = $_GET['filtro_ano'] ?? $ano_corrente;
@@ -111,6 +155,20 @@ if (!empty($eventos_prontuario)) {
     }
 }
 
+$registros_diretos = $registro_prontuario->getPorAluno($aluno_id, $user_type_id, $filtro_ano);
+$anexos_por_registro = $registro_prontuario->getAnexosPorRegistros(array_column($registros_diretos, 'id'));
+
+$itens_prontuario = [];
+foreach ($eventos_prontuario as $ev) {
+    $itens_prontuario[] = ['origem' => 'evento', 'data' => $ev['data_evento'], 'hora' => $ev['hora_evento'], 'criado' => $ev['created_at'], 'dados' => $ev];
+}
+foreach ($registros_diretos as $reg) {
+    $itens_prontuario[] = ['origem' => 'registro', 'data' => $reg['data_registro'], 'hora' => $reg['hora_registro'], 'criado' => $reg['created_at'], 'dados' => $reg];
+}
+usort($itens_prontuario, function ($a, $b) {
+    return [$a['data'], (string) $a['hora'], $a['criado']] <=> [$b['data'], (string) $b['hora'], $b['criado']];
+});
+
 $aluno_ficha = $aluno_data;
 $aluno_ficha['todas_turmas'] = [];
 foreach ($turmas_aluno as $ta) {
@@ -144,6 +202,19 @@ $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
 require_once 'includes/header.php';
 ?>
 
+<?php if ($mensagem_sucesso): ?>
+<div class="alert alert-success alert-dismissible fade show no-print" role="alert">
+    <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($mensagem_sucesso); ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php endif; ?>
+<?php if ($mensagem_erro): ?>
+<div class="alert alert-danger alert-dismissible fade show no-print" role="alert">
+    <i class="bi bi-exclamation-triangle"></i> <?php echo htmlspecialchars($mensagem_erro); ?>
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<?php endif; ?>
+
 <div class="row">
     <div class="col-md-12">
         <div class="card mb-3 printable-area">
@@ -153,6 +224,11 @@ require_once 'includes/header.php';
                     <?php echo htmlspecialchars(!empty($aluno_data['nome_social']) ? $aluno_data['nome_social'] : ($aluno_data['nome'] ?? '')); ?>
                 </h5>
                 <div class="d-flex gap-2">
+                    <?php if ($pode_registrar): ?>
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#modalNovoRegistroProntuario">
+                        <i class="bi bi-plus-circle"></i> Novo Registro
+                    </button>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-sm btn-secondary btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
@@ -242,23 +318,26 @@ require_once 'includes/header.php';
                 
             <h5 class="mb-3"><i class="bi bi-journal-text"></i> Histórico de Atendimentos - <?php echo htmlspecialchars($prontuario_titulo); ?></h5>
                 
-                <?php if (empty($eventos_prontuario)): ?>
+                <?php if (empty($itens_prontuario)): ?>
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i> Nenhum atendimento encontrado para este aluno no ano <?php echo htmlspecialchars($filtro_ano); ?>.
                 </div>
                 <?php else: ?>
                 <div class="timeline">
-                    <?php foreach ($eventos_prontuario as $ev): ?>
+                    <?php foreach ($itens_prontuario as $item): ?>
+                    <?php $ev = $item['dados']; ?>
                     <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center printable-event-header">
                             <div>
                                 <strong>
-                                    <?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?>
-                                    <?php if (!empty($ev['hora_evento'])): ?>
-                                        às <?php echo date('H:i', strtotime($ev['hora_evento'])); ?>
+                                    <?php echo date('d/m/Y', strtotime($item['data'])); ?>
+                                    <?php if (!empty($item['hora'])): ?>
+                                        às <?php echo date('H:i', strtotime($item['hora'])); ?>
                                     <?php endif; ?>
                                 </strong>
-                                <?php if (!empty($ev['tipo_evento_nome'])): ?>
+                                <?php if ($item['origem'] === 'registro'): ?>
+                                    <span class="badge bg-secondary ms-2">Registro no prontuário</span>
+                                <?php elseif (!empty($ev['tipo_evento_nome'])): ?>
                                     <span class="badge bg-<?php echo htmlspecialchars($ev['tipo_evento_cor']); ?> ms-2">
                                         <?php echo htmlspecialchars($ev['tipo_evento_nome']); ?>
                                     </span>
@@ -269,6 +348,25 @@ require_once 'includes/header.php';
                             </small>
                         </div>
                         <div class="card-body">
+                            <?php if ($item['origem'] === 'registro'): ?>
+                            <div class="p-3 bg-light rounded">
+                                <?php echo nl2br(htmlspecialchars($ev['descricao'])); ?>
+                            </div>
+                            <?php if (!empty($anexos_por_registro[$ev['id']])): ?>
+                            <div class="mt-3">
+                                <strong>Anexos:</strong>
+                                <ul class="list-unstyled mb-0">
+                                    <?php foreach ($anexos_por_registro[$ev['id']] as $anexo): ?>
+                                    <li>
+                                        <a href="prontuario_anexo.php?id=<?php echo (int) $anexo['id']; ?>" target="_blank" rel="noopener">
+                                            <?php echo htmlspecialchars($anexo['nome_original']); ?>
+                                        </a>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                            <?php endif; ?>
+                            <?php else: ?>
                             <?php if (!empty($ev['observacoes'])): ?>
                             <div class="mb-3">
                                 <strong>Observações Gerais:</strong>
@@ -299,6 +397,7 @@ require_once 'includes/header.php';
                                 </ul>
                             </div>
                             <?php endif; ?>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <?php endforeach; ?>
@@ -308,6 +407,52 @@ require_once 'includes/header.php';
         </div>
     </div>
 </div>
+
+<?php if ($pode_registrar): ?>
+<div class="modal fade" id="modalNovoRegistroProntuario" tabindex="-1" aria-labelledby="modalNovoRegistroProntuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form method="POST" action="" enctype="multipart/form-data" class="modal-content">
+            <input type="hidden" name="action" value="novo_registro">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalNovoRegistroProntuarioLabel">
+                    <i class="bi bi-journal-plus"></i> Novo registro no prontuário <?php echo htmlspecialchars($prontuario_titulo); ?>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">
+                    O registro fica apenas neste prontuário: não cria evento e não aparece na lista de eventos,
+                    no dashboard, nos alertas nem para os responsáveis.
+                </p>
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label for="registro_data" class="form-label">Data *</label>
+                        <input type="date" class="form-control" id="registro_data" name="data_registro" value="<?php echo date('Y-m-d'); ?>" required>
+                    </div>
+                    <div class="col-sm-6">
+                        <label for="registro_hora" class="form-label">Hora</label>
+                        <input type="time" class="form-control" id="registro_hora" name="hora_registro" value="<?php echo date('H:i'); ?>">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="registro_descricao" class="form-label">Descrição *</label>
+                    <textarea class="form-control" id="registro_descricao" name="descricao" rows="8" required></textarea>
+                </div>
+                <div>
+                    <label for="registro_anexos" class="form-label">Anexos</label>
+                    <input type="file" class="form-control" id="registro_anexos" name="anexos[]" multiple
+                           accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx,.txt">
+                    <div class="form-text">PDF, imagens, Word, Excel ou texto, até 10 MB cada.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-success"><i class="bi bi-check-lg"></i> Salvar registro</button>
+            </div>
+        </form>
+    </div>
+</div>
+<?php endif; ?>
 
 <!-- Modal para Ver Ficha do Aluno -->
 <div class="modal fade" id="modalFichaAluno" tabindex="-1" aria-labelledby="modalFichaAlunoLabel" aria-hidden="true">

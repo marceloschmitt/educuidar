@@ -183,6 +183,7 @@ foreach ($linhas_freq as $row) {
     $disciplinas_chart[] = [
         'label' => $filtro_turma ? $nome : $nome . ' · ' . $nome_turma,
         'titulo' => $nome . ' · ' . $nome_turma,
+        'turma' => $nome_turma,
         'turma_id' => $tid,
         'cod' => $row['cod_disciplina'],
         'cor' => $cor,
@@ -240,7 +241,9 @@ if ($apenas_meus_eventos) {
     $filtros_descricao[] = 'apenas meus eventos';
 }
 $titulo_filtros = htmlspecialchars(implode(' · ', array_map('trim', $filtros_descricao)));
-$altura_barras_turma = max(120, count($series_turma) * 30 + 30);
+// Espaço extra para a legenda de cores, que quebra em linhas de cerca de quatro turmas.
+$altura_legenda = function ($turmas) { return 16 + (int) ceil($turmas / 4) * 24; };
+$altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legenda(count($series_turma));
 ?>
 
 <div class="card mb-4">
@@ -419,7 +422,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         <?php endif; ?>
     </div>
     <div class="card-body">
-        <div class="dashboard-chart" style="height: <?php echo max(120, count($disciplinas_chart) * 28 + 40); ?>px;"><canvas id="chartDisciplinas"></canvas></div>
+        <div class="dashboard-chart" style="height: <?php echo max(120, count($disciplinas_chart) * 28 + 40) + $altura_legenda(count(array_unique(array_column($disciplinas_chart, 'turma_id')))); ?>px;"><canvas id="chartDisciplinas"></canvas></div>
         <div class="small text-muted mt-2">
             Faltas divididas pelos períodos dados no ano, somando os alunos da turma.
             Disciplinas com menos de <?php echo DashboardEstatisticas::MIN_ALUNOS_DISCIPLINA; ?> alunos na turma (dependências) ficam de fora.
@@ -646,6 +649,33 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
         }
     };
 
+    // Legenda das cores de turma para gráficos de uma só série, em que cada barra tem a cor da sua turma.
+    function legendaCoresTurmas(itens) {
+        var ordemTurmas = dados.turmas.map(function (t) { return t.label; });
+        var unicos = [];
+        itens.forEach(function (item) {
+            if (!unicos.some(function (u) { return u.label === item.label; })) unicos.push(item);
+        });
+        unicos.sort(function (a, b) {
+            var ia = ordemTurmas.indexOf(a.label), ib = ordemTurmas.indexOf(b.label);
+            return (ia < 0 ? Infinity : ia) - (ib < 0 ? Infinity : ib);
+        });
+        return {
+            position: 'bottom',
+            onClick: function () {},
+            labels: {
+                boxWidth: 28,
+                boxHeight: 8,
+                padding: 14,
+                generateLabels: function () {
+                    return unicos.map(function (item) {
+                        return { text: item.label, fillStyle: item.cor, strokeStyle: item.cor, lineWidth: 0, hidden: false };
+                    });
+                }
+            }
+        };
+    }
+
     criarGrafico('chartMensal', {
         type: 'line',
         data: {
@@ -700,7 +730,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 y: { grid: { display: false } }
             },
             plugins: {
-                legend: { display: false },
+                legend: legendaCoresTurmas(dados.turmas),
                 tooltip: {
                     callbacks: {
                         label: function (ctx) {
@@ -830,7 +860,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30);
                 y: { grid: { display: false } }
             },
             plugins: {
-                legend: { display: false },
+                legend: legendaCoresTurmas(disciplinas.map(function (d) { return { label: d.turma, cor: d.cor }; })),
                 tooltip: {
                     callbacks: {
                         label: function (ctx) {

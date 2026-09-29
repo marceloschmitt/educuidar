@@ -25,6 +25,9 @@ function getUserTypeUsage($db, $id) {
     $stmt->execute();
     $tipos_total = (int)($stmt->fetch()['total'] ?? 0);
 
+    // Registros diretos no prontuário também prendem o tipo (a chave estrangeira impede a exclusão).
+    $tipos_total += ProntuarioRegistro::contarPorTipoUsuario($db, $id);
+
     return [$users_total, $tipos_total];
 }
 
