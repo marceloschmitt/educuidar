@@ -23,6 +23,8 @@ class UsuariosController extends Controller {
         // Get success/error messages from session
         $success = $this->getSuccess();
         $error = $this->getError();
+        $resultado_professores = $_SESSION['inserir_professores_resultado'] ?? null;
+        unset($_SESSION['inserir_professores_resultado']);
         
         // Get all users
         $usuarios = $this->user->getAll();
@@ -46,6 +48,7 @@ class UsuariosController extends Controller {
             'usuarios' => $usuarios,
             'user_types' => $user_types,
             'cursos' => $cursos,
+            'resultado_professores' => $resultado_professores,
             'user' => $this->user
         ]);
         
@@ -65,7 +68,68 @@ class UsuariosController extends Controller {
             $this->update();
         } elseif ($action == 'delete') {
             $this->delete();
+        } elseif ($action == 'inserir_professores') {
+            $this->inserirProfessores();
         }
+    }
+
+    /**
+     * Roda python/inserir_professores.py e guarda a saída na sessão
+     */
+    private function inserirProfessores() {
+        $tipo_id = (int) ($_POST['tipo_usuario_id'] ?? 0);
+        $simular = !empty($_POST['simular']);
+
+        $tipos_validos = array_map('intval', array_column($this->user->getUserTypes(), 'id'));
+        if (!in_array($tipo_id, $tipos_validos, true)) {
+            $this->setError('Escolha o tipo de usuário dos professores.');
+            $this->redirect('usuarios.php');
+            return;
+        }
+
+        if (!function_exists('proc_open')) {
+            $this->setError('O PHP deste servidor não permite executar scripts (proc_open desabilitado).');
+            $this->redirect('usuarios.php');
+            return;
+        }
+
+        $dir_python = realpath(__DIR__ . '/../python');
+        $comando = [$this->localizarPython(), $dir_python . '/inserir_professores.py', '--tipo-usuario', (string) $tipo_id];
+        if ($simular) {
+            $comando[] = '--dry-run';
+        }
+
+        set_time_limit(300);
+        $ambiente = array_merge(getenv(), ['PYTHONIOENCODING' => 'utf-8']);
+        $processo = proc_open($comando, [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $dir_python, $ambiente);
+        if (!is_resource($processo)) {
+            $this->setError('Não foi possível iniciar o script inserir_professores.py.');
+            $this->redirect('usuarios.php');
+            return;
+        }
+
+        $saida = stream_get_contents($pipes[1]);
+        $erros = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $codigo = proc_close($processo);
+
+        $_SESSION['inserir_professores_resultado'] = [
+            'simulacao' => $simular,
+            'codigo' => $codigo,
+            'saida' => trim((string) $saida),
+            'erros' => trim((string) $erros),
+        ];
+        $this->redirect('usuarios.php');
+    }
+
+    private function localizarPython() {
+        foreach (['/usr/bin/python3', '/usr/local/bin/python3', '/opt/homebrew/bin/python3'] as $caminho) {
+            if (is_executable($caminho)) {
+                return $caminho;
+            }
+        }
+        return 'python3';
     }
     
     /**

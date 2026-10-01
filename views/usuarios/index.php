@@ -12,14 +12,48 @@
 </div>
 <?php endif; ?>
 
+<?php if (!empty($resultado_professores)): ?>
+<?php $falhou_professores = (int) $resultado_professores['codigo'] !== 0; ?>
+<div class="card mb-3 border-<?php echo $falhou_professores ? 'danger' : ($resultado_professores['simulacao'] ? 'info' : 'success'); ?>">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">
+            <i class="bi bi-mortarboard"></i>
+            <?php if ($falhou_professores): ?>
+                Erro ao inserir professores do SIGAA
+            <?php elseif ($resultado_professores['simulacao']): ?>
+                Simulação: professores do SIGAA (nada foi gravado)
+            <?php else: ?>
+                Professores do SIGAA inseridos
+            <?php endif; ?>
+        </h6>
+        <button type="button" class="btn-close" aria-label="Fechar" onclick="this.closest('.card').remove()"></button>
+    </div>
+    <div class="card-body">
+        <?php if ($resultado_professores['saida'] !== ''): ?>
+        <pre class="mb-0 small" style="max-height: 420px; overflow: auto;"><?php echo htmlspecialchars($resultado_professores['saida']); ?></pre>
+        <?php endif; ?>
+        <?php if ($resultado_professores['erros'] !== ''): ?>
+        <div class="alert alert-<?php echo $falhou_professores ? 'danger' : 'warning'; ?> mb-0 mt-2">
+            <pre class="mb-0 small" style="white-space: pre-wrap;"><?php echo htmlspecialchars($resultado_professores['erros']); ?></pre>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="row">
     <div class="col-12">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-people"></i> Lista de Usuários</h5>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                    <i class="bi bi-person-plus"></i> Novo Usuário
-                </button>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#inserirProfessoresModal">
+                        <i class="bi bi-cloud-download"></i> Inserir professores do SIGAA
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createUserModal">
+                        <i class="bi bi-person-plus"></i> Novo Usuário
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -92,6 +126,79 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para Inserir Professores do SIGAA -->
+<?php
+$tipo_professor_id = '';
+foreach ($user_types as $ut) {
+    if (mb_strtolower(trim($ut['nome'])) === 'professor') {
+        $tipo_professor_id = (string) $ut['id'];
+        break;
+    }
+}
+?>
+<div class="modal fade" id="inserirProfessoresModal" tabindex="-1" aria-labelledby="inserirProfessoresModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inserirProfessoresModalLabel"><i class="bi bi-cloud-download"></i> Inserir professores do SIGAA</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="" id="inserirProfessoresForm">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="inserir_professores">
+                    <p class="small text-muted">
+                        Busca no SIGAA os professores das disciplinas dos cursos integrados e cadastra,
+                        com autenticação LDAP, os que ainda não existem. Usuários já cadastrados
+                        (mesmo usuário, e-mail ou nome) não são alterados.
+                    </p>
+                    <div class="mb-3">
+                        <label for="tipo_usuario_id" class="form-label">Tipo de usuário dos novos professores <span class="text-danger">*</span></label>
+                        <select class="form-select" id="tipo_usuario_id" name="tipo_usuario_id" required>
+                            <option value="">Selecione...</option>
+                            <?php foreach ($user_types as $ut): ?>
+                            <option value="<?php echo (int) $ut['id']; ?>" <?php echo (string) $ut['id'] === $tipo_professor_id ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($ut['nome']); ?>
+                            </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <small class="text-muted">Use "Simular" para ver quem seria cadastrado antes de gravar.</small>
+                    <div class="d-none mt-3" id="inserirProfessoresAguarde">
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Consultando o SIGAA, isso pode levar alguns segundos...
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-outline-primary" name="simular" value="1">
+                        <i class="bi bi-eye"></i> Simular
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-person-plus"></i> Inserir professores
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('inserirProfessoresForm').addEventListener('submit', function (e) {
+    if (!this.checkValidity()) {
+        return;
+    }
+    var botao = e.submitter;
+    if (botao && botao.name) {
+        var campo = document.createElement('input');
+        campo.type = 'hidden';
+        campo.name = botao.name;
+        campo.value = botao.value;
+        this.appendChild(campo);
+    }
+    this.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    document.getElementById('inserirProfessoresAguarde').classList.remove('d-none');
+});
+</script>
 
 <!-- Modal para Criar Usuário -->
 <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
