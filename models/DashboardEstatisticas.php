@@ -3,7 +3,8 @@
  * Consultas agregadas para os gráficos do dashboard.
  *
  * Filtros aceitos: ano, curso_id, turma_id, tipo_evento_id, registrado_por, incluir_sabados.
- * faltasPorDisciplina() lê frequencia_disciplina (SIGAA) e ignora tipo, registrado_por e sábados.
+ * faltasPorDisciplina() e topAlunosPorPercentualFaltas() leem frequencia_disciplina (SIGAA) e
+ * ignoram tipo, registrado_por e sábados.
  */
 class DashboardEstatisticas {
     private $conn;
@@ -205,6 +206,58 @@ class DashboardEstatisticas {
         } catch (PDOException $e) {
             return [];
         }
+    }
+
+    /**
+     * Os $limite alunos com maior percentual de faltas no SIGAA (soma das faltas / soma dos
+     * períodos das disciplinas) em cada turma, agrupados por turma_id. Usa só ano, curso_id e turma_id.
+     */
+    public function topAlunosPorPercentualFaltas($limite = 5) {
+        $limite = max(1, (int) $limite);
+        $where = ["fd.ano = :ano_freq", "t.ano_civil = :ano", "COALESCE(a.desistente, 0) = 0"];
+        $params = [
+            ':ano_freq' => (int) $this->filtros['ano'],
+            ':ano' => (int) $this->filtros['ano'],
+        ];
+        if (!empty($this->filtros['curso_id'])) {
+            $where[] = "t.curso_id = :curso_id";
+            $params[':curso_id'] = (int) $this->filtros['curso_id'];
+        }
+        if (!empty($this->filtros['turma_id'])) {
+            $where[] = "t.id = :turma_id";
+            $params[':turma_id'] = (int) $this->filtros['turma_id'];
+        }
+
+        $query = "SELECT t.id AS turma_id, a.id AS id, MAX(COALESCE(NULLIF(a.nome_social, ''), a.nome)) AS nome,
+                         SUM(fd.faltas) AS faltas, SUM(fd.aulas) AS aulas
+                  FROM frequencia_disciplina fd
+                  INNER JOIN alunos a ON a.id = fd.aluno_id
+                  INNER JOIN aluno_turmas at ON at.aluno_id = fd.aluno_id
+                  INNER JOIN turmas t ON t.id = at.turma_id
+                  WHERE " . implode(' AND ', $where) . "
+                  GROUP BY t.id, a.id
+                  HAVING SUM(fd.aulas) > 0
+                  ORDER BY t.id, SUM(fd.faltas) / SUM(fd.aulas) DESC, nome ASC";
+        try {
+            $stmt = $this->conn->prepare($query);
+            foreach ($params as $chave => $valor) {
+                $stmt->bindValue($chave, $valor, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return [];
+        }
+
+        $por_turma = [];
+        foreach ($rows as $row) {
+            $tid = (int) $row['turma_id'];
+            if (count($por_turma[$tid] ?? []) < $limite) {
+                $row['percentual'] = round(((int) $row['faltas'] / (int) $row['aulas']) * 100, 1);
+                $por_turma[$tid][] = $row;
+            }
+        }
+        return $por_turma;
     }
 
     /**

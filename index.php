@@ -78,7 +78,16 @@ $stats_todos_tipos = new DashboardEstatisticas($db, $filtros_base);
 $por_turma = $stats->porTurma();
 $por_mes_turma = $stats->porMesETurma();
 $por_dia_turma = $stats->porDiaETurma();
-$top_alunos_por_turma = $stats->topAlunosPorTurma(5);
+// Para a falta do SIGAA, a contagem de marcações não é proporcional (um dia pode valer 1 ou 3 períodos):
+// o ranking usa o percentual de faltas sobre os períodos dados.
+$top_por_percentual = false;
+if ($tipo_sigaa_id !== null && $tipo_selecionado_id === (int) $tipo_sigaa_id) {
+    $top_alunos_por_turma = $stats->topAlunosPorPercentualFaltas(5);
+    $top_por_percentual = !empty($top_alunos_por_turma);
+}
+if (!$top_por_percentual) {
+    $top_alunos_por_turma = $stats->topAlunosPorTurma(5);
+}
 $totais_por_tipo = $stats_todos_tipos->totaisPorTipo();
 $freq_disciplinas = $stats_todos_tipos->faltasPorDisciplina();
 
@@ -344,7 +353,7 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legend
     </div>
 </div>
 
-<h6 class="mb-3">Top 5 alunos por turma<?php echo $sufixo_titulo; ?></h6>
+<h6 class="mb-3">Top 5 alunos por turma<?php echo $sufixo_titulo; ?><?php if ($top_por_percentual): ?> <span class="text-muted fw-normal">— por percentual de faltas no SIGAA</span><?php endif; ?></h6>
 <div class="row g-3 mb-4">
     <?php foreach ($series_turma as $tid => $serie): ?>
     <?php $top = $top_alunos_por_turma[$tid] ?? []; ?>
@@ -363,20 +372,33 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legend
                 <?php else: ?>
                 <table class="table table-hover table-sm mb-0 align-middle">
                     <tbody>
-                        <?php $max_top = max(1, (int) $top[0]['total']); ?>
+                        <?php $max_top = $top_por_percentual ? max(0.1, (float) $top[0]['percentual']) : max(1, (int) $top[0]['total']); ?>
                         <?php foreach ($top as $pos => $al): ?>
+                        <?php
+                        if ($top_por_percentual) {
+                            $valor_top = (float) $al['percentual'];
+                            $critico_top = $valor_top > FrequenciaDisciplina::LIMITE_FALTAS;
+                            $texto_top = number_format($valor_top, 1, ',', '.') . '%';
+                            $detalhe_top = (int) $al['faltas'] . ' faltas em ' . number_format((int) $al['aulas'], 0, ',', '.') . ' períodos';
+                        } else {
+                            $valor_top = (int) $al['total'];
+                            $critico_top = false;
+                            $texto_top = (string) $valor_top;
+                            $detalhe_top = 'Último: ' . (!empty($al['ultimo_evento']) ? date('d/m/Y', strtotime($al['ultimo_evento'])) : '-');
+                        }
+                        ?>
                         <tr class="dashboard-top-aluno" data-aluno-id="<?php echo (int) $al['id']; ?>" data-aluno-nome="<?php echo htmlspecialchars($al['nome'] ?? ''); ?>" style="cursor: pointer;" title="Ver ficha ou frequência do aluno">
                             <td class="text-muted ps-3" style="width: 2rem;"><?php echo $pos + 1; ?></td>
                             <td>
                                 <div><?php echo htmlspecialchars($al['nome'] ?? '-'); ?></div>
-                                <div class="small text-muted">Último: <?php echo !empty($al['ultimo_evento']) ? date('d/m/Y', strtotime($al['ultimo_evento'])) : '-'; ?></div>
+                                <div class="small text-muted"><?php echo htmlspecialchars($detalhe_top); ?></div>
                             </td>
                             <td class="text-end pe-3" style="width: 150px;">
                                 <div class="d-flex align-items-center gap-2 justify-content-end">
                                     <div class="progress flex-grow-1" style="height: 6px; max-width: 90px;">
-                                        <div class="progress-bar" style="width: <?php echo round(((int) $al['total'] / $max_top) * 100); ?>%; background-color: <?php echo $serie['cor']; ?>;"></div>
+                                        <div class="progress-bar" style="width: <?php echo round(($valor_top / $max_top) * 100); ?>%; background-color: <?php echo $critico_top ? '#dc3545' : $serie['cor']; ?>;"></div>
                                     </div>
-                                    <strong><?php echo (int) $al['total']; ?></strong>
+                                    <strong class="<?php echo $critico_top ? 'text-danger' : ''; ?>"><?php echo $texto_top; ?></strong>
                                 </div>
                             </td>
                         </tr>
