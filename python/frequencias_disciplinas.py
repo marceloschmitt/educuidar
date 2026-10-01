@@ -3,7 +3,14 @@
 
 Para cada disciplina com controle de frequência, guarda aulas (períodos),
 faltas, presenças e percentual em frequencia_disciplina. Chamado ao final de
-consulta_alunos.py; também pode rodar sozinho sobre resposta_alunos.json:
+consulta_alunos.py; também pode rodar sozinho sobre resposta_alunos.json.
+
+O SIGAA às vezes retira do total do aluno a aula de um dia abonado (depende
+da ordem entre o registro do abono e o da chamada). Como todos os alunos de
+uma turma têm as mesmas aulas, cada disciplina usa o maior número de aulas
+da turma; faltas vêm do SIGAA (incluem as justificadas) e presenças e
+percentual são recalculados. Alunos com matrícula atrasada ou trancamento
+mantêm o número do SIGAA, pois para eles a diferença é legítima.
 
     python3 frequencias_disciplinas.py
     python3 frequencias_disciplinas.py --dry-run
@@ -30,6 +37,9 @@ from faltas_automaticas import (
 from paths import JSON_RESPOSTA_ALUNOS, ROOT
 
 ARQUIVO_DDL = ROOT / "sql" / "frequencia_disciplina.sql"
+
+# Ausências especiais em que o aluno de fato teve menos aulas que a turma.
+AUSENCIAS_QUE_REDUZEM_AULAS = ("matricula_atrasada", "trancamento_cancelamento")
 
 
 def _inteiro(valor: Any) -> int:
@@ -80,6 +90,10 @@ def extrair_frequencias(respostas: list[dict[str, Any]], ano_padrao: int) -> lis
                 disciplinas = frequencias.get("disciplinas")
                 if not isinstance(disciplinas, dict):
                     continue
+                turma = str(curso.get("turma_entrada") or curso.get("id_curso") or "")
+                especiais = frequencias.get("ausencias_especiais")
+                especiais = especiais if isinstance(especiais, dict) else {}
+                manter_aulas = any(especiais.get(tipo) for tipo in AUSENCIAS_QUE_REDUZEM_AULAS)
                 for codigo_chave, disc in disciplinas.items():
                     if not isinstance(disc, dict) or not disc.get("possui_controle_frequencia"):
                         continue
@@ -96,6 +110,8 @@ def extrair_frequencias(respostas: list[dict[str, Any]], ano_padrao: int) -> lis
                         "presencas": _inteiro(freq.get("presencas")),
                         "percentual_frequencia": _decimal(freq.get("percentual_frequencia")),
                         "ultima_aula": parsear_data_api(str(disc.get("ultima_aula_ministrada") or "")),
+                        "turma": turma,
+                        "manter_aulas": manter_aulas,
                     }
                     atual = entrada["disciplinas"].get(codigo)
                     # Mesmo código em dois cursos do aluno: fica o registro com mais aulas.
@@ -103,6 +119,29 @@ def extrair_frequencias(respostas: list[dict[str, Any]], ano_padrao: int) -> lis
                         entrada["disciplinas"][codigo] = linha
 
     return list(por_aluno.values())
+
+
+def corrigir_aulas(entradas: list[dict[str, Any]]) -> int:
+    """Iguala as aulas de cada disciplina ao maior número da turma; devolve quantas mudaram."""
+    maior: dict[tuple[int, str, str], int] = {}
+    for entrada in entradas:
+        for linha in entrada["disciplinas"].values():
+            chave = (entrada["ano"], linha["turma"], linha["cod_disciplina"])
+            maior[chave] = max(maior.get(chave, 0), linha["aulas"])
+
+    corrigidas = 0
+    for entrada in entradas:
+        for linha in entrada["disciplinas"].values():
+            if linha["manter_aulas"]:
+                continue
+            aulas = maior[(entrada["ano"], linha["turma"], linha["cod_disciplina"])]
+            if aulas == linha["aulas"]:
+                continue
+            linha["aulas"] = aulas
+            linha["presencas"] = max(aulas - linha["faltas"], 0)
+            linha["percentual_frequencia"] = round(linha["presencas"] * 100 / aulas, 2)
+            corrigidas += 1
+    return corrigidas
 
 
 def garantir_tabela(conn) -> None:
@@ -130,6 +169,7 @@ def gravar_frequencias(
         "alunos": 0,
         "disciplinas": 0,
         "removidas": 0,
+        "corrigidas": 0,
         "sem_aluno": 0,
         "desistentes": 0,
         "dry_run": dry_run,
@@ -146,7 +186,10 @@ def gravar_frequencias(
             cur.execute("SELECT id FROM alunos WHERE COALESCE(desistente, 0) = 0")
             alunos_ativos = {int(row["id"]) for row in cur.fetchall()}
 
-            for entrada in extrair_frequencias(respostas, ano_padrao):
+            entradas = extrair_frequencias(respostas, ano_padrao)
+            resumo["corrigidas"] = corrigir_aulas(entradas)
+
+            for entrada in entradas:
                 aluno_id = resolver_aluno_id(entrada, alunos_cpf)
                 if not aluno_id:
                     resumo["sem_aluno"] += 1
@@ -228,6 +271,7 @@ def main() -> int:
     print(
         f"{prefixo}Frequência por disciplina: {resumo['alunos']} aluno(s), "
         f"{resumo['disciplinas']} disciplina(s) gravada(s), {resumo['removidas']} removida(s), "
+        f"{resumo['corrigidas']} com aulas igualadas à turma, "
         f"{resumo['sem_aluno']} sem vínculo no banco, {resumo['desistentes']} desistente(s) ignorado(s)."
     )
     return 0

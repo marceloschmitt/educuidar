@@ -479,7 +479,8 @@ def main() -> int:
             log(
                 f"Frequência por disciplina: {resumo_freq['alunos']} aluno(s), "
                 f"{resumo_freq['disciplinas']} disciplina(s), "
-                f"{resumo_freq['removidas']} removida(s)"
+                f"{resumo_freq['removidas']} removida(s), "
+                f"{resumo_freq['corrigidas']} com aulas igualadas à turma"
             )
         except Exception as error:
             log(f"Aviso: falha ao gravar frequência por disciplina: {error}", erro=True)
