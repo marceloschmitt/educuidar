@@ -26,49 +26,45 @@ class EventoEmail {
         $config = new Configuracao($this->conn);
         $ano = $config->getAnoCorrente();
 
+        // Sem turma no evento, usa a turma do aluno no ano corrente.
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.data_evento, e.hora_evento, e.observacoes, e.created_at,
                          te.nome AS tipo_nome,
                          te.observacoes_visiveis_responsaveis,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
-                         COALESCE(
-                             t.curso_id,
-                             (
-                                 SELECT t2.curso_id
-                                 FROM aluno_turmas at
-                                 INNER JOIN turmas t2 ON t2.id = at.turma_id
-                                 WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano
-                                 ORDER BY t2.id DESC
-                                 LIMIT 1
-                             )
-                         ) AS curso_id,
-                         COALESCE(
-                             c.nome,
-                             (
-                                 SELECT c2.nome
-                                 FROM aluno_turmas at
-                                 INNER JOIN turmas t2 ON t2.id = at.turma_id
-                                 INNER JOIN cursos c2 ON c2.id = t2.curso_id
-                                 WHERE at.aluno_id = e.aluno_id AND t2.ano_civil = :ano2
-                                 ORDER BY t2.id DESC
-                                 LIMIT 1
-                             )
-                         ) AS curso_nome
-                  FROM eventos e
+                         t.id AS turma_ref_id,
+                         t.ano_curso,
+                         c.id AS curso_id,
+                         c.nome AS curso_nome
+                  FROM (
+                      SELECT ev.*,
+                             COALESCE(
+                                 ev.turma_id,
+                                 (
+                                     SELECT at.turma_id
+                                     FROM aluno_turmas at
+                                     INNER JOIN turmas t2 ON t2.id = at.turma_id
+                                     WHERE at.aluno_id = ev.aluno_id AND t2.ano_civil = :ano
+                                     ORDER BY t2.id DESC
+                                     LIMIT 1
+                                 )
+                             ) AS turma_ref_id
+                      FROM eventos ev
+                      WHERE ev.data_evento = :data_ref
+                        AND ev.sem_notificacao = 0
+                  ) e
                   INNER JOIN tipos_eventos te ON te.id = e.tipo_evento_id
                   INNER JOIN alunos a ON a.id = e.aluno_id
-                  LEFT JOIN turmas t ON t.id = e.turma_id
+                  LEFT JOIN turmas t ON t.id = e.turma_ref_id
                   LEFT JOIN cursos c ON c.id = t.curso_id
                   WHERE te.notificar_email_responsaveis = 1
-                    AND e.sem_notificacao = 0
-                    AND e.data_evento = :data_ref
                   ORDER BY curso_nome ASC,
+                           t.ano_curso ASC,
                            COALESCE(NULLIF(a.nome_social, ''), a.nome) ASC,
                            e.hora_evento IS NULL, e.hora_evento ASC,
                            e.created_at ASC";
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':data_ref', $data_ref);
         $stmt->bindParam(':ano', $ano);
-        $stmt->bindParam(':ano2', $ano);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -281,6 +277,14 @@ class EventoEmail {
         return implode("\n", $linhas);
     }
 
+    private static function rotuloTurma(array $ev) {
+        $curso = trim((string) ($ev['curso_nome'] ?? ''));
+        if ($curso === '') {
+            return 'Turma não identificada';
+        }
+        return !empty($ev['ano_curso']) ? $curso . ' - ' . (int) $ev['ano_curso'] . 'º Ano' : $curso;
+    }
+
     public static function montarCorpoResumo(array $eventos, $data_ref) {
         $linhas = [];
         $linhas[] = 'Esta é uma mensagem automática do sistema EduCuidar.';
@@ -289,18 +293,18 @@ class EventoEmail {
         $linhas[] = 'Resumo das ocorrências de ' . date('d/m/Y', strtotime($data_ref)) . ':';
         $linhas[] = '';
 
-        $por_curso = [];
+        $por_turma = [];
         foreach ($eventos as $ev) {
-            $por_curso[$ev['curso_nome'] ?? 'Curso não identificado'][] = $ev;
+            $por_turma[self::rotuloTurma($ev)][] = $ev;
         }
 
-        $primeiro_curso = true;
-        foreach ($por_curso as $curso => $lista) {
-            if (!$primeiro_curso) {
+        $primeira_turma = true;
+        foreach ($por_turma as $turma => $lista) {
+            if (!$primeira_turma) {
                 $linhas[] = '';
             }
-            $primeiro_curso = false;
-            $linhas[] = '— ' . $curso . ' —';
+            $primeira_turma = false;
+            $linhas[] = '— ' . $turma . ' —';
             $linhas = array_merge($linhas, self::linhasAlunos(self::agruparPorAluno($lista)));
         }
 
@@ -480,6 +484,9 @@ class EventoEmail {
             $lista = array_values($coord['eventos']);
             usort($lista, static function ($a, $b) {
                 $cmp = strcmp((string) ($a['curso_nome'] ?? ''), (string) ($b['curso_nome'] ?? ''));
+                if ($cmp === 0) {
+                    $cmp = (int) ($a['ano_curso'] ?? 0) <=> (int) ($b['ano_curso'] ?? 0);
+                }
                 return $cmp !== 0 ? $cmp : strcmp((string) $a['aluno_nome'], (string) $b['aluno_nome']);
             });
 
