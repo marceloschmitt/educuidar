@@ -2,6 +2,8 @@
 
 Sistema desenvolvido em PHP 8 com interface Bootstrap para controle de aspectos relacionados a alunos do ensino médio em cursos do IFRS - Campus Porto Alegre.
 
+Para uma apresentação não técnica do sistema, com telas de exemplo, veja [docs/APRESENTACAO.md](docs/APRESENTACAO.md) (também em PDF: [docs/EduCuidar_apresentacao.pdf](docs/EduCuidar_apresentacao.pdf)).
+
 ## Características
 
 ### Tipos de Usuários

@@ -28,3 +28,7 @@ python/.env
 python/resposta_alunos.json
 python/lista_faltas.json
 
+# Geradores das telas de exemplo e do PDF da apresentação (uso local)
+docs/telas/
+docs/.apresentacao_pdf.html
+
