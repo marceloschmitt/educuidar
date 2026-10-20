@@ -506,21 +506,24 @@ CREATE TABLE IF NOT EXISTS prontuario_registros_anexos (
     INDEX idx_registro (registro_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Termos de autorização para passeios e eventos escolares
+-- Participações (autorizações de passeios e eventos escolares)
 CREATE TABLE IF NOT EXISTS termo_autorizacao (
     id INT AUTO_INCREMENT PRIMARY KEY,
     titulo VARCHAR(200) NOT NULL,
     objetivo TEXT NOT NULL,
     data_evento DATE NOT NULL,
     hora TIME NULL,
-    pdf_caminho VARCHAR(255) NOT NULL,
-    pdf_nome_original VARCHAR(255) NOT NULL,
+    texto_autorizacao TEXT NULL,
+    pdf_caminho VARCHAR(255) NULL,
+    pdf_nome_original VARCHAR(255) NULL,
     pdf_mime VARCHAR(100) NULL,
     pdf_tamanho INT NULL,
+    status ENUM('ativo', 'suspenso') NOT NULL DEFAULT 'ativo',
     criado_por INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_data_evento (data_evento),
+    INDEX idx_status (status),
     FOREIGN KEY (criado_por) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

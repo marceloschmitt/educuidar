@@ -89,7 +89,7 @@ $return_query = http_build_query(array_filter([
     'nome' => $filtro_nome,
 ], function ($v) { return $v !== '' && $v !== null; }));
 
-$page_title = 'Autorizações';
+$page_title = 'Autorizações — Entrada e saída';
 require_once 'includes/header.php';
 ?>
 
@@ -155,7 +155,7 @@ require_once 'includes/header.php';
 
 <div class="card mb-3">
     <div class="card-header">
-        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Autorizações de responsáveis</h5>
+        <h5 class="mb-0"><i class="bi bi-door-open"></i> Entrada e saída</h5>
     </div>
     <div class="card-body">
         <p class="text-muted small">

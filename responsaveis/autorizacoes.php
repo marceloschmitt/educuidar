@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $lista = $autorizacao->listByResponsavel($responsavel_id);
 
-$page_title = 'Autorizações';
+$page_title = 'Entrada e saída';
 $show_header = true;
 $responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 require __DIR__ . '/header.php';
@@ -75,7 +75,7 @@ require __DIR__ . '/header.php';
 
 <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <a href="index.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Ocorrências</a>
-    <span class="text-muted small">Autorizações</span>
+    <span class="text-muted small">Autorizações · Entrada e saída</span>
 </div>
 
 <?php if ($success): ?>

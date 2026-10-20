@@ -1,8 +1,9 @@
 <?php
 /**
- * Termos de autorização para passeios e eventos escolares.
- * A escola cadastra o termo (PDF + turmas); os responsáveis respondem concordou/discordou.
+ * Autorizações de passeios e eventos escolares (outro tipo além de entrada/saída).
+ * A escola cadastra a atividade (PDF + turmas); os responsáveis respondem concordou/discordou.
  * Decisão irrevogável, salvo liberação do admin (com histórico).
+ * Pode ser suspensa (ainda com respostas) ou excluída (só sem respostas).
  */
 class TermoAutorizacao {
     public const DIRETORIO_PDF = 'uploads/termos';
@@ -11,6 +12,9 @@ class TermoAutorizacao {
 
     public const DECISAO_CONCORDOU = 'concordou';
     public const DECISAO_DISCORDOU = 'discordou';
+
+    public const STATUS_ATIVO = 'ativo';
+    public const STATUS_SUSPENSO = 'suspenso';
 
     private $conn;
     private $tabelas_ok = false;
@@ -26,6 +30,13 @@ class TermoAutorizacao {
         ];
     }
 
+    public static function statusLabels() {
+        return [
+            self::STATUS_ATIVO => 'Ativa',
+            self::STATUS_SUSPENSO => 'Suspensa',
+        ];
+    }
+
     public static function decisaoBadgeClass($decisao) {
         if ($decisao === self::DECISAO_CONCORDOU) {
             return 'success';
@@ -34,6 +45,11 @@ class TermoAutorizacao {
             return 'danger';
         }
         return 'secondary';
+    }
+
+    public static function estaAtivo(array $termo) {
+        $status = $termo['status'] ?? self::STATUS_ATIVO;
+        return $status === self::STATUS_ATIVO;
     }
 
     private function garantirTabelas() {
@@ -48,7 +64,39 @@ class TermoAutorizacao {
         foreach (array_filter(array_map('trim', explode(';', $sql))) as $comando) {
             $this->conn->exec($comando);
         }
+        // Migrações em instalações já existentes
+        try {
+            $cols = $this->conn->query("SHOW COLUMNS FROM termo_autorizacao")->fetchAll(PDO::FETCH_COLUMN);
+            if ($cols && !in_array('status', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE termo_autorizacao
+                     ADD COLUMN status ENUM('ativo','suspenso') NOT NULL DEFAULT 'ativo' AFTER pdf_tamanho,
+                     ADD INDEX idx_status (status)"
+                );
+            }
+            if ($cols && !in_array('texto_autorizacao', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE termo_autorizacao
+                     ADD COLUMN texto_autorizacao TEXT NULL AFTER hora"
+                );
+            }
+            // PDF passou a ser opcional (pode haver só texto)
+            if ($cols) {
+                $this->conn->exec("ALTER TABLE termo_autorizacao MODIFY pdf_caminho VARCHAR(255) NULL");
+                $this->conn->exec("ALTER TABLE termo_autorizacao MODIFY pdf_nome_original VARCHAR(255) NULL");
+            }
+        } catch (Throwable $e) {
+            // tabela ainda inexistente ou sem permissão ALTER
+        }
         $this->tabelas_ok = true;
+    }
+
+    public static function temPdf(array $termo) {
+        return !empty($termo['pdf_caminho']);
+    }
+
+    public static function temTexto(array $termo) {
+        return trim((string) ($termo['texto_autorizacao'] ?? '')) !== '';
     }
 
     private function garantirDiretorioPdf($termo_id = null) {
@@ -74,65 +122,80 @@ class TermoAutorizacao {
     }
 
     /**
-     * Cria o termo e salva o PDF. $turma_ids = lista de IDs; $arquivo = $_FILES['pdf'].
+     * Cria a autorização. Informe PDF ($arquivo = $_FILES['pdf']) ou texto digitado ($texto_autorizacao).
      * @return int|false id do termo
      */
-    public function criar($titulo, $objetivo, $data_evento, $hora, array $turma_ids, $arquivo, $criado_por) {
+    public function criar($titulo, $objetivo, $data_evento, $hora, array $turma_ids, $criado_por, $arquivo = null, $texto_autorizacao = null) {
         $this->garantirTabelas();
 
         $titulo = trim((string) $titulo);
         $objetivo = trim((string) $objetivo);
+        $texto_autorizacao = trim((string) ($texto_autorizacao ?? ''));
         $hora = $hora !== null && $hora !== '' ? $hora : null;
         $turma_ids = array_values(array_unique(array_filter(array_map('intval', $turma_ids))));
+
+        $tem_pdf = is_array($arquivo) && ($arquivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+        $tem_texto = $texto_autorizacao !== '';
 
         if ($titulo === '' || $objetivo === '' || empty($data_evento) || empty($turma_ids)) {
             return false;
         }
-        if (!is_array($arquivo) || ($arquivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            return false;
-        }
-        if (($arquivo['size'] ?? 0) > self::TAMANHO_MAXIMO_PDF || ($arquivo['size'] ?? 0) <= 0) {
+        if (!$tem_pdf && !$tem_texto) {
             return false;
         }
 
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($arquivo['tmp_name']) ?: '';
-        $ext = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
-        if ($mime !== self::MIME_PDF && $ext !== 'pdf') {
-            return false;
+        $pdf_nome = null;
+        $pdf_mime = null;
+        $pdf_tamanho = null;
+        if ($tem_pdf) {
+            if (($arquivo['size'] ?? 0) > self::TAMANHO_MAXIMO_PDF || ($arquivo['size'] ?? 0) <= 0) {
+                return false;
+            }
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($arquivo['tmp_name']) ?: '';
+            $ext = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
+            if ($mime !== self::MIME_PDF && $ext !== 'pdf') {
+                return false;
+            }
+            $pdf_nome = basename((string) $arquivo['name']);
+            $pdf_mime = self::MIME_PDF;
+            $pdf_tamanho = (int) $arquivo['size'];
         }
 
         $this->conn->beginTransaction();
         try {
             $stmt = $this->conn->prepare(
                 "INSERT INTO termo_autorizacao
-                 (titulo, objetivo, data_evento, hora, pdf_caminho, pdf_nome_original, pdf_mime, pdf_tamanho, criado_por)
-                 VALUES (:titulo, :objetivo, :data_evento, :hora, '', :pdf_nome, :pdf_mime, :pdf_tamanho, :criado_por)"
+                 (titulo, objetivo, data_evento, hora, texto_autorizacao,
+                  pdf_caminho, pdf_nome_original, pdf_mime, pdf_tamanho, criado_por)
+                 VALUES (:titulo, :objetivo, :data_evento, :hora, :texto,
+                         NULL, :pdf_nome, :pdf_mime, :pdf_tamanho, :criado_por)"
             );
-            $nome_original = basename((string) $arquivo['name']);
-            $tamanho = (int) $arquivo['size'];
             $stmt->bindValue(':titulo', $titulo);
             $stmt->bindValue(':objetivo', $objetivo);
             $stmt->bindValue(':data_evento', $data_evento);
             $stmt->bindValue(':hora', $hora);
-            $stmt->bindValue(':pdf_nome', $nome_original);
-            $stmt->bindValue(':pdf_mime', self::MIME_PDF);
-            $stmt->bindValue(':pdf_tamanho', $tamanho);
+            $stmt->bindValue(':texto', $tem_texto ? $texto_autorizacao : null, $tem_texto ? PDO::PARAM_STR : PDO::PARAM_NULL);
+            $stmt->bindValue(':pdf_nome', $pdf_nome);
+            $stmt->bindValue(':pdf_mime', $pdf_mime);
+            $stmt->bindValue(':pdf_tamanho', $pdf_tamanho, $pdf_tamanho !== null ? PDO::PARAM_INT : PDO::PARAM_NULL);
             $stmt->bindValue(':criado_por', $criado_por ? (int) $criado_por : null, $criado_por ? PDO::PARAM_INT : PDO::PARAM_NULL);
             $stmt->execute();
             $termo_id = (int) $this->conn->lastInsertId();
 
-            $dir = $this->garantirDiretorioPdf($termo_id);
-            $stored = uniqid('termo_', true) . '.pdf';
-            $destino = $dir . '/' . $stored;
-            if (!move_uploaded_file($arquivo['tmp_name'], $destino)) {
-                throw new RuntimeException('Falha ao salvar o PDF.');
+            if ($tem_pdf) {
+                $dir = $this->garantirDiretorioPdf($termo_id);
+                $stored = uniqid('termo_', true) . '.pdf';
+                $destino = $dir . '/' . $stored;
+                if (!move_uploaded_file($arquivo['tmp_name'], $destino)) {
+                    throw new RuntimeException('Falha ao salvar o PDF.');
+                }
+                $relativo = self::DIRETORIO_PDF . '/' . $termo_id . '/' . $stored;
+                $upd = $this->conn->prepare("UPDATE termo_autorizacao SET pdf_caminho = :caminho WHERE id = :id");
+                $upd->bindValue(':caminho', $relativo);
+                $upd->bindValue(':id', $termo_id, PDO::PARAM_INT);
+                $upd->execute();
             }
-            $relativo = self::DIRETORIO_PDF . '/' . $termo_id . '/' . $stored;
-            $upd = $this->conn->prepare("UPDATE termo_autorizacao SET pdf_caminho = :caminho WHERE id = :id");
-            $upd->bindValue(':caminho', $relativo);
-            $upd->bindValue(':id', $termo_id, PDO::PARAM_INT);
-            $upd->execute();
 
             $insTurma = $this->conn->prepare(
                 "INSERT INTO termo_autorizacao_turma (termo_id, turma_id) VALUES (:termo_id, :turma_id)"
@@ -149,6 +212,70 @@ class TermoAutorizacao {
             $this->conn->rollBack();
             return false;
         }
+    }
+
+    public function contarRespostas($termo_id) {
+        $this->garantirTabelas();
+        $stmt = $this->conn->prepare(
+            "SELECT COUNT(*) FROM termo_autorizacao_resposta WHERE termo_id = :termo_id"
+        );
+        $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function suspender($termo_id) {
+        return $this->setStatus($termo_id, self::STATUS_SUSPENSO);
+    }
+
+    public function reativar($termo_id) {
+        return $this->setStatus($termo_id, self::STATUS_ATIVO);
+    }
+
+    private function setStatus($termo_id, $status) {
+        $this->garantirTabelas();
+        if (!isset(self::statusLabels()[$status])) {
+            return false;
+        }
+        $stmt = $this->conn->prepare(
+            "UPDATE termo_autorizacao SET status = :status WHERE id = :id"
+        );
+        $stmt->bindValue(':status', $status);
+        $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 || $this->getById($termo_id) !== null;
+    }
+
+    /**
+     * Exclui só se ninguém respondeu. Remove o PDF do disco.
+     * @return true|string true ou código de erro
+     */
+    public function excluir($termo_id) {
+        $this->garantirTabelas();
+        $termo = $this->getById($termo_id);
+        if (!$termo) {
+            return 'nao_encontrado';
+        }
+        if ($this->contarRespostas($termo_id) > 0) {
+            return 'tem_respostas';
+        }
+
+        $caminho = $this->caminhoAbsolutoPdf($termo);
+        $dir = $caminho ? dirname($caminho) : null;
+
+        $stmt = $this->conn->prepare("DELETE FROM termo_autorizacao WHERE id = :id");
+        $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+        if (!$stmt->execute()) {
+            return 'erro';
+        }
+
+        if ($caminho && is_file($caminho)) {
+            @unlink($caminho);
+        }
+        if ($dir && is_dir($dir)) {
+            @rmdir($dir);
+        }
+        return true;
     }
 
     public function getById($id) {
@@ -361,6 +488,20 @@ class TermoAutorizacao {
         return $row ?: null;
     }
 
+    /** Existe ao menos uma resposta de qualquer responsável para o aluno neste termo? */
+    public function alunoTemAlgumaResposta($termo_id, $aluno_id) {
+        $this->garantirTabelas();
+        $stmt = $this->conn->prepare(
+            "SELECT 1 FROM termo_autorizacao_resposta
+             WHERE termo_id = :termo_id AND aluno_id = :aluno_id
+             LIMIT 1"
+        );
+        $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
+        $stmt->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return (bool) $stmt->fetchColumn();
+    }
+
     /** O aluno está em alguma turma do termo? */
     public function alunoPertenceAoTermo($termo_id, $aluno_id) {
         $stmt = $this->conn->prepare(
@@ -387,6 +528,13 @@ class TermoAutorizacao {
         $this->garantirTabelas();
         if (!isset(self::decisoesLabels()[$decisao])) {
             return 'decisao_invalida';
+        }
+        $termo = $this->getById($termo_id);
+        if (!$termo) {
+            return 'nao_encontrado';
+        }
+        if (!self::estaAtivo($termo)) {
+            return 'suspenso';
         }
         if (!$this->alunoPertenceAoTermo($termo_id, $aluno_id)) {
             return 'aluno_fora';
@@ -571,6 +719,7 @@ class TermoAutorizacao {
         $alunos = $stmt->fetchAll();
         foreach ($alunos as &$aluno) {
             $aluno['resposta'] = $this->getResposta($termo_id, $responsavel_id, (int) $aluno['id']);
+            $aluno['aluno_tem_resposta'] = $this->alunoTemAlgumaResposta($termo_id, (int) $aluno['id']);
             $aluno['turma_label'] = ($aluno['curso_nome'] ?? '') . ' - ' . (int) $aluno['ano_curso'] . 'º Ano';
         }
         unset($aluno);

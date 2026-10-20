@@ -14,34 +14,77 @@ if (!$user->isLoggedIn() || !($user->isAdmin() || $user->isNivel0() || $user->is
 $termo_id = (int) ($_GET['id'] ?? 0);
 $termo = $termo_id ? $termoModel->getById($termo_id) : null;
 if (!$termo) {
-    $_SESSION['error'] = 'Termo não encontrado.';
+    $_SESSION['error'] = 'Autorização não encontrada.';
     header('Location: termos_autorizacao.php');
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'liberar' && $user->isAdmin()) {
-    $resposta_id = (int) ($_POST['resposta_id'] ?? 0);
-    if ($resposta_id && $termoModel->liberarAlteracao($resposta_id, $_SESSION['user_id'])) {
-        $_SESSION['success'] = 'Alteração liberada. O responsável poderá responder novamente.';
-    } else {
-        $_SESSION['error'] = 'Não foi possível liberar (já liberado ou inexistente).';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'liberar' && $user->isAdmin()) {
+        $resposta_id = (int) ($_POST['resposta_id'] ?? 0);
+        if ($resposta_id && $termoModel->liberarAlteracao($resposta_id, $_SESSION['user_id'])) {
+            $_SESSION['success'] = 'Alteração liberada. O responsável poderá responder novamente.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível liberar (já liberado ou inexistente).';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
     }
-    header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
-    exit;
+
+    if ($action === 'suspender') {
+        if ($termoModel->suspender($termo_id)) {
+            $_SESSION['success'] = 'Autorização suspensa. Os responsáveis não podem mais responder.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível suspender.';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
+
+    if ($action === 'reativar') {
+        if ($termoModel->reativar($termo_id)) {
+            $_SESSION['success'] = 'Autorização reativada.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível reativar.';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
+
+    if ($action === 'excluir') {
+        $resultado = $termoModel->excluir($termo_id);
+        if ($resultado === true) {
+            $_SESSION['success'] = 'Autorização excluída.';
+            header('Location: termos_autorizacao.php');
+            exit;
+        }
+        if ($resultado === 'tem_respostas') {
+            $_SESSION['error'] = 'Não é possível excluir: já há respostas. Suspenda a participação em vez disso.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível excluir.';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
 }
 
+$termo = $termoModel->getById($termo_id);
 $alunos = $termoModel->listAlunosDoTermo($termo_id);
 $respostas = $termoModel->listRespostasDoTermo($termo_id);
 $historico = $termoModel->listHistorico($termo_id);
 $totais = $termoModel->totaisRespostas($termo_id);
+$total_respostas = $termoModel->contarRespostas($termo_id);
 $labels = TermoAutorizacao::decisoesLabels();
+$ativo = TermoAutorizacao::estaAtivo($termo);
 
 $respostas_por_aluno = [];
 foreach ($respostas as $r) {
     $respostas_por_aluno[(int) $r['aluno_id']][] = $r;
 }
 
-$page_title = 'Termo — ' . $termo['titulo'];
+$page_title = 'Autorização — ' . $termo['titulo'];
 require __DIR__ . '/includes/header.php';
 ?>
 
@@ -58,18 +101,48 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="mb-3">
+<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
     <a href="termos_autorizacao.php" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
+    <?php if (TermoAutorizacao::temPdf($termo)): ?>
+    <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
+        <i class="bi bi-file-pdf"></i> Ver PDF
+    </a>
+    <?php endif; ?>
+    <?php if ($ativo): ?>
+    <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
+        <input type="hidden" name="action" value="suspender">
+        <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
+    </form>
+    <?php else: ?>
+    <form method="POST" class="d-inline">
+        <input type="hidden" name="action" value="reativar">
+        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
+    </form>
+    <?php endif; ?>
+    <?php if ($total_respostas === 0): ?>
+    <form method="POST" class="d-inline" onsubmit="return confirm('Excluir esta autorização? Só é permitido porque ainda não há respostas.');">
+        <input type="hidden" name="action" value="excluir">
+        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
+    </form>
+    <?php endif; ?>
 </div>
+
+<?php if (!$ativo): ?>
+<div class="alert alert-warning">
+    <i class="bi bi-pause-circle"></i> Esta autorização está <strong>suspensa</strong>. Os responsáveis não podem responder enquanto ela não for reativada.
+</div>
+<?php endif; ?>
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="mb-0"><i class="bi bi-file-earmark-text"></i> <?php echo htmlspecialchars($termo['titulo']); ?></h5>
-        <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
-            <i class="bi bi-file-pdf"></i> Ver PDF
-        </a>
+        <h5 class="mb-0"><i class="bi bi-people"></i> <?php echo htmlspecialchars($termo['titulo']); ?></h5>
+        <?php if ($ativo): ?>
+        <span class="badge bg-success">Ativa</span>
+        <?php else: ?>
+        <span class="badge bg-secondary">Suspensa</span>
+        <?php endif; ?>
     </div>
     <div class="card-body">
         <div class="row g-3">
@@ -101,6 +174,22 @@ require __DIR__ . '/includes/header.php';
                 <strong>Objetivo</strong>
                 <div><?php echo nl2br(htmlspecialchars($termo['objetivo'])); ?></div>
             </div>
+            <?php if (TermoAutorizacao::temTexto($termo)): ?>
+            <div class="col-12">
+                <strong>Texto da autorização</strong>
+                <div class="border rounded p-3 bg-light mt-1"><?php echo nl2br(htmlspecialchars($termo['texto_autorizacao'])); ?></div>
+            </div>
+            <?php elseif (TermoAutorizacao::temPdf($termo)): ?>
+            <div class="col-12">
+                <strong>Autorização</strong>
+                <div>
+                    <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" target="_blank">
+                        <i class="bi bi-file-pdf"></i>
+                        <?php echo htmlspecialchars($termo['pdf_nome_original'] ?: 'Abrir PDF'); ?>
+                    </a>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <hr>
         <div class="d-flex flex-wrap gap-3 small">
@@ -141,6 +230,7 @@ require __DIR__ . '/includes/header.php';
                     $aid = (int) $aluno['id'];
                     $resps_aluno = $respostas_por_aluno[$aid] ?? [];
                     $tem_discordancia = $termoModel->alunoTemDiscordancia($termo_id, $aid);
+                    $alguem_respondeu = !empty($resps_aluno);
                     $por_resp = [];
                     foreach ($resps_aluno as $r) {
                         $por_resp[(int) $r['responsavel_id']] = $r;
@@ -178,9 +268,9 @@ require __DIR__ . '/includes/header.php';
                                     <span class="small text-muted">
                                         <?php echo date('d/m/Y H:i', strtotime($r['decidido_em'])); ?>
                                     </span>
-                                    <?php if ((int) $r['pode_alterar']): ?>
+                                    <?php if ($ativo && (int) $r['pode_alterar']): ?>
                                     <span class="badge bg-info">Pode alterar</span>
-                                    <?php elseif ($user->isAdmin()): ?>
+                                    <?php elseif ($ativo && $user->isAdmin()): ?>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Permitir que este responsável responda novamente?');">
                                         <input type="hidden" name="action" value="liberar">
                                         <input type="hidden" name="resposta_id" value="<?php echo (int) $r['id']; ?>">
@@ -189,7 +279,7 @@ require __DIR__ . '/includes/header.php';
                                         </button>
                                     </form>
                                     <?php endif; ?>
-                                    <?php else: ?>
+                                    <?php elseif (!$alguem_respondeu): ?>
                                     <span class="badge bg-warning text-dark">Pendente</span>
                                     <?php endif; ?>
                                 </li>

@@ -48,18 +48,40 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <?php endif; ?>
+    <?php
+    $paginas_autorizacoes = ['autorizacoes.php', 'termos_autorizacao.php', 'termo_autorizacao_ver.php'];
+    $menu_autorizacoes_aberto = in_array($current_page, $paginas_autorizacoes, true);
+    if (!isset($menu_autorizacoes_uid)) {
+        $menu_autorizacoes_uid = 0;
+    }
+    $menu_autorizacoes_uid++;
+    $menu_autorizacoes_id = 'menuAutorizacoes' . $menu_autorizacoes_uid;
+    ?>
     <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'autorizacoes.php' ? 'active' : ''; ?>" href="autorizacoes.php">
-            <i class="bi bi-clipboard-check"></i> Autorizações
+        <a class="nav-link d-flex justify-content-between align-items-center <?php echo $menu_autorizacoes_aberto ? 'active' : ''; ?>"
+           data-bs-toggle="collapse" href="#<?php echo $menu_autorizacoes_id; ?>" role="button"
+           aria-expanded="<?php echo $menu_autorizacoes_aberto ? 'true' : 'false'; ?>"
+           aria-controls="<?php echo $menu_autorizacoes_id; ?>">
+            <span><i class="bi bi-clipboard-check"></i> Autorizações</span>
+            <i class="bi bi-chevron-down small"></i>
         </a>
+        <div class="collapse <?php echo $menu_autorizacoes_aberto ? 'show' : ''; ?>" id="<?php echo $menu_autorizacoes_id; ?>">
+            <ul class="nav flex-column sidebar-submenu">
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'autorizacoes.php' ? 'active' : ''; ?>" href="autorizacoes.php">
+                        <i class="bi bi-door-open"></i> Entrada e saída
+                    </a>
+                </li>
+                <?php if ($pode_ver_termos): ?>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo in_array($current_page, ['termos_autorizacao.php', 'termo_autorizacao_ver.php'], true) ? 'active' : ''; ?>" href="termos_autorizacao.php">
+                        <i class="bi bi-people"></i> Participação em atividades
+                    </a>
+                </li>
+                <?php endif; ?>
+            </ul>
+        </div>
     </li>
-    <?php if ($pode_ver_termos): ?>
-    <li class="nav-item">
-        <a class="nav-link <?php echo in_array($current_page, ['termos_autorizacao.php', 'termo_autorizacao_ver.php'], true) ? 'active' : ''; ?>" href="termos_autorizacao.php">
-            <i class="bi bi-file-earmark-text"></i> Termos
-        </a>
-    </li>
-    <?php endif; ?>
     <?php if ($is_admin): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'emails_enviados.php' ? 'active' : ''; ?>" href="emails_enviados.php">
