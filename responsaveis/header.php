@@ -135,6 +135,7 @@
     <nav class="resp-header-nav" aria-label="Menu do responsável">
         <a href="index.php">Ocorrências</a>
         <a href="autorizacoes.php">Autorizações</a>
+        <a href="termos.php">Termos</a>
         <a href="meusdados.php">Conta</a>
         <a href="logout.php">Sair</a>
     </nav>

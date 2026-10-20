@@ -9,6 +9,7 @@ $is_nivel2 = $user->isNivel2();
 
 $can_view_eventos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2;
 $pode_ver_alertas = $is_admin || $is_nivel0 || $is_nivel1 || $user->isCoordenador();
+$pode_ver_termos = $is_admin || $is_nivel0 || $is_nivel1;
 $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
     || $user_level_session === 'nivel0' || $user_level_session === 'nivel1'
     || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
@@ -52,6 +53,13 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
             <i class="bi bi-clipboard-check"></i> Autorizações
         </a>
     </li>
+    <?php if ($pode_ver_termos): ?>
+    <li class="nav-item">
+        <a class="nav-link <?php echo in_array($current_page, ['termos_autorizacao.php', 'termo_autorizacao_ver.php'], true) ? 'active' : ''; ?>" href="termos_autorizacao.php">
+            <i class="bi bi-file-earmark-text"></i> Termos
+        </a>
+    </li>
+    <?php endif; ?>
     <?php if ($is_admin): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'emails_enviados.php' ? 'active' : ''; ?>" href="emails_enviados.php">
