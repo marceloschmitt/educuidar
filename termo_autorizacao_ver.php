@@ -54,15 +54,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'excluir') {
-        $resultado = $termoModel->excluir($termo_id);
-        if ($resultado === true) {
-            $_SESSION['success'] = 'Autorização excluída.';
-            header('Location: termos_autorizacao.php');
-            exit;
-        }
-        if ($resultado === 'tem_respostas') {
-            $_SESSION['error'] = 'Não é possível excluir: já há respostas. Suspenda a participação em vez disso.';
+        if (!$user->isAdmin()) {
+            $_SESSION['error'] = 'Apenas o administrador pode excluir uma autorização.';
         } else {
+            $resultado = $termoModel->excluir($termo_id);
+            if ($resultado === true) {
+                $_SESSION['success'] = 'Autorização excluída.';
+                header('Location: termos_autorizacao.php');
+                exit;
+            }
             $_SESSION['error'] = 'Não foi possível excluir.';
         }
         header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
@@ -121,8 +121,13 @@ require __DIR__ . '/includes/header.php';
         <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
     </form>
     <?php endif; ?>
-    <?php if ($total_respostas === 0): ?>
-    <form method="POST" class="d-inline" onsubmit="return confirm('Excluir esta autorização? Só é permitido porque ainda não há respostas.');">
+    <?php if ($user->isAdmin()): ?>
+    <?php
+    $msg_excluir = $total_respostas > 0
+        ? 'Atenção: esta autorização já possui ' . (int) $total_respostas . ' resposta(s) de responsáveis. Ao excluir, essas assinaturas serão removidas permanentemente. Deseja continuar?'
+        : 'Excluir esta autorização? Esta ação não pode ser desfeita.';
+    ?>
+    <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_excluir), ENT_QUOTES, 'UTF-8'); ?>);">
         <input type="hidden" name="action" value="excluir">
         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
     </form>

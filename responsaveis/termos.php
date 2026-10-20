@@ -60,7 +60,7 @@ if ($termo_id) {
     $alunos_termo = $termoModel->listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id);
 }
 
-$page_title = 'Atividades';
+$page_title = 'Participação em atividades';
 $show_header = true;
 $responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago',9=>'set',10=>'out',11=>'nov',12=>'dez'];
@@ -69,11 +69,11 @@ require __DIR__ . '/header.php';
 
 <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <?php if ($termo): ?>
-    <a href="termos.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Atividades</a>
+    <a href="termos.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Participação em atividades</a>
     <?php else: ?>
-    <a href="index.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Ocorrências</a>
+    <a href="autorizacoes_menu.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Autorizações</a>
     <?php endif; ?>
-    <span class="text-muted small">Autorizações · Participação em atividades</span>
+    <span class="text-muted small">Participação em atividades</span>
 </div>
 
 <?php if ($success): ?>

@@ -247,7 +247,7 @@ class TermoAutorizacao {
     }
 
     /**
-     * Exclui só se ninguém respondeu. Remove o PDF do disco.
+     * Exclui a autorização (e respostas/histórico em cascata). Remove o PDF do disco.
      * @return true|string true ou código de erro
      */
     public function excluir($termo_id) {
@@ -255,9 +255,6 @@ class TermoAutorizacao {
         $termo = $this->getById($termo_id);
         if (!$termo) {
             return 'nao_encontrado';
-        }
-        if ($this->contarRespostas($termo_id) > 0) {
-            return 'tem_respostas';
         }
 
         $caminho = $this->caminhoAbsolutoPdf($termo);
