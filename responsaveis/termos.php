@@ -97,8 +97,6 @@ require __DIR__ . '/header.php';
             · <span class="badge bg-secondary">Suspensa</span>
             <?php endif; ?>
         </div>
-        <p class="mb-3"><?php echo nl2br(htmlspecialchars($termo['objetivo'])); ?></p>
-
         <?php if (TermoAutorizacao::temTexto($termo)): ?>
         <div class="border rounded p-3 bg-light mb-0">
             <div class="small text-muted mb-2">Texto da autorização</div>
