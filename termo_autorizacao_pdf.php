@@ -15,7 +15,7 @@ $termo = $termo_id ? $termoModel->getById($termo_id) : null;
 $caminho = $termo ? $termoModel->caminhoAbsolutoPdf($termo) : null;
 
 $autorizado = false;
-if ($user->isLoggedIn() && ($user->isAdmin() || $user->isNivel0() || $user->isNivel1())) {
+if ($user->isLoggedIn() && ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2())) {
     $autorizado = true;
 } elseif ($resp->isLoggedIn() && $termo && TermoAutorizacao::estaVisivelPais($termo)) {
     $autorizado = $termoModel->responsavelPodeVerTermo($termo_id, $resp->getLoggedId());

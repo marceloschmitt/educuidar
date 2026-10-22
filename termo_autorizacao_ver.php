@@ -6,7 +6,10 @@ $db = $database->getConnection();
 $user = new User($db);
 $termoModel = new TermoAutorizacao($db);
 
-if (!$user->isLoggedIn() || !($user->isAdmin() || $user->isNivel0() || $user->isNivel1())) {
+$pode_ver = $user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2();
+$pode_gerenciar = $user->isAdmin() || $user->isNivel0() || $user->isNivel1();
+
+if (!$user->isLoggedIn() || !$pode_ver) {
     header('Location: index.php');
     exit;
 }
@@ -20,6 +23,11 @@ if (!$termo) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!$pode_gerenciar) {
+        $_SESSION['error'] = 'Você não tem permissão para alterar esta autorização.';
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
     $action = $_POST['action'] ?? '';
 
     if ($action === 'liberar' && $user->isAdmin()) {
@@ -141,14 +149,17 @@ require __DIR__ . '/includes/header.php';
     <a href="termos_autorizacao.php" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
+    <?php if ($pode_gerenciar): ?>
     <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm">
         <i class="bi bi-pencil"></i> Editar
     </a>
+    <?php endif; ?>
     <?php if (TermoAutorizacao::temPdf($termo)): ?>
     <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
         <i class="bi bi-file-pdf"></i> Ver PDF
     </a>
     <?php endif; ?>
+    <?php if ($pode_gerenciar): ?>
     <?php if ($visivel_pais): ?>
     <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
         <input type="hidden" name="action" value="visibilidade">
@@ -204,6 +215,7 @@ require __DIR__ . '/includes/header.php';
         <input type="hidden" name="action" value="excluir">
         <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
     </form>
+    <?php endif; ?>
     <?php endif; ?>
 </div>
 

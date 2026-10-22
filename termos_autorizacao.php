@@ -8,13 +8,22 @@ $configuracao = new Configuracao($db);
 $turmaModel = new Turma($db);
 $termoModel = new TermoAutorizacao($db);
 
-if (!$user->isLoggedIn() || !($user->isAdmin() || $user->isNivel0() || $user->isNivel1())) {
+$pode_ver = $user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2();
+$pode_gerenciar = $user->isAdmin() || $user->isNivel0() || $user->isNivel1();
+
+if (!$user->isLoggedIn() || !$pode_ver) {
     header('Location: index.php');
     exit;
 }
 
 $ano_corrente = $configuracao->getAnoCorrente();
 $turmas = $turmaModel->getTurmasPorAnoCorrente($ano_corrente);
+
+if (!$pode_gerenciar && (isset($_GET['novo']) || ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar'))) {
+    $_SESSION['error'] = 'Você não tem permissão para criar autorizações de participação.';
+    header('Location: termos_autorizacao.php');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar') {
     $titulo = trim($_POST['titulo'] ?? '');
@@ -72,7 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
 }
 
 $lista = $termoModel->listParaEscola($ano_corrente);
-$mostrar_form = isset($_GET['novo']);
+$mostrar_form = $pode_gerenciar && isset($_GET['novo']);
 $status_labels = TermoAutorizacao::statusLabels();
 
 $page_title = 'Participação em atividades';
@@ -95,11 +104,11 @@ require __DIR__ . '/includes/header.php';
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-people"></i> Participação em atividades</h5>
-        <?php if (!$mostrar_form): ?>
+        <?php if ($pode_gerenciar && !$mostrar_form): ?>
         <a href="termos_autorizacao.php?novo=1" class="btn btn-primary btn-sm">
             <i class="bi bi-plus-circle"></i> Nova autorização
         </a>
-        <?php else: ?>
+        <?php elseif ($mostrar_form): ?>
         <a href="termos_autorizacao.php" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-x-circle"></i> Cancelar
         </a>
@@ -107,8 +116,12 @@ require __DIR__ . '/includes/header.php';
     </div>
     <div class="card-body">
         <p class="text-muted mb-0">
+            <?php if ($pode_gerenciar): ?>
             Cadastre passeios e eventos com o texto da autorização (digitado ou PDF).
             Os responsáveis das turmas respondem se concordam com a participação.
+            <?php else: ?>
+            Consulte as autorizações existentes e o status das respostas dos responsáveis.
+            <?php endif; ?>
             Ano corrente: <strong><?php echo (int) $ano_corrente; ?></strong>.
         </p>
     </div>

@@ -9,7 +9,7 @@ $is_nivel2 = $user->isNivel2();
 
 $can_view_eventos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2;
 $pode_ver_alertas = $is_admin || $is_nivel0 || $is_nivel1 || $user->isCoordenador();
-$pode_ver_termos = $is_admin || $is_nivel0 || $is_nivel1;
+$pode_ver_termos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2;
 $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
     || $user_level_session === 'nivel0' || $user_level_session === 'nivel1'
     || $user_level_session === 'nivel2' || $user_level_session === 'administrador';
