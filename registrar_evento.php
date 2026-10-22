@@ -477,7 +477,7 @@ if ($aluno_id) {
         $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
         $aluno_ficha['is_ano_corrente'] = true;
     }
-    $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por, $visibilidade_nivel2);
+    $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por, $visibilidade_nivel2, $user_id);
     $eventos_aluno = filterEventosPorSabado($eventos_aluno, $incluir_sabados);
     $aluno_ficha['total_eventos'] = count($eventos_aluno);
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));
@@ -673,6 +673,15 @@ if ($aluno_id) {
                                     $can_delete = ($diff_seconds <= 3600);
                                 }
                             }
+                            $pode_ver_detalhes = usuarioPodeVerDetalhesEvento($user, $ev['registrado_por'] ?? null, $user_id);
+                            $obs_visivel = $pode_ver_detalhes ? ($ev['observacoes'] ?? '') : '';
+                            $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
+                            $can_view_prontuario = $pode_ver_detalhes
+                                && !empty($prontuario_tipo_id)
+                                && (string)$current_user_type_id === (string)$prontuario_tipo_id;
+                            $can_view_anexos = $pode_ver_detalhes
+                                && (empty($prontuario_tipo_id) || (string)$current_user_type_id === (string)$prontuario_tipo_id);
+                            $anexos_visiveis = $can_view_anexos ? ($anexos_por_evento[$ev['id']] ?? []) : [];
                             ?>
                             <tr class="evento-row" data-evento='<?php echo htmlspecialchars(json_encode([
                                 'id' => $ev['id'],
@@ -681,12 +690,9 @@ if ($aluno_id) {
                                 'aluno' => $aluno_data['nome'] ?? 'N/A',
                                 'tipo' => $ev['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $ev['registrado_por_nome'] ?? '-',
-                                'observacoes' => $ev['observacoes'] ?? '',
-                                'prontuario' => (function() use ($ev, $current_user_type_id) {
-                                    $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($ev['prontuario'] ?? '') : '';
-                                })(),
-                                'prontuario_user_type_id' => ($ev['tipo_evento_prontuario_user_type_id'] ?? ''),
+                                'observacoes' => $obs_visivel,
+                                'prontuario' => $can_view_prontuario ? ($ev['prontuario'] ?? '') : '',
+                                'prontuario_user_type_id' => $prontuario_tipo_id,
                                 'aluno_id' => $ev['aluno_id'] ?? '',
                                 'turma_id' => $ev['turma_id'] ?? '',
                                 'tipo_evento_id' => $ev['tipo_evento_id'] ?? '',
@@ -696,15 +702,10 @@ if ($aluno_id) {
                                 'created_at' => $ev['created_at'] ?? '',
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
-                                'anexos' => $anexos_por_evento[$ev['id']] ?? [],
-                                'can_view_anexos' => (function() use ($ev, $current_user_type_id) {
-                                    $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return empty($prontuario_tipo_id) || ((string)$current_user_type_id === (string)$prontuario_tipo_id);
-                                })(),
-                                'can_view_prontuario' => (function() use ($ev, $current_user_type_id) {
-                                    $prontuario_tipo_id = $ev['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id);
-                                })()
+                                'anexos' => $anexos_visiveis,
+                                'can_view_anexos' => $can_view_anexos,
+                                'can_view_prontuario' => $can_view_prontuario,
+                                'can_view_detalhes' => $pode_ver_detalhes,
                             ])); ?>'>
                                 <td><div><?php echo date('d/m/Y', strtotime($ev['data_evento'])); ?></div><div class="small text-muted"><?php echo $ev['hora_evento'] ? date('H:i', strtotime($ev['hora_evento'])) : '-'; ?></div></td>
                                 <td style="max-width: 280px; overflow-wrap: break-word;">
@@ -720,14 +721,14 @@ if ($aluno_id) {
                                         ?>
                                             <?php echo htmlspecialchars($ev['tipo_evento_nome']); ?>
                                         </span>
-                                        <?php if (!empty($anexos_por_evento[$ev['id']])): ?>
+                                        <?php if (!empty($anexos_visiveis)): ?>
                                             <i class="bi bi-paperclip ms-2 text-muted" title="Possui anexos"></i>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="badge bg-secondary">N/A</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?php echo htmlspecialchars($ev['observacoes'] ?? '-'); ?></td>
+                                <td><?php echo $pode_ver_detalhes ? htmlspecialchars($ev['observacoes'] ?? '-') : '<span class="text-muted">—</span>'; ?></td>
                                 <td><?php echo htmlspecialchars($ev['registrado_por_nome'] ?? '-'); ?></td>
                             </tr>
                             <?php endforeach; ?>

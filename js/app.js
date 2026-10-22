@@ -1911,9 +1911,12 @@ function showEvento(evento) {
     document.getElementById('obs_tipo').textContent = evento.tipo || '-';
     document.getElementById('obs_registrado_por').textContent = evento.registrado_por || '-';
     
-    var observacoes = evento.observacoes || '';
+    var podeVerDetalhes = evento.can_view_detalhes !== false;
+    var observacoes = podeVerDetalhes ? (evento.observacoes || '') : '';
     var obsTexto = document.getElementById('obs_texto');
-    if (observacoes.trim() === '') {
+    if (!podeVerDetalhes) {
+        obsTexto.innerHTML = '<em class="text-muted">Detalhes disponíveis apenas para o autor do registro.</em>';
+    } else if (observacoes.trim() === '') {
         obsTexto.innerHTML = '<em class="text-muted">Nenhuma observação registrada.</em>';
     } else {
         obsTexto.textContent = observacoes;
@@ -1923,7 +1926,7 @@ function showEvento(evento) {
     var prontuarioTexto = document.getElementById('obs_prontuario_texto');
     var prontuario = evento.prontuario || '';
     if (prontuarioSection && prontuarioTexto) {
-        if (evento.can_view_prontuario === false) {
+        if (!podeVerDetalhes || evento.can_view_prontuario === false) {
             prontuarioTexto.textContent = '';
             prontuarioSection.style.display = 'none';
         } else if (prontuario.trim() !== '') {
@@ -1939,7 +1942,7 @@ function showEvento(evento) {
     var anexosList = document.getElementById('obs_anexos_list');
     if (anexosSection && anexosList) {
         anexosList.innerHTML = '';
-        if (evento.can_view_anexos === false) {
+        if (!podeVerDetalhes || evento.can_view_anexos === false) {
             anexosSection.style.display = 'none';
         } else if (evento.anexos && evento.anexos.length > 0) {
             evento.anexos.forEach(function(anexo) {

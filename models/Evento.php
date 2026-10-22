@@ -67,7 +67,7 @@ class Evento {
         return false;
     }
 
-    public function getAll($registrado_por = null, $ano_civil = null, $incluir_sabados = true, $visibilidade_nivel2 = false) {
+    public function getAll($registrado_por = null, $ano_civil = null, $incluir_sabados = true, $visibilidade_nivel2 = false, $viewer_id = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -109,7 +109,11 @@ class Evento {
         }
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        $eventos = $stmt->fetchAll();
+        if ($visibilidade_nivel2 && $viewer_id) {
+            $eventos = ocultarDetalhesEventosAlheios($eventos, $viewer_id);
+        }
+        return $eventos;
     }
 
     public function getByAluno($aluno_id) {
@@ -132,7 +136,7 @@ class Evento {
         return $stmt->fetchAll();
     }
 
-    public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null, $visibilidade_nivel2 = false) {
+    public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null, $visibilidade_nivel2 = false, $viewer_id = null) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -164,7 +168,11 @@ class Evento {
         }
         $stmt->execute();
 
-        return $stmt->fetchAll();
+        $eventos = $stmt->fetchAll();
+        if ($visibilidade_nivel2 && $viewer_id) {
+            $eventos = ocultarDetalhesEventosAlheios($eventos, $viewer_id);
+        }
+        return $eventos;
     }
 
     public function getById($id) {

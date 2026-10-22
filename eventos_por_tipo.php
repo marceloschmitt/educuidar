@@ -42,7 +42,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
     $registrado_por = $filtro_autor['registrado_por'];
     $visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
     $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por, $incluir_sabados, $visibilidade_nivel2);
-    $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados, $visibilidade_nivel2);
+    $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados, $visibilidade_nivel2, $user_id);
     // Filter eventos recentes by ano corrente
     $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($ano_corrente) {
         return !empty($evt['ano_civil']) && $evt['ano_civil'] == $ano_corrente;
@@ -259,6 +259,10 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                         </thead>
                         <tbody>
                             <?php foreach ($eventos_recentes as $evt): ?>
+                            <?php
+                            $pode_ver_detalhes = usuarioPodeVerDetalhesEvento($user, $evt['registrado_por'] ?? null, $user_id);
+                            $obs_visivel = $pode_ver_detalhes ? trim((string)($evt['observacoes'] ?? '')) : '';
+                            ?>
                             <tr class="row-observacoes" style="cursor: pointer;" data-evento='<?php echo htmlspecialchars(json_encode([
                                 'id' => $evt['id'],
                                 'aluno_id' => $evt['aluno_id'] ?? null,
@@ -267,7 +271,8 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                 'aluno' => $evt['aluno_nome'] ?? 'N/A',
                                 'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
-                                'observacoes' => $evt['observacoes'] ?? ''
+                                'observacoes' => $obs_visivel,
+                                'can_view_detalhes' => $pode_ver_detalhes,
                             ])); ?>'>
                                 <td><div><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></div><div class="small text-muted"><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></div></td>
                                 <?php if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()): ?>
@@ -278,14 +283,13 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
                                         <?php
                                         $cor = $evt['tipo_evento_cor'] ?? 'secondary';
-                                        $obs_tipo = trim((string)($evt['observacoes'] ?? ''));
-                                        $tooltip_attrs = $obs_tipo !== ''
-                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
+                                        $tooltip_attrs = $obs_visivel !== ''
+                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_visivel, ENT_QUOTES, 'UTF-8') . '"'
                                             : '';
                                         if (strpos($cor, '#') === 0) {
-                                            echo '<span class="badge"' . $tooltip_attrs . ' style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;' . ($obs_tipo !== '' ? ' cursor: help;' : '') . '">';
+                                            echo '<span class="badge"' . $tooltip_attrs . ' style="background-color: ' . htmlspecialchars($cor) . '; white-space: normal;' . ($obs_visivel !== '' ? ' cursor: help;' : '') . '">';
                                         } else {
-                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '"' . $tooltip_attrs . ' style="white-space: normal;' . ($obs_tipo !== '' ? ' cursor: help;' : '') . '">';
+                                            echo '<span class="badge bg-' . htmlspecialchars($cor) . '"' . $tooltip_attrs . ' style="white-space: normal;' . ($obs_visivel !== '' ? ' cursor: help;' : '') . '">';
                                         }
                                         ?>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>

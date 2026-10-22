@@ -140,6 +140,9 @@ $stmt->bindParam(':user_type_id', $user_type_id);
 $stmt->bindParam(':filtro_ano', $filtro_ano);
 $stmt->execute();
 $eventos_prontuario = $stmt->fetchAll();
+if ($user->isNivel2()) {
+    $eventos_prontuario = ocultarDetalhesEventosAlheios($eventos_prontuario, $_SESSION['user_id'] ?? null);
+}
 $anexos_por_evento = [];
 if (!empty($eventos_prontuario)) {
     $evento_ids = array_column($eventos_prontuario, 'id');
@@ -152,6 +155,14 @@ if (!empty($eventos_prontuario)) {
     $rows = $stmt->fetchAll();
     foreach ($rows as $row) {
         $anexos_por_evento[$row['evento_id']][] = $row;
+    }
+    if ($user->isNivel2()) {
+        $viewer_id = (int) ($_SESSION['user_id'] ?? 0);
+        foreach ($eventos_prontuario as $ev) {
+            if ((int) ($ev['registrado_por'] ?? 0) !== $viewer_id) {
+                unset($anexos_por_evento[$ev['id']]);
+            }
+        }
     }
 }
 

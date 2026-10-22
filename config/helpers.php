@@ -166,6 +166,41 @@ if (!function_exists('sqlCondicaoVisibilidadeEventosNivel2')) {
     }
 }
 
+if (!function_exists('usuarioPodeVerDetalhesEvento')) {
+    /**
+     * Nível 2 só vê observações/prontuário/anexos dos próprios eventos.
+     * Demais níveis veem conforme as regras já existentes da tela.
+     */
+    function usuarioPodeVerDetalhesEvento($user, $registrado_por, $user_id = null) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if (!$user || !$user->isNivel2()) {
+            return true;
+        }
+        return $user_id && (int) $registrado_por === (int) $user_id;
+    }
+}
+
+if (!function_exists('ocultarDetalhesEventosAlheios')) {
+    /**
+     * Remove observações/prontuário de eventos que não são do visualizador.
+     */
+    function ocultarDetalhesEventosAlheios(array $eventos, $viewer_id) {
+        $viewer_id = (int) $viewer_id;
+        if ($viewer_id <= 0) {
+            return $eventos;
+        }
+        foreach ($eventos as &$evento) {
+            if ((int) ($evento['registrado_por'] ?? 0) !== $viewer_id) {
+                $evento['observacoes'] = '';
+                $evento['prontuario'] = '';
+                $evento['_detalhes_ocultos'] = true;
+            }
+        }
+        unset($evento);
+        return $eventos;
+    }
+}
+
 if (!function_exists('processarAlertasAluno')) {
     function processarAlertasAluno($db, $aluno_id) {
         $aluno_id = (int) $aluno_id;

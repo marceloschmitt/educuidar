@@ -355,7 +355,7 @@ $current_user_type_id = $_SESSION['user_type_id'] ?? '';
 if (empty($current_user_type_id)) {
     $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
 }
-$eventos = $evento->getAll($registrado_por, $filtro_ano, $incluir_sabados, $visibilidade_nivel2);
+$eventos = $evento->getAll($registrado_por, $filtro_ano, $incluir_sabados, $visibilidade_nivel2, $user_id);
 $anexos_por_evento = [];
 if (!empty($eventos)) {
     $evento_ids = array_column($eventos, 'id');
@@ -590,6 +590,15 @@ require_once 'includes/header.php';
                                     $can_delete = ($diff_seconds <= 3600);
                                 }
                             }
+                            $pode_ver_detalhes = usuarioPodeVerDetalhesEvento($user, $evt['registrado_por'] ?? null, $user_id);
+                            $obs_visivel = $pode_ver_detalhes ? trim((string)($evt['observacoes'] ?? '')) : '';
+                            $prontuario_tipo_id = $evt['tipo_evento_prontuario_user_type_id'] ?? '';
+                            $can_view_prontuario = $pode_ver_detalhes
+                                && !empty($prontuario_tipo_id)
+                                && (string)$current_user_type_id === (string)$prontuario_tipo_id;
+                            $can_view_anexos = $pode_ver_detalhes
+                                && (empty($prontuario_tipo_id) || (string)$current_user_type_id === (string)$prontuario_tipo_id);
+                            $anexos_visiveis = $can_view_anexos ? ($anexos_por_evento[$evt['id']] ?? []) : [];
                             ?>
                             <tr class="evento-row" data-evento='<?php echo htmlspecialchars(json_encode([
                                 'id' => $evt['id'],
@@ -598,12 +607,9 @@ require_once 'includes/header.php';
                                 'aluno' => $evt['aluno_nome'] ?? 'N/A',
                                 'tipo' => $evt['tipo_evento_nome'] ?? 'N/A',
                                 'registrado_por' => $evt['registrado_por_nome'] ?? '-',
-                                'observacoes' => $evt['observacoes'] ?? '',
-                                'prontuario' => (function() use ($evt, $current_user_type_id) {
-                                    $prontuario_tipo_id = $evt['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id) ? ($evt['prontuario'] ?? '') : '';
-                                })(),
-                                'prontuario_user_type_id' => ($evt['tipo_evento_prontuario_user_type_id'] ?? ''),
+                                'observacoes' => $obs_visivel,
+                                'prontuario' => $can_view_prontuario ? ($evt['prontuario'] ?? '') : '',
+                                'prontuario_user_type_id' => $prontuario_tipo_id,
                                 'aluno_id' => $evt['aluno_id'] ?? '',
                                 'turma_id' => $evt['turma_id'] ?? '',
                                 'tipo_evento_id' => $evt['tipo_evento_id'] ?? '',
@@ -613,15 +619,10 @@ require_once 'includes/header.php';
                                 'created_at' => $evt['created_at'] ?? '',
                                 'can_edit' => $can_edit,
                                 'can_delete' => $can_delete,
-                                'anexos' => $anexos_por_evento[$evt['id']] ?? [],
-                                'can_view_anexos' => (function() use ($evt, $current_user_type_id) {
-                                    $prontuario_tipo_id = $evt['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return empty($prontuario_tipo_id) || ((string)$current_user_type_id === (string)$prontuario_tipo_id);
-                                })(),
-                                'can_view_prontuario' => (function() use ($evt, $current_user_type_id) {
-                                    $prontuario_tipo_id = $evt['tipo_evento_prontuario_user_type_id'] ?? '';
-                                    return (!empty($prontuario_tipo_id) && (string)$current_user_type_id === (string)$prontuario_tipo_id);
-                                })()
+                                'anexos' => $anexos_visiveis,
+                                'can_view_anexos' => $can_view_anexos,
+                                'can_view_prontuario' => $can_view_prontuario,
+                                'can_view_detalhes' => $pode_ver_detalhes,
                             ])); ?>'>
                                 <td><div><?php echo date('d/m/Y', strtotime($evt['data_evento'])); ?></div><div class="small text-muted"><?php echo $evt['hora_evento'] ? date('H:i', strtotime($evt['hora_evento'])) : '-'; ?></div></td>
                                 <td><?php echo htmlspecialchars($evt['aluno_nome'] ?? 'N/A'); ?></td>
@@ -629,16 +630,15 @@ require_once 'includes/header.php';
                                 <td style="max-width: 140px; overflow-wrap: break-word;">
                                     <?php if (!empty($evt['tipo_evento_nome'])): ?>
                                         <?php
-                                        $obs_tipo = trim((string)($evt['observacoes'] ?? ''));
-                                        $tooltip_attrs = $obs_tipo !== ''
-                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_tipo, ENT_QUOTES, 'UTF-8') . '"'
+                                        $tooltip_attrs = $obs_visivel !== ''
+                                            ? ' data-bs-toggle="tooltip" data-bs-placement="top" data-bs-custom-class="tooltip-observacoes" title="' . htmlspecialchars($obs_visivel, ENT_QUOTES, 'UTF-8') . '"'
                                             : '';
                                         ?>
                                         <span class="badge bg-<?php echo htmlspecialchars($evt['tipo_evento_cor'] ?? 'secondary'); ?>"
-                                              style="white-space: normal;<?php echo $obs_tipo !== '' ? ' cursor: help;' : ''; ?>"<?php echo $tooltip_attrs; ?>>
+                                              style="white-space: normal;<?php echo $obs_visivel !== '' ? ' cursor: help;' : ''; ?>"<?php echo $tooltip_attrs; ?>>
                                             <?php echo htmlspecialchars($evt['tipo_evento_nome']); ?>
                                         </span>
-                                        <?php if (!empty($anexos_por_evento[$evt['id']])): ?>
+                                        <?php if (!empty($anexos_visiveis)): ?>
                                             <i class="bi bi-paperclip ms-2 text-muted" title="Possui anexos"></i>
                                         <?php endif; ?>
                                     <?php else: ?>

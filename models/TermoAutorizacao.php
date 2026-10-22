@@ -612,7 +612,7 @@ class TermoAutorizacao {
              INNER JOIN alunos a ON a.id = at.aluno_id
              WHERE tt.termo_id = :termo_id
                AND COALESCE(a.desistente, 0) = 0
-             ORDER BY c.nome ASC, tu.ano_curso ASC, nome ASC"
+             ORDER BY nome ASC"
         );
         $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
         $stmt->execute();
