@@ -130,39 +130,33 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
 
 <div class="card resp-card mb-3">
     <div class="card-body p-4">
-        <h2 class="h5 mb-2"><?php echo htmlspecialchars($termo['titulo']); ?></h2>
-        <div class="text-muted small mb-2">
-            <?php echo date('d/m/Y', strtotime($termo['data_evento'])); ?>
+        <h2 class="h5 mb-1"><?php echo htmlspecialchars($aluno['nome']); ?></h2>
+        <div class="small text-muted mb-3">
+            <?php echo htmlspecialchars($aluno['turma_label']); ?>
+            · <?php echo htmlspecialchars($termo['titulo']); ?>
+            · <?php echo date('d/m/Y', strtotime($termo['data_evento'])); ?>
             <?php if (!empty($termo['hora'])): ?>
-            · <?php echo substr($termo['hora'], 0, 5); ?>
+            às <?php echo substr($termo['hora'], 0, 5); ?>
             <?php endif; ?>
             <?php if (!$termo_ativo): ?>
             · <span class="badge bg-secondary">Suspensa</span>
             <?php endif; ?>
         </div>
-        <div class="mb-3">
-            <div class="fw-semibold"><?php echo htmlspecialchars($aluno['nome']); ?></div>
-            <div class="small text-muted"><?php echo htmlspecialchars($aluno['turma_label']); ?></div>
-        </div>
-        <?php if (TermoAutorizacao::temTexto($termo)): ?>
-        <div class="border rounded p-3 bg-light mb-0">
-            <div class="small text-muted mb-2">Texto da autorização</div>
-            <div><?php echo nl2br(htmlspecialchars($texto_personalizado)); ?></div>
-        </div>
-        <?php elseif (TermoAutorizacao::temPdf($termo)): ?>
-        <a class="btn btn-outline-success btn-touch" href="../termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" target="_blank">
-            <i class="bi bi-file-pdf"></i> Abrir autorização (PDF)
-        </a>
+
+        <?php if (!$termo_ativo): ?>
+        <div class="alert alert-warning py-2">Esta autorização está suspensa. Não é possível responder no momento.</div>
         <?php endif; ?>
-    </div>
-</div>
 
-<?php if (!$termo_ativo): ?>
-<div class="alert alert-warning">Esta autorização está suspensa. Não é possível responder no momento.</div>
-<?php endif; ?>
+        <?php if (TermoAutorizacao::temTexto($termo)): ?>
+        <div class="mb-4"><?php echo nl2br(htmlspecialchars($texto_personalizado)); ?></div>
+        <?php elseif (TermoAutorizacao::temPdf($termo)): ?>
+        <div class="mb-4">
+            <a class="btn btn-outline-success btn-touch" href="../termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" target="_blank">
+                <i class="bi bi-file-pdf"></i> Abrir autorização (PDF)
+            </a>
+        </div>
+        <?php endif; ?>
 
-<div class="card resp-card mb-3">
-    <div class="card-body p-4">
         <?php if ($r && !(int) $r['pode_alterar']): ?>
         <div class="mb-0">
             <span class="badge bg-<?php echo TermoAutorizacao::decisaoBadgeClass($r['decisao']); ?> mb-1">
@@ -181,7 +175,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             (<?php echo date('d/m/Y H:i', strtotime($r['decidido_em'])); ?>).
         </div>
         <?php endif; ?>
-        <p class="mb-3">Você autoriza a participação de <strong><?php echo htmlspecialchars($aluno['nome']); ?></strong> neste evento?</p>
+        <p class="mb-3">Você autoriza a participação neste evento?</p>
         <div class="d-grid gap-2">
             <form method="POST" action="">
                 <input type="hidden" name="action" value="decidir">
