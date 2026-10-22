@@ -155,6 +155,12 @@ require __DIR__ . '/includes/header.php';
                 <div id="bloco-texto">
                     <textarea class="form-control" id="texto_autorizacao" name="texto_autorizacao" rows="8"
                               placeholder="Digite aqui o texto completo da autorização que os responsáveis deverão ler."></textarea>
+                    <div class="form-text">
+                        Variáveis personalizadas (cada responsável vê os dados do seu filho):
+                        <code>{{nome_aluno}}</code>,
+                        <code>{{nome_responsavel}}</code>,
+                        <code>{{turma_aluno}}</code>.
+                    </div>
                 </div>
                 <div id="bloco-pdf" class="d-none">
                     <input type="file" class="form-control" id="pdf" name="pdf" accept="application/pdf,.pdf">

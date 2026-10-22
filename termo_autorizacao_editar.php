@@ -157,6 +157,12 @@ require __DIR__ . '/includes/header.php';
                     <?php if ($eh_texto): ?>
                     <div class="small text-muted mb-1">Texto atual (edite abaixo ou troque o tipo):</div>
                     <textarea class="form-control" id="texto_manter" name="texto_autorizacao" rows="6"><?php echo htmlspecialchars($termo['texto_autorizacao']); ?></textarea>
+                    <div class="form-text mt-1">
+                        Variáveis:
+                        <code>{{nome_aluno}}</code>,
+                        <code>{{nome_responsavel}}</code>,
+                        <code>{{turma_aluno}}</code>.
+                    </div>
                     <?php elseif ($eh_pdf): ?>
                     <div class="small">
                         PDF atual:
@@ -171,6 +177,12 @@ require __DIR__ . '/includes/header.php';
                 <div id="bloco-texto" class="d-none">
                     <textarea class="form-control" id="texto_autorizacao" rows="8"
                               placeholder="Digite aqui o texto completo da autorização."><?php echo $eh_texto ? htmlspecialchars($termo['texto_autorizacao']) : ''; ?></textarea>
+                    <div class="form-text">
+                        Variáveis:
+                        <code>{{nome_aluno}}</code>,
+                        <code>{{nome_responsavel}}</code>,
+                        <code>{{turma_aluno}}</code>.
+                    </div>
                 </div>
                 <div id="bloco-pdf" class="d-none">
                     <input type="file" class="form-control" id="pdf" name="pdf" accept="application/pdf,.pdf">

@@ -12,6 +12,7 @@ if (!$resp->isLoggedIn()) {
 }
 
 $responsavel_id = $resp->getLoggedId();
+$responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 $labels = TermoAutorizacao::decisoesLabels();
 
 $success = $_SESSION['flash_success'] ?? '';
@@ -39,36 +40,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'decid
             $_SESSION['flash_error'] = 'Não foi possível registrar a resposta.';
         }
     }
-    header('Location: termos.php' . ($termo_id ? '?id=' . $termo_id : ''));
+    $redir = 'termos.php';
+    if ($termo_id && $aluno_id) {
+        $redir .= '?id=' . $termo_id . '&aluno_id=' . $aluno_id;
+    }
+    header('Location: ' . $redir);
     exit;
 }
 
-$termos = $termoModel->listParaResponsavel($responsavel_id);
+$itens = $termoModel->listItensParaResponsavel($responsavel_id);
 $termo_id = (int) ($_GET['id'] ?? 0);
+$aluno_id = (int) ($_GET['aluno_id'] ?? 0);
 $termo = null;
-$alunos_termo = [];
+$aluno = null;
 $termo_ativo = true;
 
-if ($termo_id) {
+if ($termo_id && $aluno_id) {
     $termo = $termoModel->getById($termo_id);
     if (!$termo || !TermoAutorizacao::estaVisivelPais($termo) || !$termoModel->responsavelPodeVerTermo($termo_id, $responsavel_id)) {
         $_SESSION['flash_error'] = 'Autorização não encontrada.';
         header('Location: termos.php');
         exit;
     }
+    if (!$resp->jaVinculado($responsavel_id, $aluno_id) || !$termoModel->alunoPertenceAoTermo($termo_id, $aluno_id)) {
+        $_SESSION['flash_error'] = 'Aluno inválido para esta autorização.';
+        header('Location: termos.php');
+        exit;
+    }
     $termo_ativo = TermoAutorizacao::estaAtivo($termo);
     $alunos_termo = $termoModel->listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id);
+    foreach ($alunos_termo as $a) {
+        if ((int) $a['id'] === $aluno_id) {
+            $aluno = $a;
+            break;
+        }
+    }
+    if (!$aluno) {
+        $_SESSION['flash_error'] = 'Aluno inválido para esta autorização.';
+        header('Location: termos.php');
+        exit;
+    }
+} elseif ($termo_id && !$aluno_id) {
+    // Fluxo antigo: redireciona para o primeiro aluno pendente, se houver
+    $alunos_termo = $termoModel->listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id);
+    if (!empty($alunos_termo)) {
+        header('Location: termos.php?id=' . $termo_id . '&aluno_id=' . (int) $alunos_termo[0]['id']);
+        exit;
+    }
+    header('Location: termos.php');
+    exit;
 }
 
 $page_title = 'Participação em atividades';
 $show_header = true;
-$responsavel_nome = $_SESSION['responsavel_nome'] ?? '';
 $meses = [1=>'jan',2=>'fev',3=>'mar',4=>'abr',5=>'mai',6=>'jun',7=>'jul',8=>'ago',9=>'set',10=>'out',11=>'nov',12=>'dez'];
 require __DIR__ . '/header.php';
 ?>
 
 <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
-    <?php if ($termo): ?>
+    <?php if ($termo && $aluno): ?>
     <a href="termos.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Participação em atividades</a>
     <?php else: ?>
     <a href="autorizacoes_menu.php" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Autorizações</a>
@@ -83,7 +113,20 @@ require __DIR__ . '/header.php';
 <div class="alert alert-danger"><?php echo htmlspecialchars($error); ?></div>
 <?php endif; ?>
 
-<?php if ($termo): ?>
+<?php if ($termo && $aluno): ?>
+
+<?php
+$r = $aluno['resposta'] ?? null;
+$pode_responder = $termo_ativo && (!$r || (int) $r['pode_alterar']);
+$texto_personalizado = TermoAutorizacao::temTexto($termo)
+    ? TermoAutorizacao::renderTextoPersonalizado(
+        $termo['texto_autorizacao'],
+        $aluno['nome'],
+        $responsavel_nome,
+        $aluno['turma_label']
+    )
+    : '';
+?>
 
 <div class="card resp-card mb-3">
     <div class="card-body p-4">
@@ -97,10 +140,14 @@ require __DIR__ . '/header.php';
             · <span class="badge bg-secondary">Suspensa</span>
             <?php endif; ?>
         </div>
+        <div class="mb-3">
+            <div class="fw-semibold"><?php echo htmlspecialchars($aluno['nome']); ?></div>
+            <div class="small text-muted"><?php echo htmlspecialchars($aluno['turma_label']); ?></div>
+        </div>
         <?php if (TermoAutorizacao::temTexto($termo)): ?>
         <div class="border rounded p-3 bg-light mb-0">
             <div class="small text-muted mb-2">Texto da autorização</div>
-            <div><?php echo nl2br(htmlspecialchars($termo['texto_autorizacao'])); ?></div>
+            <div><?php echo nl2br(htmlspecialchars($texto_personalizado)); ?></div>
         </div>
         <?php elseif (TermoAutorizacao::temPdf($termo)): ?>
         <a class="btn btn-outline-success btn-touch" href="../termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" target="_blank">
@@ -114,19 +161,8 @@ require __DIR__ . '/header.php';
 <div class="alert alert-warning">Esta autorização está suspensa. Não é possível responder no momento.</div>
 <?php endif; ?>
 
-<?php if (empty($alunos_termo)): ?>
-<div class="alert alert-warning">Nenhum filho seu está nas turmas desta autorização.</div>
-<?php else: ?>
-<?php foreach ($alunos_termo as $aluno): ?>
-<?php
-$r = $aluno['resposta'] ?? null;
-$pode_responder = $termo_ativo && (!$r || (int) $r['pode_alterar']);
-?>
 <div class="card resp-card mb-3">
     <div class="card-body p-4">
-        <h3 class="h6 mb-1"><?php echo htmlspecialchars($aluno['nome']); ?></h3>
-        <div class="small text-muted mb-3"><?php echo htmlspecialchars($aluno['turma_label']); ?></div>
-
         <?php if ($r && !(int) $r['pode_alterar']): ?>
         <div class="mb-0">
             <span class="badge bg-<?php echo TermoAutorizacao::decisaoBadgeClass($r['decisao']); ?> mb-1">
@@ -145,7 +181,7 @@ $pode_responder = $termo_ativo && (!$r || (int) $r['pode_alterar']);
             (<?php echo date('d/m/Y H:i', strtotime($r['decidido_em'])); ?>).
         </div>
         <?php endif; ?>
-        <p class="mb-3">Você autoriza a participação neste evento?</p>
+        <p class="mb-3">Você autoriza a participação de <strong><?php echo htmlspecialchars($aluno['nome']); ?></strong> neste evento?</p>
         <div class="d-grid gap-2">
             <form method="POST" action="">
                 <input type="hidden" name="action" value="decidir">
@@ -173,48 +209,40 @@ $pode_responder = $termo_ativo && (!$r || (int) $r['pode_alterar']);
         <?php endif; ?>
     </div>
 </div>
-<?php endforeach; ?>
-<?php endif; ?>
 
 <?php else: ?>
 
-<?php if (empty($termos)): ?>
+<?php if (empty($itens)): ?>
 <div class="alert alert-info">Não há autorizações de participação em atividades para os seus alunos no momento.</div>
 <?php else: ?>
 <div class="card resp-card">
-    <?php foreach ($termos as $t): ?>
+    <?php foreach ($itens as $item): ?>
     <?php
-    $alunos_t = $termoModel->listAlunosDoResponsavelNoTermo((int) $t['id'], $responsavel_id);
-    $mostrar_pendente = false;
-    $eu_respondi_todos = true;
-    foreach ($alunos_t as $a) {
-        $rr = $a['resposta'] ?? null;
-        $eu_ok = $rr && !(int) ($rr['pode_alterar'] ?? 0);
-        if (!$eu_ok) {
-            $eu_respondi_todos = false;
-            // Pendente só se ninguém respondeu por esse aluno
-            if (empty($a['aluno_tem_resposta'])) {
-                $mostrar_pendente = true;
-            }
-        }
-    }
+    $t = $item['termo'];
+    $a = $item['aluno'];
+    $rr = $a['resposta'] ?? null;
+    $eu_ok = $rr && !(int) ($rr['pode_alterar'] ?? 0);
+    $pendente = !$eu_ok && empty($a['aluno_tem_resposta']);
+    $aguardando = !$eu_ok && !empty($a['aluno_tem_resposta']);
     ?>
-    <a href="termos.php?id=<?php echo (int) $t['id']; ?>" class="resp-event text-decoration-none text-dark">
+    <a href="termos.php?id=<?php echo (int) $t['id']; ?>&aluno_id=<?php echo (int) $a['id']; ?>"
+       class="resp-event text-decoration-none text-dark">
         <div class="resp-event-date">
             <span class="day"><?php echo date('d', strtotime($t['data_evento'])); ?></span>
             <span class="month"><?php echo $meses[(int) date('n', strtotime($t['data_evento']))] ?? date('m', strtotime($t['data_evento'])); ?></span>
         </div>
         <div class="flex-grow-1">
             <div class="fw-semibold"><?php echo htmlspecialchars($t['titulo']); ?></div>
+            <div class="small"><?php echo htmlspecialchars($a['nome']); ?></div>
             <div class="small text-muted">
-                <?php echo count($alunos_t); ?> aluno(s)
+                <?php echo htmlspecialchars($a['turma_label']); ?>
                 <?php if (!empty($t['status']) && $t['status'] === TermoAutorizacao::STATUS_SUSPENSO): ?>
                 · <span class="text-secondary">Suspensa</span>
-                <?php elseif ($mostrar_pendente): ?>
+                <?php elseif ($pendente): ?>
                 · <span class="text-warning">Pendente</span>
-                <?php elseif ($eu_respondi_todos): ?>
+                <?php elseif ($eu_ok): ?>
                 · <span class="text-success">Respondido</span>
-                <?php else: ?>
+                <?php elseif ($aguardando): ?>
                 · <span class="text-muted">Aguardando sua resposta</span>
                 <?php endif; ?>
             </div>

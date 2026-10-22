@@ -110,6 +110,27 @@ class TermoAutorizacao {
         return (int) ($termo['visivel_pais'] ?? 1) === 1;
     }
 
+    /** Placeholders disponíveis no texto digitado da autorização. */
+    public static function placeholdersTexto() {
+        return [
+            '{{nome_aluno}}' => 'Nome do aluno',
+            '{{nome_responsavel}}' => 'Nome do responsável',
+            '{{turma_aluno}}' => 'Turma do aluno',
+        ];
+    }
+
+    /**
+     * Substitui {{nome_aluno}}, {{nome_responsavel}} e {{turma_aluno}} no texto.
+     */
+    public static function renderTextoPersonalizado($texto, $nome_aluno, $nome_responsavel, $turma_aluno) {
+        $mapa = [
+            '{{nome_aluno}}' => (string) $nome_aluno,
+            '{{nome_responsavel}}' => (string) $nome_responsavel,
+            '{{turma_aluno}}' => (string) $turma_aluno,
+        ];
+        return str_replace(array_keys($mapa), array_values($mapa), (string) $texto);
+    }
+
     private function garantirDiretorioPdf($termo_id = null) {
         $raiz = __DIR__ . '/../' . self::DIRETORIO_PDF;
         if (!is_dir($raiz)) {
@@ -964,6 +985,25 @@ class TermoAutorizacao {
         $stmt->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Uma entrada por aluno do responsável em cada termo (para o portal:
+     * cada filho exige autorização separada).
+     */
+    public function listItensParaResponsavel($responsavel_id) {
+        $termos = $this->listParaResponsavel($responsavel_id);
+        $itens = [];
+        foreach ($termos as $t) {
+            $alunos = $this->listAlunosDoResponsavelNoTermo((int) $t['id'], $responsavel_id);
+            foreach ($alunos as $aluno) {
+                $itens[] = [
+                    'termo' => $t,
+                    'aluno' => $aluno,
+                ];
+            }
+        }
+        return $itens;
     }
 
     /** Alunos do responsável que estão em turmas do termo. */
