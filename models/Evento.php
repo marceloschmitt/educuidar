@@ -67,7 +67,7 @@ class Evento {
         return false;
     }
 
-    public function getAll($registrado_por = null, $ano_civil = null, $incluir_sabados = true) {
+    public function getAll($registrado_por = null, $ano_civil = null, $incluir_sabados = true, $visibilidade_nivel2 = false) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -85,6 +85,8 @@ class Evento {
         $where = ["(a.id IS NULL OR COALESCE(a.desistente, 0) = 0)"];
         if ($registrado_por !== null) {
             $where[] = "e.registrado_por = :registrado_por";
+        } elseif ($visibilidade_nivel2) {
+            $where[] = sqlCondicaoVisibilidadeEventosNivel2('e');
         }
         if ($ano_civil !== null) {
             $where[] = "t.ano_civil = :ano_civil";
@@ -130,7 +132,7 @@ class Evento {
         return $stmt->fetchAll();
     }
 
-    public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null) {
+    public function getByAlunoETurma($aluno_id, $turma_id, $registrado_por = null, $visibilidade_nivel2 = false) {
         $query = "SELECT e.id, e.aluno_id, e.turma_id, e.tipo_evento_id, 
                   e.data_evento, e.hora_evento, e.observacoes, e.prontuario, e.registrado_por, e.created_at,
                   a.nome as aluno_nome,
@@ -148,6 +150,8 @@ class Evento {
         
         if ($registrado_por !== null) {
             $query .= " AND e.registrado_por = :registrado_por";
+        } elseif ($visibilidade_nivel2) {
+            $query .= " AND " . sqlCondicaoVisibilidadeEventosNivel2('e');
         }
         
         $query .= " ORDER BY e.data_evento DESC, e.hora_evento DESC";
@@ -298,7 +302,7 @@ class Evento {
         return false;
     }
 
-    public function getEstatisticas($aluno_id = null, $turma_id = null, $curso_id = null, $ano_corrente = null, $registrado_por = null, $incluir_sabados = true) {
+    public function getEstatisticas($aluno_id = null, $turma_id = null, $curso_id = null, $ano_corrente = null, $registrado_por = null, $incluir_sabados = true, $visibilidade_nivel2 = false) {
         $where = [];
         $params = [];
         
@@ -327,6 +331,8 @@ class Evento {
         if ($registrado_por !== null) {
             $where[] = "e.registrado_por = :registrado_por";
             $params[':registrado_por'] = $registrado_por;
+        } elseif ($visibilidade_nivel2) {
+            $where[] = sqlCondicaoVisibilidadeEventosNivel2('e');
         }
 
         if (!$incluir_sabados) {
@@ -354,7 +360,7 @@ class Evento {
         return $stmt->fetchAll();
     }
 
-    public function countByAluno($aluno_id, $registrado_por = null, $ano_civil = null) {
+    public function countByAluno($aluno_id, $registrado_por = null, $ano_civil = null, $visibilidade_nivel2 = false) {
         $query = "SELECT COUNT(*) as total 
                   FROM " . $this->table . " e
                   LEFT JOIN turmas t ON e.turma_id = t.id";
@@ -362,6 +368,8 @@ class Evento {
         $where = ["e.aluno_id = :aluno_id"];
         if ($registrado_por !== null) {
             $where[] = "e.registrado_por = :registrado_por";
+        } elseif ($visibilidade_nivel2) {
+            $where[] = sqlCondicaoVisibilidadeEventosNivel2('e');
         }
         if ($ano_civil !== null) {
             $where[] = "t.ano_civil = :ano_civil";

@@ -41,6 +41,8 @@ class DashboardEstatisticas {
         if (!empty($this->filtros['registrado_por'])) {
             $where[] = "e.registrado_por = :registrado_por";
             $params[':registrado_por'] = (int) $this->filtros['registrado_por'];
+        } elseif (!empty($this->filtros['visibilidade_nivel2'])) {
+            $where[] = sqlCondicaoVisibilidadeEventosNivel2('e');
         }
         if (empty($this->filtros['incluir_sabados'])) {
             $where[] = "DAYOFWEEK(e.data_evento) != 7";

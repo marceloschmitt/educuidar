@@ -117,6 +117,55 @@ if (!function_exists('usuarioPodeVerPopupAlertas')) {
     }
 }
 
+if (!function_exists('resolverFiltroAutorEventos')) {
+    /**
+     * Resolve o filtro de autor para listagens de eventos.
+     * Nível 2: vê tudo de outros nível 2 + marcações sem observações dos demais,
+     * a menos que "apenas meus" esteja ativo.
+     *
+     * @return array{registrado_por: int|null, visibilidade_nivel2: bool}
+     */
+    function resolverFiltroAutorEventos($user, $user_id = null, $apenas_meus_eventos = false) {
+        $user_id = $user_id ?? ($_SESSION['user_id'] ?? null);
+        if ($apenas_meus_eventos && $user_id) {
+            return [
+                'registrado_por' => (int) $user_id,
+                'visibilidade_nivel2' => false,
+            ];
+        }
+        if ($user && $user->isNivel2()) {
+            return [
+                'registrado_por' => null,
+                'visibilidade_nivel2' => true,
+            ];
+        }
+        return [
+            'registrado_por' => null,
+            'visibilidade_nivel2' => false,
+        ];
+    }
+}
+
+if (!function_exists('sqlCondicaoVisibilidadeEventosNivel2')) {
+    /**
+     * SQL: eventos de autores nível 2 (com ou sem observação)
+     * ou marcações sem observações de qualquer outro autor.
+     */
+    function sqlCondicaoVisibilidadeEventosNivel2($alias = 'e') {
+        $alias = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $alias) ?: 'e';
+        return "(
+            EXISTS (
+                SELECT 1
+                FROM user_user_types uut
+                INNER JOIN user_types ut ON ut.id = uut.user_type_id
+                WHERE uut.user_id = {$alias}.registrado_por
+                  AND ut.nivel = 'nivel2'
+            )
+            OR TRIM(COALESCE({$alias}.observacoes, '')) = ''
+        )";
+    }
+}
+
 if (!function_exists('processarAlertasAluno')) {
     function processarAlertasAluno($db, $aluno_id) {
         $aluno_id = (int) $aluno_id;
