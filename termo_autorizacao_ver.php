@@ -124,7 +124,7 @@ $destinatarios_email = $ativo ? $termoModel->listDestinatariosPendentesParaEmail
 $qtd_email_pendentes = count($destinatarios_email);
 
 $filtro_turma = (int) ($_GET['turma_id'] ?? 0);
-$filtro_decisao = trim((string) ($_GET['decisao'] ?? ''));
+$filtro_decisao = trim((string) ($_GET['filtro_decisao'] ?? $_GET['decisao'] ?? ''));
 $decisoes_filtro = [
     'concordou' => 'Concordaram',
     'discordou' => 'Discordaram',
@@ -151,31 +151,53 @@ foreach ($respostas as $r) {
     $respostas_por_aluno[(int) $r['aluno_id']][] = $r;
 }
 
+$status_por_aluno = [];
+foreach ($alunos as $aluno) {
+    $aid = (int) $aluno['id'];
+    $decs = array_column($respostas_por_aluno[$aid] ?? [], 'decisao');
+    $tem_sim = in_array(TermoAutorizacao::DECISAO_CONCORDOU, $decs, true);
+    $tem_nao = in_array(TermoAutorizacao::DECISAO_DISCORDOU, $decs, true);
+    if ($tem_sim && $tem_nao) {
+        $status_por_aluno[$aid] = 'discordancia';
+    } elseif ($tem_sim) {
+        $status_por_aluno[$aid] = 'concordou';
+    } elseif ($tem_nao) {
+        $status_por_aluno[$aid] = 'discordou';
+    } else {
+        $status_por_aluno[$aid] = 'pendente';
+    }
+}
+
 $alunos_filtrados = [];
 foreach ($alunos as $aluno) {
     $aid = (int) $aluno['id'];
     if ($filtro_turma > 0 && (int) ($aluno['turma_id'] ?? 0) !== $filtro_turma) {
         continue;
     }
-
-    if ($filtro_decisao !== '') {
-        $decs = array_column($respostas_por_aluno[$aid] ?? [], 'decisao');
-        $tem_sim = in_array(TermoAutorizacao::DECISAO_CONCORDOU, $decs, true);
-        $tem_nao = in_array(TermoAutorizacao::DECISAO_DISCORDOU, $decs, true);
-        $status = 'pendente';
-        if ($tem_sim && $tem_nao) {
-            $status = 'discordancia';
-        } elseif ($tem_sim) {
-            $status = 'concordou';
-        } elseif ($tem_nao) {
-            $status = 'discordou';
-        }
-        if ($status !== $filtro_decisao) {
-            continue;
-        }
+    if ($filtro_decisao !== '' && ($status_por_aluno[$aid] ?? '') !== $filtro_decisao) {
+        continue;
     }
-
     $alunos_filtrados[] = $aluno;
+}
+
+$totais = [
+    'total_alunos' => count($alunos_filtrados),
+    'concordaram' => 0,
+    'discordaram' => 0,
+    'pendentes' => 0,
+    'alunos_com_discordancia' => 0,
+];
+foreach ($alunos_filtrados as $aluno) {
+    $status = $status_por_aluno[(int) $aluno['id']] ?? 'pendente';
+    if ($status === 'concordou') {
+        $totais['concordaram']++;
+    } elseif ($status === 'discordou') {
+        $totais['discordaram']++;
+    } elseif ($status === 'discordancia') {
+        $totais['alunos_com_discordancia']++;
+    } else {
+        $totais['pendentes']++;
+    }
 }
 
 $page_title = 'Autorização — ' . $termo['titulo'];
@@ -343,19 +365,6 @@ require __DIR__ . '/includes/header.php';
             </div>
             <?php endif; ?>
         </div>
-        <hr>
-        <div class="d-flex flex-wrap gap-3 small">
-            <span><span class="badge bg-success"><?php echo (int) $totais['concordaram']; ?></span> concordaram</span>
-            <span><span class="badge bg-danger"><?php echo (int) $totais['discordaram']; ?></span> discordaram</span>
-            <span><span class="badge bg-warning text-dark"><?php echo (int) $totais['pendentes']; ?></span> pendentes</span>
-            <?php if ((int) $totais['alunos_com_discordancia'] > 0): ?>
-            <span class="text-danger">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-                <strong><?php echo (int) $totais['alunos_com_discordancia']; ?></strong> com discordância entre responsáveis
-            </span>
-            <?php endif; ?>
-            <span class="text-muted"><?php echo (int) $totais['total_alunos']; ?> aluno(s) nas turmas</span>
-        </div>
     </div>
 </div>
 
@@ -367,11 +376,11 @@ require __DIR__ . '/includes/header.php';
         </span>
     </div>
     <div class="card-body border-bottom">
-        <form method="GET" action="termo_autorizacao_ver.php" class="row g-2 align-items-end">
+        <form method="GET" action="termo_autorizacao_ver.php" class="row g-2 align-items-end" id="form-filtro-decisoes">
             <input type="hidden" name="id" value="<?php echo (int) $termo_id; ?>">
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <label class="form-label mb-1" for="filtro_turma">Turma</label>
-                <select class="form-select form-select-sm" id="filtro_turma" name="turma_id">
+                <select class="form-select form-select-sm" id="filtro_turma" name="turma_id" onchange="this.form.submit()">
                     <option value="">Todas</option>
                     <?php foreach ($turmas_filtro as $tid => $tlabel): ?>
                     <option value="<?php echo (int) $tid; ?>" <?php echo $filtro_turma === (int) $tid ? 'selected' : ''; ?>>
@@ -380,9 +389,9 @@ require __DIR__ . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-5">
                 <label class="form-label mb-1" for="filtro_decisao">Decisão</label>
-                <select class="form-select form-select-sm" id="filtro_decisao" name="decisao">
+                <select class="form-select form-select-sm" id="filtro_decisao" name="filtro_decisao" onchange="this.form.submit()">
                     <option value="">Todas</option>
                     <?php foreach ($decisoes_filtro as $valor => $rotulo): ?>
                     <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $filtro_decisao === $valor ? 'selected' : ''; ?>>
@@ -391,10 +400,7 @@ require __DIR__ . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button type="submit" class="btn btn-primary btn-sm">
-                    <i class="bi bi-funnel"></i> Filtrar
-                </button>
+            <div class="col-md-2">
                 <?php if ($filtro_turma || $filtro_decisao !== ''): ?>
                 <a href="termo_autorizacao_ver.php?id=<?php echo (int) $termo_id; ?>" class="btn btn-outline-secondary btn-sm">
                     Limpar
@@ -402,6 +408,18 @@ require __DIR__ . '/includes/header.php';
                 <?php endif; ?>
             </div>
         </form>
+        <div class="d-flex flex-wrap gap-3 small mt-3">
+            <span><span class="badge bg-success"><?php echo (int) $totais['concordaram']; ?></span> concordaram</span>
+            <span><span class="badge bg-danger"><?php echo (int) $totais['discordaram']; ?></span> discordaram</span>
+            <span><span class="badge bg-warning text-dark"><?php echo (int) $totais['pendentes']; ?></span> pendentes</span>
+            <?php if ((int) $totais['alunos_com_discordancia'] > 0): ?>
+            <span class="text-danger">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <strong><?php echo (int) $totais['alunos_com_discordancia']; ?></strong> com discordância entre responsáveis
+            </span>
+            <?php endif; ?>
+            <span class="text-muted"><?php echo (int) $totais['total_alunos']; ?> aluno(s)</span>
+        </div>
     </div>
     <div class="card-body p-0">
         <?php if (empty($alunos)): ?>

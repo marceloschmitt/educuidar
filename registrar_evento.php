@@ -449,9 +449,10 @@ if ($aluno_id) {
         exit;
     }
     
-    // Nivel2 só vê eventos que ele mesmo registrou
     $user_id = $_SESSION['user_id'] ?? null;
-    $registrado_por = ($user->isNivel2()) ? $user_id : null;
+    $filtro_autor = resolverFiltroAutorEventos($user, $user_id);
+    $registrado_por = $filtro_autor['registrado_por'];
+    $visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
 
     $aluno_ficha = $aluno_data;
     $aluno_ficha['todas_turmas'] = [];
@@ -476,7 +477,7 @@ if ($aluno_id) {
         $aluno_ficha['ano_civil'] = $turma_corrente['ano_civil'];
         $aluno_ficha['is_ano_corrente'] = true;
     }
-    $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por);
+    $eventos_aluno = $evento->getByAlunoETurma($aluno_id, $turma_corrente['id'], $registrado_por, $visibilidade_nivel2);
     $eventos_aluno = filterEventosPorSabado($eventos_aluno, $incluir_sabados);
     $aluno_ficha['total_eventos'] = count($eventos_aluno);
     $aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha));

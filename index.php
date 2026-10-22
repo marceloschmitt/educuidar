@@ -45,7 +45,8 @@ if ($tipo_sigaa_id === null) {
 
 $filtro_curso = $_GET['filtro_curso'] ?? '';
 $filtro_turma = $_GET['filtro_turma'] ?? '';
-$apenas_meus_eventos = $user->isNivel2() || ($_GET['apenas_meus_eventos'] ?? '') === '1';
+$apenas_meus_eventos = ($_GET['apenas_meus_eventos'] ?? '') === '1';
+$filtro_autor = resolverFiltroAutorEventos($user, $user_id, $apenas_meus_eventos);
 
 // Sem parâmetro, o filtro de tipo começa no tipo configurado em Configurações; "todos" remove o filtro.
 $tipo_padrao_id = $configuracao->getDashboardTipoEventoPadraoId();
@@ -69,7 +70,8 @@ $filtros_base = [
     'ano' => $ano_corrente,
     'curso_id' => $filtro_curso,
     'turma_id' => $filtro_turma,
-    'registrado_por' => $apenas_meus_eventos ? $user_id : null,
+    'registrado_por' => $filtro_autor['registrado_por'],
+    'visibilidade_nivel2' => $filtro_autor['visibilidade_nivel2'],
     'incluir_sabados' => $incluir_sabados,
 ];
 $stats = new DashboardEstatisticas($db, $filtros_base + ['tipo_evento_id' => $tipo_selecionado_id]);
@@ -146,7 +148,7 @@ if ($filtro_curso) $params_base['filtro_curso'] = $filtro_curso;
 if ($filtro_turma) $params_base['filtro_turma'] = $filtro_turma;
 if (!$tipo_e_padrao) $params_base['filtro_tipo_evento'] = $tipo_selecionado_id ?? 'todos';
 if (!$incluir_sabados) $params_base['incluir_sabados'] = '0';
-if ($apenas_meus_eventos && !$user->isNivel2()) $params_base['apenas_meus_eventos'] = '1';
+if ($apenas_meus_eventos) $params_base['apenas_meus_eventos'] = '1';
 
 $url_dashboard = function (array $sobrescrever) use ($params_base) {
     $p = array_filter(array_merge($params_base, $sobrescrever), function ($v) {
@@ -205,7 +207,7 @@ foreach ($linhas_freq as $row) {
     ];
 }
 
-$filtros_alterados = $filtro_curso || $filtro_turma || !$tipo_e_padrao || !$incluir_sabados || ($apenas_meus_eventos && !$user->isNivel2());
+$filtros_alterados = $filtro_curso || $filtro_turma || !$tipo_e_padrao || !$incluir_sabados || $apenas_meus_eventos;
 
 $chart_data = [
     'rotulo' => $rotulo_ocorrencias,
@@ -304,7 +306,6 @@ $altura_barras_turma = max(120, count($series_turma) * 30 + 30) + $altura_legend
                 </div>
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo $apenas_meus_eventos ? 'checked' : ''; ?>
-                           <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
                            onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
                     <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
                 </div>

@@ -38,7 +38,9 @@ if (!$aluno) {
 
 $ano_corrente = $configuracao->getAnoCorrente();
 $user_id = $_SESSION['user_id'] ?? null;
-$registrado_por = ($user->isNivel2()) ? $user_id : null;
+$filtro_autor = resolverFiltroAutorEventos($user, $user_id);
+$registrado_por = $filtro_autor['registrado_por'];
+$visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
 
 $turmas_aluno = $aluno_model->getTurmasAluno($aluno_id);
 $aluno['todas_turmas'] = [];
@@ -75,7 +77,7 @@ if ($turma_ano_corrente_aluno) {
     }
 }
 
-$aluno['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $ano_corrente);
+$aluno['total_eventos'] = $evento->countByAluno($aluno_id, $registrado_por, $ano_corrente, $visibilidade_nivel2);
 
 // Garante CPF como string (evita perda de zeros à esquerda no JSON)
 if (array_key_exists('cpf', $aluno)) {

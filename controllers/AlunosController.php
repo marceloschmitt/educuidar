@@ -46,9 +46,10 @@ class AlunosController extends Controller {
         $ano_corrente = $this->configuracao->getAnoCorrente();
         $turmas_ano_corrente_lista = $this->turma->getTurmasPorAnoCorrente($ano_corrente);
         
-        // Nivel2 só vê eventos que ele mesmo registrou
         $user_id = $_SESSION['user_id'] ?? null;
-        $registrado_por = ($this->user->isNivel2()) ? $user_id : null;
+        $filtro_autor = resolverFiltroAutorEventos($this->user, $user_id);
+        $registrado_por = $filtro_autor['registrado_por'];
+        $visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
         
         // Process alunos data
         foreach ($alunos as &$a) {
@@ -98,7 +99,7 @@ class AlunosController extends Controller {
             }
             
             // Contar eventos do aluno
-            $a['total_eventos'] = $this->evento->countByAluno($a['id'], $registrado_por, $ano_corrente);
+            $a['total_eventos'] = $this->evento->countByAluno($a['id'], $registrado_por, $ano_corrente, $visibilidade_nivel2);
         }
         unset($a); // Limpar referência
         

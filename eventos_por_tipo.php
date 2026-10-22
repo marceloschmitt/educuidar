@@ -38,10 +38,11 @@ $todos_tipos = $tipo_evento_model->getAll(false); // Inclui não visíveis (ex.:
 
 // Get statistics
 if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel2()) {
-    // Nivel2 só vê seus eventos; demais usuários podem ativar esse filtro.
-    $registrado_por = ($user->isNivel2() || $apenas_meus_eventos) ? $user_id : null;
-    $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por, $incluir_sabados);
-    $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados);
+    $filtro_autor = resolverFiltroAutorEventos($user, $user_id, $apenas_meus_eventos);
+    $registrado_por = $filtro_autor['registrado_por'];
+    $visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
+    $estatisticas = $evento->getEstatisticas(null, $filtro_turma ?: null, $filtro_curso ?: null, $ano_corrente, $registrado_por, $incluir_sabados, $visibilidade_nivel2);
+    $eventos_recentes = $evento->getAll($registrado_por, null, $incluir_sabados, $visibilidade_nivel2);
     // Filter eventos recentes by ano corrente
     $eventos_recentes = array_filter($eventos_recentes, function($evt) use ($ano_corrente) {
         return !empty($evt['ano_civil']) && $evt['ano_civil'] == $ano_corrente;
@@ -86,7 +87,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
             <div class="card-body">
                 <form method="GET" action="" class="row g-3 align-items-end">
                     <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
-                    <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
+                    <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo $apenas_meus_eventos ? '1' : '0'; ?>">
                     <div class="col-md-3">
                         <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
                         <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
@@ -125,8 +126,7 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                             <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                         </div>
                         <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
-                                   <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                            <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo $apenas_meus_eventos ? 'checked' : ''; ?>
                                    onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
                             <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
                         </div>
@@ -206,8 +206,10 @@ if ($user->isAdmin() || $user->isNivel0() || $user->isNivel1() || $user->isNivel
                     <?php if (!$incluir_sabados): ?>
                     <span class="badge bg-secondary">Sábados ocultos</span>
                     <?php endif; ?>
-                    <?php if ($user->isNivel2() || $apenas_meus_eventos): ?>
+                    <?php if ($apenas_meus_eventos): ?>
                     <span class="badge bg-primary">Apenas meus eventos</span>
+                    <?php elseif (!empty($visibilidade_nivel2)): ?>
+                    <span class="badge bg-secondary">Visão de monitor</span>
                     <?php endif; ?>
                 <?php if ($filtro_tipo_evento): ?>
                     <?php 

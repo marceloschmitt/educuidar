@@ -347,14 +347,15 @@ if (isset($_GET['delete'])) {
     }
 }
 
-// Nivel2 só vê seus eventos; demais usuários podem ativar esse filtro.
 $user_id = $_SESSION['user_id'] ?? null;
-$registrado_por = ($user->isNivel2() || $apenas_meus_eventos) ? $user_id : null;
+$filtro_autor = resolverFiltroAutorEventos($user, $user_id, $apenas_meus_eventos);
+$registrado_por = $filtro_autor['registrado_por'];
+$visibilidade_nivel2 = $filtro_autor['visibilidade_nivel2'];
 $current_user_type_id = $_SESSION['user_type_id'] ?? '';
 if (empty($current_user_type_id)) {
     $current_user_type_id = getUserTypeIdByUserId($db, $_SESSION['user_id'] ?? null);
 }
-$eventos = $evento->getAll($registrado_por, $filtro_ano, $incluir_sabados);
+$eventos = $evento->getAll($registrado_por, $filtro_ano, $incluir_sabados, $visibilidade_nivel2);
 $anexos_por_evento = [];
 if (!empty($eventos)) {
     $evento_ids = array_column($eventos, 'id');
@@ -464,7 +465,7 @@ require_once 'includes/header.php';
         <!-- Filters -->
         <form method="GET" action="" class="row g-3 mb-4">
             <input type="hidden" name="incluir_sabados" id="incluir_sabados_value" value="<?php echo $incluir_sabados ? '1' : '0'; ?>">
-            <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo ($user->isNivel2() || $apenas_meus_eventos) ? '1' : '0'; ?>">
+            <input type="hidden" name="apenas_meus_eventos" id="apenas_meus_eventos_value" value="<?php echo $apenas_meus_eventos ? '1' : '0'; ?>">
             <div class="col-md-3">
                 <label for="filtro_curso" class="form-label">Filtrar por Curso</label>
                 <select class="form-select form-select-sm" id="filtro_curso" name="filtro_curso">
@@ -525,8 +526,7 @@ require_once 'includes/header.php';
                     <label class="form-check-label" for="incluir_sabados_cb">Incluir eventos de sábado</label>
                 </div>
                 <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo ($user->isNivel2() || $apenas_meus_eventos) ? 'checked' : ''; ?>
-                           <?php echo $user->isNivel2() ? 'disabled' : ''; ?>
+                    <input class="form-check-input" type="checkbox" id="apenas_meus_eventos_cb" <?php echo $apenas_meus_eventos ? 'checked' : ''; ?>
                            onchange="document.getElementById('apenas_meus_eventos_value').value = this.checked ? '1' : '0'; this.form.submit();">
                     <label class="form-check-label" for="apenas_meus_eventos_cb">Apenas meus eventos</label>
                 </div>
