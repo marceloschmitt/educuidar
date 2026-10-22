@@ -49,7 +49,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
     </li>
     <?php endif; ?>
     <?php
-    $paginas_autorizacoes = ['autorizacoes.php', 'termos_autorizacao.php', 'termo_autorizacao_ver.php'];
+    $paginas_autorizacoes = ['autorizacoes.php', 'autorizacao_registrar.php', 'termos_autorizacao.php', 'termo_autorizacao_ver.php'];
     $menu_autorizacoes_aberto = in_array($current_page, $paginas_autorizacoes, true);
     if (!isset($menu_autorizacoes_uid)) {
         $menu_autorizacoes_uid = 0;
@@ -68,7 +68,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         <div class="collapse <?php echo $menu_autorizacoes_aberto ? 'show' : ''; ?>" id="<?php echo $menu_autorizacoes_id; ?>">
             <ul class="nav flex-column sidebar-submenu">
                 <li class="nav-item">
-                    <a class="nav-link <?php echo $current_page === 'autorizacoes.php' ? 'active' : ''; ?>" href="autorizacoes.php">
+                    <a class="nav-link <?php echo in_array($current_page, ['autorizacoes.php', 'autorizacao_registrar.php'], true) ? 'active' : ''; ?>" href="autorizacoes.php">
                         <i class="bi bi-door-open"></i> Entrada e saída
                     </a>
                 </li>

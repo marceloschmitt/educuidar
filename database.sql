@@ -416,6 +416,7 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     tipo ENUM('entrada_fora_horario', 'saida_fora_horario') NOT NULL,
     data_autorizacao DATE NOT NULL,
     hora TIME NOT NULL,
+    hora_registro TIME NULL,
     justificativa TEXT NOT NULL,
     autorizado_por_nome VARCHAR(200) NULL,
     meio_autorizacao VARCHAR(50) NULL,

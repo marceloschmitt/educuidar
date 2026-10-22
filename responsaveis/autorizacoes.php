@@ -34,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $tipo = $_POST['tipo'] ?? '';
         $data_raw = trim($_POST['data_autorizacao'] ?? '');
         $hora = $_POST['hora'] ?? '';
+        $hora_registro = $_POST['hora_registro'] ?? '';
         $justificativa = trim($_POST['justificativa'] ?? '');
 
         $data = null;
@@ -50,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_error'] = 'Aluno inválido.';
         } elseif (!isset($tipos[$tipo])) {
             $_SESSION['flash_error'] = 'Selecione o tipo de autorização.';
-        } elseif ($data === null || $hora === '') {
-            $_SESSION['flash_error'] = 'Informe a data no formato dd/mm/aa e o horário.';
+        } elseif ($data === null || $hora === '' || $hora_registro === '') {
+            $_SESSION['flash_error'] = 'Informe a data (dd/mm/aa), o horário do registro e o horário previsto.';
         } elseif ($justificativa === '') {
             $_SESSION['flash_error'] = 'Informe a justificativa.';
-        } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
+        } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $hora_registro, $justificativa)) {
             $_SESSION['flash_success'] = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
         } else {
             $_SESSION['flash_error'] = 'Erro ao salvar a autorização.';
@@ -112,17 +113,24 @@ require __DIR__ . '/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div class="mb-3">
+                <label class="form-label" for="data_autorizacao">Data (dd/mm/aa)</label>
+                <input type="text" class="form-control form-control-lg" id="data_autorizacao" name="data_autorizacao"
+                       required inputmode="numeric" autocomplete="off" placeholder="dd/mm/aa"
+                       maxlength="8" pattern="\d{2}/\d{2}/\d{2}"
+                       value="<?php echo date('d/m/y'); ?>">
+            </div>
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="form-label" for="data_autorizacao">Data (dd/mm/aa)</label>
-                    <input type="text" class="form-control form-control-lg" id="data_autorizacao" name="data_autorizacao"
-                           required inputmode="numeric" autocomplete="off" placeholder="dd/mm/aa"
-                           maxlength="8" pattern="\d{2}/\d{2}/\d{2}"
-                           value="<?php echo date('d/m/y'); ?>">
+                    <label class="form-label" for="hora_registro">Horário do registro</label>
+                    <input type="time" class="form-control form-control-lg" id="hora_registro" name="hora_registro"
+                           value="<?php echo date('H:i'); ?>" required>
+                    <div class="form-text">Agora, ao enviar o pedido</div>
                 </div>
                 <div class="col-6">
-                    <label class="form-label" for="hora">Horário</label>
+                    <label class="form-label" for="hora">Horário previsto</label>
                     <input type="time" class="form-control form-control-lg" id="hora" name="hora" required>
+                    <div class="form-text">Quando o aluno deve entrar/sair</div>
                 </div>
             </div>
             <div class="mb-3">
@@ -161,7 +169,10 @@ require __DIR__ . '/header.php';
                 <div class="small"><?php echo htmlspecialchars($nome_aluno); ?></div>
                 <div class="small text-muted">
                     <?php echo date('d/m/y', strtotime($item['data_autorizacao'])); ?>
-                    às <?php echo substr($item['hora'], 0, 5); ?>
+                    · previsto <?php echo substr($item['hora'], 0, 5); ?>
+                    <?php if (!empty($item['hora_registro'])): ?>
+                    · registro <?php echo substr($item['hora_registro'], 0, 5); ?>
+                    <?php endif; ?>
                 </div>
                 <?php if ($escola): ?>
                 <div class="small text-muted mt-1">
