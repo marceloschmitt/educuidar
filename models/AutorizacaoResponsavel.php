@@ -277,8 +277,9 @@ class AutorizacaoResponsavel {
         if (!empty($auth['registrado_por_nome'])) {
             $linhas[] = 'Registrado na escola por: ' . $auth['registrado_por_nome'];
         }
+        $url_sistema = self::urlAutorizacoesEntradaSaida();
         $linhas[] = '';
-        $linhas[] = 'Se o aluno sair durante a sua aula de forma antecipada, conforme autorizado aqui, entre no EduCuidar, vá em Autorizações/Entrada e Saída, e marque o evento como ocorrido, por favor.';
+        $linhas[] = 'Se o aluno sair durante a sua aula de forma antecipada, conforme autorizado aqui, entre no EduCuidar (' . $url_sistema . '), vá em Autorizações/Entrada e Saída, e marque o evento como ocorrido, por favor.';
         $linhas[] = '';
         $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';
         $linhas[] = '';
@@ -298,6 +299,17 @@ class AutorizacaoResponsavel {
         }
 
         return $stats;
+    }
+
+    /** URL absoluta da tela Autorizações → Entrada e saída. */
+    public static function urlAutorizacoesEntradaSaida() {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $scheme = $https ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $base = rtrim($base, '/');
+        return $scheme . '://' . $host . $base . '/autorizacoes.php';
     }
 
     private function turmaLabelDoAluno($aluno_id) {
