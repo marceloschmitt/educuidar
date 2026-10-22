@@ -156,17 +156,17 @@ require_once 'includes/header.php';
 <?php endif; ?>
 
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="card-header">
         <h5 class="mb-0"><i class="bi bi-door-open"></i> Entrada e saída</h5>
-        <a href="autorizacao_registrar.php" class="btn btn-primary btn-sm">
-            <i class="bi bi-telephone"></i> Registrar aviso recebido
-        </a>
     </div>
     <div class="card-body">
         <p class="text-muted small mb-0">
             Autorizações feitas pelos responsáveis no portal ou registradas pela escola
-            (telefone, e-mail etc.). Marque com <i class="bi bi-check-lg"></i> se ocorreu
-            (cria o evento) ou com <i class="bi bi-x-lg text-danger"></i> se não ocorreu.
+            (telefone, e-mail etc.). Para registrar um aviso recebido, abra o aluno na lista de
+            <a href="alunos.php">Alunos</a> e use o menu
+            <strong>Registrar autorização</strong>.
+            Marque com <i class="bi bi-check-lg"></i> se ocorreu (cria o evento) ou com
+            <i class="bi bi-x-lg text-danger"></i> se não ocorreu.
         </p>
     </div>
 </div>

@@ -1208,6 +1208,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var linkVerEventos = document.getElementById('contextMenuVerEventos');
             linkVerEventos.href = 'registrar_evento.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();
 
+            var linkRegistrarAutorizacao = document.getElementById('contextMenuRegistrarAutorizacao');
+            if (linkRegistrarAutorizacao) {
+                linkRegistrarAutorizacao.href = 'autorizacao_registrar.php?aluno_id=' + alunoData.id + getAlunosFilterQuery();
+            }
+
             // Configurar link do prontuário se existir
             var linkProntuario = document.getElementById('contextMenuProntuario');
             if (linkProntuario) {

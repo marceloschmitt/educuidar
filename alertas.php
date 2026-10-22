@@ -236,6 +236,9 @@ require_once 'includes/header.php';
     <a class="dropdown-item" href="#" id="contextMenuVerEventos">
         <i class="bi bi-eye text-success"></i> Ver/Criar Eventos
     </a>
+    <a class="dropdown-item" href="#" id="contextMenuRegistrarAutorizacao">
+        <i class="bi bi-telephone text-primary"></i> Registrar autorização
+    </a>
     <a class="dropdown-item" href="#" id="contextMenuProntuario">
         <i class="bi bi-file-text text-info"></i> Ver Prontuário
     </a>

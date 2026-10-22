@@ -571,6 +571,9 @@ if ($aluno_id) {
                     <button type="button" class="btn btn-secondary btn-sm me-2 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
                         <i class="bi bi-file-text"></i> Ver Ficha
                     </button>
+                    <a href="autorizacao_registrar.php?aluno_id=<?php echo (int) $aluno_id; ?>" class="btn btn-outline-primary btn-sm me-2">
+                        <i class="bi bi-telephone"></i> Registrar autorização
+                    </a>
                     <a href="prontuario.php?aluno_id=<?php echo htmlspecialchars($aluno_id); ?><?php echo empty($voltar_params) ? '' : '&' . implode('&', $voltar_params); ?>" class="btn btn-info btn-sm me-2">
                         <i class="bi bi-file-text"></i> Ver Prontuário
                     </a>
