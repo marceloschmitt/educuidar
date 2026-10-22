@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS termo_autorizacao (
     pdf_mime VARCHAR(100) NULL,
     pdf_tamanho INT NULL,
     status ENUM('ativo', 'suspenso') NOT NULL DEFAULT 'ativo',
+    visivel_pais TINYINT(1) NOT NULL DEFAULT 1,
     criado_por INT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

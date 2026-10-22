@@ -51,7 +51,7 @@ $termo_ativo = true;
 
 if ($termo_id) {
     $termo = $termoModel->getById($termo_id);
-    if (!$termo || !$termoModel->responsavelPodeVerTermo($termo_id, $responsavel_id)) {
+    if (!$termo || !TermoAutorizacao::estaVisivelPais($termo) || !$termoModel->responsavelPodeVerTermo($termo_id, $responsavel_id)) {
         $_SESSION['flash_error'] = 'Autorização não encontrada.';
         header('Location: termos.php');
         exit;

@@ -49,7 +49,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
     </li>
     <?php endif; ?>
     <?php
-    $paginas_autorizacoes = ['autorizacoes.php', 'autorizacao_registrar.php', 'termos_autorizacao.php', 'termo_autorizacao_ver.php'];
+    $paginas_autorizacoes = ['autorizacoes.php', 'autorizacao_registrar.php', 'termos_autorizacao.php', 'termo_autorizacao_ver.php', 'termo_autorizacao_editar.php'];
     $menu_autorizacoes_aberto = in_array($current_page, $paginas_autorizacoes, true);
     if (!isset($menu_autorizacoes_uid)) {
         $menu_autorizacoes_uid = 0;
@@ -74,7 +74,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
                 </li>
                 <?php if ($pode_ver_termos): ?>
                 <li class="nav-item">
-                    <a class="nav-link <?php echo in_array($current_page, ['termos_autorizacao.php', 'termo_autorizacao_ver.php'], true) ? 'active' : ''; ?>" href="termos_autorizacao.php">
+                    <a class="nav-link <?php echo in_array($current_page, ['termos_autorizacao.php', 'termo_autorizacao_ver.php', 'termo_autorizacao_editar.php'], true) ? 'active' : ''; ?>" href="termos_autorizacao.php">
                         <i class="bi bi-people"></i> Participação em atividades
                     </a>
                 </li>

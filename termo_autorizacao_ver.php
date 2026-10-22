@@ -88,6 +88,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
         exit;
     }
+
+    if ($action === 'visibilidade') {
+        $visivel = !empty($_POST['visivel']);
+        if ($termoModel->setVisivelPais($termo_id, $visivel)) {
+            $_SESSION['success'] = $visivel
+                ? 'Autorização visível para os responsáveis.'
+                : 'Autorização oculta dos responsáveis.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível alterar a visibilidade.';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
 }
 
 $termo = $termoModel->getById($termo_id);
@@ -98,6 +111,7 @@ $totais = $termoModel->totaisRespostas($termo_id);
 $total_respostas = $termoModel->contarRespostas($termo_id);
 $labels = TermoAutorizacao::decisoesLabels();
 $ativo = TermoAutorizacao::estaAtivo($termo);
+$visivel_pais = TermoAutorizacao::estaVisivelPais($termo);
 $destinatarios_email = $ativo ? $termoModel->listDestinatariosPendentesParaEmail($termo_id) : [];
 $qtd_email_pendentes = count($destinatarios_email);
 
@@ -127,10 +141,30 @@ require __DIR__ . '/includes/header.php';
     <a href="termos_autorizacao.php" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
+    <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-pencil"></i> Editar
+    </a>
     <?php if (TermoAutorizacao::temPdf($termo)): ?>
     <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
         <i class="bi bi-file-pdf"></i> Ver PDF
     </a>
+    <?php endif; ?>
+    <?php if ($visivel_pais): ?>
+    <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
+        <input type="hidden" name="action" value="visibilidade">
+        <input type="hidden" name="visivel" value="0">
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-eye-slash"></i> Ocultar dos pais
+        </button>
+    </form>
+    <?php else: ?>
+    <form method="POST" class="d-inline">
+        <input type="hidden" name="action" value="visibilidade">
+        <input type="hidden" name="visivel" value="1">
+        <button type="submit" class="btn btn-outline-success btn-sm">
+            <i class="bi bi-eye"></i> Tornar visível aos pais
+        </button>
+    </form>
     <?php endif; ?>
     <?php if ($ativo): ?>
     <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
@@ -173,6 +207,11 @@ require __DIR__ . '/includes/header.php';
     <?php endif; ?>
 </div>
 
+<?php if (!$visivel_pais): ?>
+<div class="alert alert-secondary">
+    <i class="bi bi-eye-slash"></i> Esta autorização está <strong>oculta</strong> dos responsáveis no portal.
+</div>
+<?php endif; ?>
 <?php if (!$ativo): ?>
 <div class="alert alert-warning">
     <i class="bi bi-pause-circle"></i> Esta autorização está <strong>suspensa</strong>. Os responsáveis não podem responder enquanto ela não for reativada.
@@ -182,11 +221,18 @@ require __DIR__ . '/includes/header.php';
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-people"></i> <?php echo htmlspecialchars($termo['titulo']); ?></h5>
-        <?php if ($ativo): ?>
-        <span class="badge bg-success">Ativa</span>
-        <?php else: ?>
-        <span class="badge bg-secondary">Suspensa</span>
-        <?php endif; ?>
+        <div class="d-flex gap-1 flex-wrap">
+            <?php if ($ativo): ?>
+            <span class="badge bg-success">Ativa</span>
+            <?php else: ?>
+            <span class="badge bg-secondary">Suspensa</span>
+            <?php endif; ?>
+            <?php if ($visivel_pais): ?>
+            <span class="badge bg-info">Visível aos pais</span>
+            <?php else: ?>
+            <span class="badge bg-dark">Oculta dos pais</span>
+            <?php endif; ?>
+        </div>
     </div>
     <div class="card-body">
         <div class="row g-3">

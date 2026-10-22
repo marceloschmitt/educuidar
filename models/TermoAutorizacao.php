@@ -80,6 +80,13 @@ class TermoAutorizacao {
                      ADD COLUMN texto_autorizacao TEXT NULL AFTER hora"
                 );
             }
+            if ($cols && !in_array('visivel_pais', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE termo_autorizacao
+                     ADD COLUMN visivel_pais TINYINT(1) NOT NULL DEFAULT 1 AFTER status,
+                     ADD INDEX idx_visivel_pais (visivel_pais)"
+                );
+            }
             // PDF passou a ser opcional (pode haver só texto)
             if ($cols) {
                 $this->conn->exec("ALTER TABLE termo_autorizacao MODIFY pdf_caminho VARCHAR(255) NULL");
@@ -97,6 +104,10 @@ class TermoAutorizacao {
 
     public static function temTexto(array $termo) {
         return trim((string) ($termo['texto_autorizacao'] ?? '')) !== '';
+    }
+
+    public static function estaVisivelPais(array $termo) {
+        return (int) ($termo['visivel_pais'] ?? 1) === 1;
     }
 
     private function garantirDiretorioPdf($termo_id = null) {
@@ -230,6 +241,167 @@ class TermoAutorizacao {
 
     public function reativar($termo_id) {
         return $this->setStatus($termo_id, self::STATUS_ATIVO);
+    }
+
+    public function setVisivelPais($termo_id, $visivel) {
+        $this->garantirTabelas();
+        $stmt = $this->conn->prepare(
+            "UPDATE termo_autorizacao SET visivel_pais = :visivel WHERE id = :id"
+        );
+        $stmt->bindValue(':visivel', $visivel ? 1 : 0, PDO::PARAM_INT);
+        $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 || $this->getById($termo_id) !== null;
+    }
+
+    /**
+     * Atualiza dados do termo. Conteúdo: informe PDF novo e/ou texto;
+     * se não enviar conteúdo novo, mantém o atual (desde que ainda exista texto ou PDF).
+     */
+    public function atualizar($termo_id, $titulo, $objetivo, $data_evento, $hora, array $turma_ids, $arquivo = null, $texto_autorizacao = null, $trocar_conteudo = false) {
+        $this->garantirTabelas();
+        $termo = $this->getById($termo_id);
+        if (!$termo) {
+            return false;
+        }
+
+        $titulo = trim((string) $titulo);
+        $objetivo = trim((string) $objetivo);
+        $texto_autorizacao = trim((string) ($texto_autorizacao ?? ''));
+        $hora = $hora !== null && $hora !== '' ? $hora : null;
+        $turma_ids = array_values(array_unique(array_filter(array_map('intval', $turma_ids))));
+
+        $tem_pdf_novo = is_array($arquivo) && ($arquivo['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK;
+        $tem_texto_novo = $texto_autorizacao !== '';
+
+        if ($titulo === '' || $objetivo === '' || empty($data_evento) || empty($turma_ids)) {
+            return false;
+        }
+
+        if ($trocar_conteudo) {
+            if (!$tem_pdf_novo && !$tem_texto_novo) {
+                return false;
+            }
+        } elseif (!$tem_pdf_novo && !$tem_texto_novo && !self::temPdf($termo) && !self::temTexto($termo)) {
+            return false;
+        }
+
+        $pdf_nome = null;
+        $pdf_mime = null;
+        $pdf_tamanho = null;
+        if ($tem_pdf_novo) {
+            if (($arquivo['size'] ?? 0) > self::TAMANHO_MAXIMO_PDF || ($arquivo['size'] ?? 0) <= 0) {
+                return false;
+            }
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($arquivo['tmp_name']) ?: '';
+            $ext = strtolower(pathinfo($arquivo['name'], PATHINFO_EXTENSION));
+            if ($mime !== self::MIME_PDF && $ext !== 'pdf') {
+                return false;
+            }
+            $pdf_nome = basename((string) $arquivo['name']);
+            $pdf_mime = self::MIME_PDF;
+            $pdf_tamanho = (int) $arquivo['size'];
+        }
+
+        $this->conn->beginTransaction();
+        try {
+            if ($trocar_conteudo && $tem_texto_novo && !$tem_pdf_novo) {
+                // Troca para texto: remove PDF antigo do disco
+                $caminho_antigo = $this->caminhoAbsolutoPdf($termo);
+                $stmt = $this->conn->prepare(
+                    "UPDATE termo_autorizacao
+                     SET titulo = :titulo, objetivo = :objetivo, data_evento = :data_evento, hora = :hora,
+                         texto_autorizacao = :texto,
+                         pdf_caminho = NULL, pdf_nome_original = NULL, pdf_mime = NULL, pdf_tamanho = NULL
+                     WHERE id = :id"
+                );
+                $stmt->bindValue(':texto', $texto_autorizacao);
+                $stmt->bindValue(':titulo', $titulo);
+                $stmt->bindValue(':objetivo', $objetivo);
+                $stmt->bindValue(':data_evento', $data_evento);
+                $stmt->bindValue(':hora', $hora);
+                $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+                $stmt->execute();
+                if ($caminho_antigo && is_file($caminho_antigo)) {
+                    @unlink($caminho_antigo);
+                }
+            } elseif ($tem_pdf_novo) {
+                $caminho_antigo = $this->caminhoAbsolutoPdf($termo);
+                $stmt = $this->conn->prepare(
+                    "UPDATE termo_autorizacao
+                     SET titulo = :titulo, objetivo = :objetivo, data_evento = :data_evento, hora = :hora,
+                         texto_autorizacao = NULL,
+                         pdf_nome_original = :pdf_nome, pdf_mime = :pdf_mime, pdf_tamanho = :pdf_tamanho
+                     WHERE id = :id"
+                );
+                $stmt->bindValue(':titulo', $titulo);
+                $stmt->bindValue(':objetivo', $objetivo);
+                $stmt->bindValue(':data_evento', $data_evento);
+                $stmt->bindValue(':hora', $hora);
+                $stmt->bindValue(':pdf_nome', $pdf_nome);
+                $stmt->bindValue(':pdf_mime', $pdf_mime);
+                $stmt->bindValue(':pdf_tamanho', $pdf_tamanho, PDO::PARAM_INT);
+                $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+                $stmt->execute();
+
+                $dir = $this->garantirDiretorioPdf($termo_id);
+                $stored = uniqid('termo_', true) . '.pdf';
+                $destino = $dir . '/' . $stored;
+                if (!move_uploaded_file($arquivo['tmp_name'], $destino)) {
+                    throw new RuntimeException('Falha ao salvar o PDF.');
+                }
+                $relativo = self::DIRETORIO_PDF . '/' . $termo_id . '/' . $stored;
+                $upd = $this->conn->prepare("UPDATE termo_autorizacao SET pdf_caminho = :caminho WHERE id = :id");
+                $upd->bindValue(':caminho', $relativo);
+                $upd->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+                $upd->execute();
+                if ($caminho_antigo && is_file($caminho_antigo) && realpath($caminho_antigo) !== realpath($destino)) {
+                    @unlink($caminho_antigo);
+                }
+            } else {
+                // Mantém conteúdo; só atualiza metadados (e texto se informado sem trocar tipo)
+                $stmt = $this->conn->prepare(
+                    "UPDATE termo_autorizacao
+                     SET titulo = :titulo, objetivo = :objetivo, data_evento = :data_evento, hora = :hora
+                     WHERE id = :id"
+                );
+                $stmt->bindValue(':titulo', $titulo);
+                $stmt->bindValue(':objetivo', $objetivo);
+                $stmt->bindValue(':data_evento', $data_evento);
+                $stmt->bindValue(':hora', $hora);
+                $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+                $stmt->execute();
+
+                if ($tem_texto_novo && self::temTexto($termo) && !self::temPdf($termo)) {
+                    $updTxt = $this->conn->prepare(
+                        "UPDATE termo_autorizacao SET texto_autorizacao = :texto WHERE id = :id"
+                    );
+                    $updTxt->bindValue(':texto', $texto_autorizacao);
+                    $updTxt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
+                    $updTxt->execute();
+                }
+            }
+
+            $delTurmas = $this->conn->prepare("DELETE FROM termo_autorizacao_turma WHERE termo_id = :termo_id");
+            $delTurmas->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
+            $delTurmas->execute();
+
+            $insTurma = $this->conn->prepare(
+                "INSERT INTO termo_autorizacao_turma (termo_id, turma_id) VALUES (:termo_id, :turma_id)"
+            );
+            foreach ($turma_ids as $turma_id) {
+                $insTurma->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
+                $insTurma->bindValue(':turma_id', $turma_id, PDO::PARAM_INT);
+                $insTurma->execute();
+            }
+
+            $this->conn->commit();
+            return true;
+        } catch (Throwable $e) {
+            $this->conn->rollBack();
+            return false;
+        }
     }
 
     private function setStatus($termo_id, $status) {
@@ -786,6 +958,7 @@ class TermoAutorizacao {
              INNER JOIN alunos a ON a.id = at.aluno_id
              WHERE ra.responsavel_id = :responsavel_id
                AND COALESCE(a.desistente, 0) = 0
+               AND COALESCE(t.visivel_pais, 1) = 1
              ORDER BY t.data_evento DESC, t.id DESC"
         );
         $stmt->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);

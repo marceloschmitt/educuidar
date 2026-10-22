@@ -227,6 +227,7 @@ require __DIR__ . '/includes/header.php';
                         <th class="ps-3">Data</th>
                         <th>Título</th>
                         <th>Status</th>
+                        <th>Visibilidade</th>
                         <th>Turmas</th>
                         <th class="text-center">Concordaram</th>
                         <th class="text-center">Discordaram</th>
@@ -251,6 +252,13 @@ require __DIR__ . '/includes/header.php';
                             <span class="badge bg-secondary"><?php echo htmlspecialchars($status_labels[$st]); ?></span>
                             <?php else: ?>
                             <span class="badge bg-success"><?php echo htmlspecialchars($status_labels[$st] ?? 'Ativa'); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if (TermoAutorizacao::estaVisivelPais($t)): ?>
+                            <span class="badge bg-info">Visível</span>
+                            <?php else: ?>
+                            <span class="badge bg-dark">Oculta</span>
                             <?php endif; ?>
                         </td>
                         <td class="small"><?php echo htmlspecialchars($t['turmas_label'] ?: '—'); ?></td>
