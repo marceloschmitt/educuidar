@@ -21,13 +21,6 @@ require __DIR__ . '/header.php';
     <span class="text-muted small">Autorizações</span>
 </div>
 
-<div class="card resp-card mb-3">
-    <div class="card-body p-4">
-        <h1 class="h5 mb-3">Autorizações</h1>
-        <p class="text-muted mb-0">Escolha o tipo de autorização:</p>
-    </div>
-</div>
-
 <a href="autorizacoes.php" class="card resp-card mb-3 text-decoration-none text-dark">
     <div class="card-body p-4 d-flex align-items-center justify-content-between gap-3">
         <div>
