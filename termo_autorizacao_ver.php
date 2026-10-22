@@ -123,9 +123,59 @@ $visivel_pais = TermoAutorizacao::estaVisivelPais($termo);
 $destinatarios_email = $ativo ? $termoModel->listDestinatariosPendentesParaEmail($termo_id) : [];
 $qtd_email_pendentes = count($destinatarios_email);
 
+$filtro_turma = (int) ($_GET['turma_id'] ?? 0);
+$filtro_decisao = trim((string) ($_GET['decisao'] ?? ''));
+$decisoes_filtro = [
+    'concordou' => 'Concordaram',
+    'discordou' => 'Discordaram',
+    'pendente' => 'Pendentes',
+    'discordancia' => 'Com discordância',
+];
+if ($filtro_decisao !== '' && !isset($decisoes_filtro[$filtro_decisao])) {
+    $filtro_decisao = '';
+}
+
+$turmas_filtro = [];
+foreach ($termo['turmas'] ?? [] as $tu) {
+    $tid = (int) ($tu['id'] ?? 0);
+    if ($tid > 0) {
+        $turmas_filtro[$tid] = ($tu['curso_nome'] ?? '') . ' - ' . (int) ($tu['ano_curso'] ?? 0) . 'º';
+    }
+}
+if ($filtro_turma > 0 && !isset($turmas_filtro[$filtro_turma])) {
+    $filtro_turma = 0;
+}
+
 $respostas_por_aluno = [];
 foreach ($respostas as $r) {
     $respostas_por_aluno[(int) $r['aluno_id']][] = $r;
+}
+
+$alunos_filtrados = [];
+foreach ($alunos as $aluno) {
+    $aid = (int) $aluno['id'];
+    if ($filtro_turma > 0 && (int) ($aluno['turma_id'] ?? 0) !== $filtro_turma) {
+        continue;
+    }
+
+    if ($filtro_decisao !== '') {
+        $decs = array_column($respostas_por_aluno[$aid] ?? [], 'decisao');
+        $tem_sim = in_array(TermoAutorizacao::DECISAO_CONCORDOU, $decs, true);
+        $tem_nao = in_array(TermoAutorizacao::DECISAO_DISCORDOU, $decs, true);
+        $status = 'pendente';
+        if ($tem_sim && $tem_nao) {
+            $status = 'discordancia';
+        } elseif ($tem_sim) {
+            $status = 'concordou';
+        } elseif ($tem_nao) {
+            $status = 'discordou';
+        }
+        if ($status !== $filtro_decisao) {
+            continue;
+        }
+    }
+
+    $alunos_filtrados[] = $aluno;
 }
 
 $page_title = 'Autorização — ' . $termo['titulo'];
@@ -310,12 +360,54 @@ require __DIR__ . '/includes/header.php';
 </div>
 
 <div class="card mb-4">
-    <div class="card-header">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-people"></i> Decisões dos responsáveis</h5>
+        <span class="small text-muted">
+            <?php echo count($alunos_filtrados); ?> de <?php echo count($alunos); ?> aluno(s)
+        </span>
+    </div>
+    <div class="card-body border-bottom">
+        <form method="GET" action="termo_autorizacao_ver.php" class="row g-2 align-items-end">
+            <input type="hidden" name="id" value="<?php echo (int) $termo_id; ?>">
+            <div class="col-md-4">
+                <label class="form-label mb-1" for="filtro_turma">Turma</label>
+                <select class="form-select form-select-sm" id="filtro_turma" name="turma_id">
+                    <option value="">Todas</option>
+                    <?php foreach ($turmas_filtro as $tid => $tlabel): ?>
+                    <option value="<?php echo (int) $tid; ?>" <?php echo $filtro_turma === (int) $tid ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($tlabel); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label mb-1" for="filtro_decisao">Decisão</label>
+                <select class="form-select form-select-sm" id="filtro_decisao" name="decisao">
+                    <option value="">Todas</option>
+                    <?php foreach ($decisoes_filtro as $valor => $rotulo): ?>
+                    <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo $filtro_decisao === $valor ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($rotulo); ?>
+                    </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary btn-sm">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
+                <?php if ($filtro_turma || $filtro_decisao !== ''): ?>
+                <a href="termo_autorizacao_ver.php?id=<?php echo (int) $termo_id; ?>" class="btn btn-outline-secondary btn-sm">
+                    Limpar
+                </a>
+                <?php endif; ?>
+            </div>
+        </form>
     </div>
     <div class="card-body p-0">
         <?php if (empty($alunos)): ?>
         <p class="text-muted text-center my-4">Nenhum aluno nas turmas deste termo.</p>
+        <?php elseif (empty($alunos_filtrados)): ?>
+        <p class="text-muted text-center my-4">Nenhum aluno corresponde aos filtros selecionados.</p>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
@@ -327,7 +419,7 @@ require __DIR__ . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($alunos as $aluno): ?>
+                    <?php foreach ($alunos_filtrados as $aluno): ?>
                     <?php
                     $aid = (int) $aluno['id'];
                     $resps_aluno = $respostas_por_aluno[$aid] ?? [];
