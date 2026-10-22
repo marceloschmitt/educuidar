@@ -68,6 +68,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
         exit;
     }
+
+    if ($action === 'enviar_email') {
+        $stats = $termoModel->enviarEmailsPendentes(
+            $termo_id,
+            TermoAutorizacao::urlPortalTermo($termo_id)
+        );
+        if ($stats['enviados'] > 0 && $stats['falhas'] === 0) {
+            $_SESSION['success'] = 'E-mail enviado a ' . (int) $stats['enviados'] . ' responsável(is) pendente(s).';
+        } elseif ($stats['enviados'] > 0) {
+            $_SESSION['success'] = 'E-mail enviado a ' . (int) $stats['enviados']
+                . ' responsável(is); ' . (int) $stats['falhas'] . ' falha(s).';
+            $_SESSION['error'] = implode(' ', array_slice($stats['mensagens'], -5));
+        } else {
+            $_SESSION['error'] = !empty($stats['mensagens'])
+                ? implode(' ', $stats['mensagens'])
+                : 'Nenhum e-mail foi enviado.';
+        }
+        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
+        exit;
+    }
 }
 
 $termo = $termoModel->getById($termo_id);
@@ -78,6 +98,8 @@ $totais = $termoModel->totaisRespostas($termo_id);
 $total_respostas = $termoModel->contarRespostas($termo_id);
 $labels = TermoAutorizacao::decisoesLabels();
 $ativo = TermoAutorizacao::estaAtivo($termo);
+$destinatarios_email = $ativo ? $termoModel->listDestinatariosPendentesParaEmail($termo_id) : [];
+$qtd_email_pendentes = count($destinatarios_email);
 
 $respostas_por_aluno = [];
 foreach ($respostas as $r) {
@@ -115,6 +137,23 @@ require __DIR__ . '/includes/header.php';
         <input type="hidden" name="action" value="suspender">
         <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
     </form>
+    <?php if ($qtd_email_pendentes > 0): ?>
+    <?php
+    $msg_email = 'Enviar e-mail para ' . (int) $qtd_email_pendentes
+        . ' responsável(is) que ainda não responderam?';
+    ?>
+    <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_email), ENT_QUOTES, 'UTF-8'); ?>);">
+        <input type="hidden" name="action" value="enviar_email">
+        <button type="submit" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
+            <span class="badge text-bg-primary"><?php echo (int) $qtd_email_pendentes; ?></span>
+        </button>
+    </form>
+    <?php else: ?>
+    <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Não há responsáveis pendentes com e-mail">
+        <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
+    </button>
+    <?php endif; ?>
     <?php else: ?>
     <form method="POST" class="d-inline">
         <input type="hidden" name="action" value="reativar">

@@ -644,10 +644,11 @@ class TermoAutorizacao {
     }
 
     /**
-     * Destinatários futuros do e-mail: responsáveis aprovados/ativos com e-mail,
-     * vinculados a alunos das turmas do termo (sem duplicar e-mail).
+     * Responsáveis aprovados/ativos com e-mail vinculados a alunos do termo
+     * que ainda não têm nenhuma resposta (de nenhum responsável).
+     * Se um dos pais já assinou, o outro não recebe e-mail.
      */
-    public function listDestinatariosParaEmail($termo_id) {
+    public function listDestinatariosPendentesParaEmail($termo_id) {
         $this->garantirTabelas();
         $stmt = $this->conn->prepare(
             "SELECT r.id, r.nome, r.email,
@@ -663,12 +664,114 @@ class TermoAutorizacao {
                AND r.status = 'aprovado'
                AND r.ativo = 1
                AND r.email <> ''
+               AND NOT EXISTS (
+                   SELECT 1 FROM termo_autorizacao_resposta resp
+                   WHERE resp.termo_id = tt.termo_id
+                     AND resp.aluno_id = a.id
+               )
              GROUP BY r.id, r.nome, r.email
              ORDER BY r.nome ASC"
         );
         $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Envia e-mail aos responsáveis que ainda não responderam.
+     * @return array{enviados: int, falhas: int, destinatarios: int, mensagens: list<string>}
+     */
+    public function enviarEmailsPendentes($termo_id, $link_portal) {
+        $stats = ['enviados' => 0, 'falhas' => 0, 'destinatarios' => 0, 'mensagens' => []];
+        $termo = $this->getById($termo_id);
+        if (!$termo) {
+            $stats['mensagens'][] = 'Autorização não encontrada.';
+            return $stats;
+        }
+        if (!self::estaAtivo($termo)) {
+            $stats['mensagens'][] = 'A autorização está suspensa. Reative antes de enviar e-mails.';
+            return $stats;
+        }
+
+        $configuracao = new Configuracao($this->conn);
+        if (!$configuracao->isEmailEnabled()) {
+            $stats['mensagens'][] = 'Envio de e-mail desabilitado em Configuração de e-mail.';
+            return $stats;
+        }
+        if (!$configuracao->permiteEnvioEmail()) {
+            $stats['mensagens'][] = 'Envio bloqueado pela variável EMAIL_SEND.';
+            return $stats;
+        }
+        if (!$configuracao->isEmailConfigured()) {
+            $stats['mensagens'][] = 'SMTP incompleto (host, porta e remetente).';
+            return $stats;
+        }
+
+        $destinatarios = $this->listDestinatariosPendentesParaEmail($termo_id);
+        $stats['destinatarios'] = count($destinatarios);
+        if (empty($destinatarios)) {
+            $stats['mensagens'][] = 'Não há responsáveis pendentes com e-mail cadastrado.';
+            return $stats;
+        }
+
+        $mailer = new SmtpMailer($configuracao->getEmailConfig());
+        $assunto = 'Autorização pendente: ' . $termo['titulo'];
+        $data_fmt = date('d/m/Y', strtotime($termo['data_evento']));
+        $hora_fmt = !empty($termo['hora']) ? substr($termo['hora'], 0, 5) : '';
+
+        foreach ($destinatarios as $dest) {
+            $corpo = self::montarCorpoEmailPendente(
+                $dest['nome'],
+                $termo['titulo'],
+                $data_fmt,
+                $hora_fmt,
+                $dest['alunos'] ?? '',
+                $link_portal
+            );
+            try {
+                $mailer->send([$dest['email']], $assunto, $corpo);
+                $stats['enviados']++;
+                $stats['mensagens'][] = 'OK → ' . $dest['email'];
+            } catch (Exception $e) {
+                $stats['falhas']++;
+                $stats['mensagens'][] = 'ERRO → ' . $dest['email'] . ': ' . $e->getMessage();
+            }
+        }
+
+        return $stats;
+    }
+
+    public static function montarCorpoEmailPendente($nome_resp, $titulo, $data_fmt, $hora_fmt, $alunos, $link_portal) {
+        $linhas = [];
+        $linhas[] = 'Olá, ' . trim((string) $nome_resp) . '.';
+        $linhas[] = '';
+        $linhas[] = 'A escola solicita sua autorização para a participação em:';
+        $linhas[] = '';
+        $linhas[] = trim((string) $titulo);
+        $linhas[] = 'Data: ' . $data_fmt . ($hora_fmt !== '' ? ' às ' . $hora_fmt : '');
+        if (trim((string) $alunos) !== '') {
+            $linhas[] = 'Aluno(s): ' . $alunos;
+        }
+        $linhas[] = '';
+        $linhas[] = 'Acesse o portal do EduCuidar para responder:';
+        $linhas[] = $link_portal;
+        $linhas[] = '';
+        $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';
+        $linhas[] = '';
+        $linhas[] = '—';
+        $linhas[] = 'EduCuidar';
+        return implode("\n", $linhas);
+    }
+
+    /** URL absoluta do portal do responsável para esta autorização. */
+    public static function urlPortalTermo($termo_id) {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $scheme = $https ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $base = rtrim($base, '/');
+        return $scheme . '://' . $host . $base . '/responsaveis/termos.php?id=' . (int) $termo_id;
     }
 
     /** Termos que afetam algum aluno vinculado ao responsável. */
