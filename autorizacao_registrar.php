@@ -65,7 +65,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
     $tipo = $_POST['tipo'] ?? '';
     $data = trim($_POST['data_autorizacao'] ?? '');
     $hora = trim($_POST['hora'] ?? '');
-    $hora_registro = trim($_POST['hora_registro'] ?? '');
     $autorizado_por = trim($_POST['autorizado_por_nome'] ?? '');
     $meio = $_POST['meio_autorizacao'] ?? '';
     $observacoes = trim($_POST['observacoes'] ?? '');
@@ -82,8 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
 
     if (!isset($tipos[$tipo])) {
         $_SESSION['error'] = 'Selecione o tipo de autorização.';
-    } elseif ($data === '' || $hora === '' || $hora_registro === '') {
-        $_SESSION['error'] = 'Informe a data, o horário do registro e o horário previsto.';
+    } elseif ($data === '' || $hora === '') {
+        $_SESSION['error'] = 'Informe a data e o horário em que o aluno poderá sair/entrar.';
     } elseif ($autorizado_por === '') {
         $_SESSION['error'] = 'Informe quem autorizou.';
     } elseif (!isset($meios[$meio])) {
@@ -94,7 +93,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
             $tipo,
             $data,
             $hora,
-            $hora_registro,
             $autorizado_por,
             $meio,
             $observacoes,
@@ -133,12 +131,6 @@ $success = $_SESSION['success'] ?? '';
 $error = $_SESSION['error'] ?? '';
 unset($_SESSION['success'], $_SESSION['error']);
 
-$aluno_ficha = $aluno;
-$aluno_ficha['turma_atual'] = $turma_corrente
-    ? (($turma_corrente['curso_nome'] ?? '') . ' - ' . (int) ($turma_corrente['ano_curso'] ?? 0) . 'º Ano')
-    : '';
-$aluno_ficha_json = htmlspecialchars(json_encode($aluno_ficha, JSON_UNESCAPED_UNICODE), ENT_QUOTES, 'UTF-8');
-
 $page_title = 'Registrar autorização — ' . $nome_aluno;
 require_once 'includes/header.php';
 ?>
@@ -166,16 +158,8 @@ require_once 'includes/header.php';
 <?php endif; ?>
 
 <div class="card mb-3">
-    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="card-header">
         <h5 class="mb-0"><i class="bi bi-telephone"></i> Registrar aviso — <?php echo htmlspecialchars($nome_aluno); ?></h5>
-        <div>
-            <button type="button" class="btn btn-secondary btn-sm me-1 btn-view-ficha" data-aluno='<?php echo $aluno_ficha_json; ?>'>
-                <i class="bi bi-file-text"></i> Ver Ficha
-            </button>
-            <a href="registrar_evento.php?aluno_id=<?php echo (int) $aluno_id; ?>" class="btn btn-outline-success btn-sm">
-                <i class="bi bi-eye"></i> Ver Eventos
-            </a>
-        </div>
     </div>
     <div class="card-body">
         <div class="mb-3 small text-muted">
@@ -199,7 +183,7 @@ require_once 'includes/header.php';
             <?php endforeach; ?>
 
             <div class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <label class="form-label" for="tipo">Tipo *</label>
                     <select class="form-select" id="tipo" name="tipo" required>
                         <option value="">Selecione…</option>
@@ -208,21 +192,14 @@ require_once 'includes/header.php';
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label" for="data_autorizacao">Data *</label>
+                <div class="col-md-3">
+                    <label class="form-label" for="data_autorizacao">Data da saída/entrada *</label>
                     <input type="date" class="form-control" id="data_autorizacao" name="data_autorizacao"
                            value="<?php echo htmlspecialchars(date('Y-m-d')); ?>" required>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label" for="hora_registro">Horário do registro *</label>
-                    <input type="time" class="form-control" id="hora_registro" name="hora_registro"
-                           value="<?php echo htmlspecialchars(date('H:i')); ?>" required>
-                    <div class="form-text">Quando o pedido foi recebido.</div>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label" for="hora">Horário previsto *</label>
+                    <label class="form-label" for="hora">Horário da saída/entrada *</label>
                     <input type="time" class="form-control" id="hora" name="hora" required>
-                    <div class="form-text">Quando o aluno deve entrar/sair.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" for="meio_autorizacao">Como autorizou *</label>
@@ -279,9 +256,4 @@ require_once 'includes/header.php';
     </div>
 </div>
 
-<?php
-if (file_exists(__DIR__ . '/views/alunos/ficha_modal.php')) {
-    require_once __DIR__ . '/views/alunos/ficha_modal.php';
-}
-require_once 'includes/footer.php';
-?>
+<?php require_once 'includes/footer.php'; ?>

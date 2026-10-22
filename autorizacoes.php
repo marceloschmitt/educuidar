@@ -221,7 +221,7 @@ require_once 'includes/header.php';
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Data / horários</th>
+                        <th>Saída/entrada</th>
                         <th>Tipo</th>
                         <th>Aluno</th>
                         <th>Autorizado por</th>
@@ -240,14 +240,13 @@ require_once 'includes/header.php';
                     $quem = AutorizacaoResponsavel::nomeQuemAutorizou($item);
                     $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
                     $hora_prev = substr((string) ($item['hora'] ?? ''), 0, 5);
-                    $hora_reg = !empty($item['hora_registro']) ? substr($item['hora_registro'], 0, 5) : '';
                     ?>
                     <tr>
                         <td class="text-nowrap">
-                            <?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?><br>
-                            <span class="small text-muted">Previsto: <?php echo htmlspecialchars($hora_prev); ?></span>
-                            <?php if ($hora_reg !== ''): ?>
-                            <br><span class="small text-muted">Registro: <?php echo htmlspecialchars($hora_reg); ?></span>
+                            <?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?>
+                            às <?php echo htmlspecialchars($hora_prev); ?>
+                            <?php if (!empty($item['created_at'])): ?>
+                            <br><span class="small text-muted">Registrado em <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?></span>
                             <?php endif; ?>
                         </td>
                         <td><?php echo htmlspecialchars($tipos[$item['tipo']] ?? $item['tipo']); ?></td>

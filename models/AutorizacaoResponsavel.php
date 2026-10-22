@@ -113,16 +113,6 @@ class AutorizacaoResponsavel {
                     // FK pode já existir
                 }
             }
-            if (!in_array('hora_registro', $cols, true)) {
-                $this->conn->exec(
-                    "ALTER TABLE {$this->table}
-                     ADD COLUMN hora_registro TIME NULL AFTER hora"
-                );
-                // Registros antigos: usa a própria hora prevista como aproximação
-                $this->conn->exec(
-                    "UPDATE {$this->table} SET hora_registro = hora WHERE hora_registro IS NULL"
-                );
-            }
             // responsavel_id passa a ser opcional (registros da escola)
             $colInfo = $this->conn->query("SHOW COLUMNS FROM {$this->table} LIKE 'responsavel_id'")->fetch();
             if ($colInfo && strtoupper((string) ($colInfo['Null'] ?? '')) === 'NO') {
@@ -134,27 +124,26 @@ class AutorizacaoResponsavel {
         $this->schema_ok = true;
     }
 
-    /** Criação pelo responsável no portal. $hora = prevista; $hora_registro = do pedido. */
-    public function create($responsavel_id, $aluno_id, $tipo, $data, $hora, $hora_registro, $justificativa) {
+    /** Criação pelo responsável no portal. $data/$hora = dia e horário previstos da entrada/saída. */
+    public function create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa) {
         $this->garantirSchema();
         if (!isset(self::tiposLabels()[$tipo])) {
             return false;
         }
         $justificativa = trim((string) $justificativa);
-        if ($justificativa === '' || empty($data) || empty($hora) || empty($hora_registro) || empty($responsavel_id)) {
+        if ($justificativa === '' || empty($data) || empty($hora) || empty($responsavel_id)) {
             return false;
         }
 
         $query = "INSERT INTO " . $this->table . "
-                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, hora_registro, justificativa, status)
-                  VALUES (:responsavel_id, 'portal', :aluno_id, :tipo, :data_autorizacao, :hora, :hora_registro, :justificativa, 'pendente')";
+                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa, status)
+                  VALUES (:responsavel_id, 'portal', :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'pendente')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);
         $stmt->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
         $stmt->bindValue(':tipo', $tipo);
         $stmt->bindValue(':data_autorizacao', $data);
         $stmt->bindValue(':hora', $hora);
-        $stmt->bindValue(':hora_registro', $hora_registro);
         $stmt->bindValue(':justificativa', $justificativa);
         if (!$stmt->execute()) {
             return false;
@@ -164,9 +153,10 @@ class AutorizacaoResponsavel {
 
     /**
      * Registro pela escola (aviso por telefone, e-mail etc.).
-     * $hora = prevista da entrada/saída; $hora_registro = horário do pedido.
+     * $data/$hora = dia e horário previstos da entrada/saída.
+     * O momento do registro fica em created_at (automático).
      */
-    public function createByEscola($aluno_id, $tipo, $data, $hora, $hora_registro, $autorizado_por_nome, $meio, $observacoes, $registrado_por) {
+    public function createByEscola($aluno_id, $tipo, $data, $hora, $autorizado_por_nome, $meio, $observacoes, $registrado_por) {
         $this->garantirSchema();
         if (!isset(self::tiposLabels()[$tipo])) {
             return false;
@@ -177,7 +167,7 @@ class AutorizacaoResponsavel {
         }
         $autorizado_por_nome = trim((string) $autorizado_por_nome);
         $observacoes = trim((string) $observacoes);
-        if ($autorizado_por_nome === '' || empty($data) || empty($hora) || empty($hora_registro) || empty($aluno_id) || empty($registrado_por)) {
+        if ($autorizado_por_nome === '' || empty($data) || empty($hora) || empty($aluno_id) || empty($registrado_por)) {
             return false;
         }
         if ($observacoes === '') {
@@ -185,16 +175,15 @@ class AutorizacaoResponsavel {
         }
 
         $query = "INSERT INTO " . $this->table . "
-                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, hora_registro, justificativa,
+                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa,
                    autorizado_por_nome, meio_autorizacao, registrado_por, status)
-                  VALUES (NULL, 'escola', :aluno_id, :tipo, :data_autorizacao, :hora, :hora_registro, :justificativa,
+                  VALUES (NULL, 'escola', :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa,
                           :autorizado_por_nome, :meio, :registrado_por, 'pendente')";
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
         $stmt->bindValue(':tipo', $tipo);
         $stmt->bindValue(':data_autorizacao', $data);
         $stmt->bindValue(':hora', $hora);
-        $stmt->bindValue(':hora_registro', $hora_registro);
         $stmt->bindValue(':justificativa', $observacoes);
         $stmt->bindValue(':autorizado_por_nome', $autorizado_por_nome);
         $stmt->bindValue(':meio', $meio);
@@ -264,7 +253,6 @@ class AutorizacaoResponsavel {
             ? date('d/m/Y', strtotime($auth['data_autorizacao']))
             : '';
         $hora_fmt = !empty($auth['hora']) ? substr($auth['hora'], 0, 5) : '';
-        $hora_reg_fmt = !empty($auth['hora_registro']) ? substr($auth['hora_registro'], 0, 5) : '';
         $meio_label = $meios[$auth['meio_autorizacao'] ?? ''] ?? ($auth['meio_autorizacao'] ?? '');
         $quem = self::nomeQuemAutorizou($auth);
         $turma_label = $this->turmaLabelDoAluno((int) $auth['aluno_id']);
@@ -278,11 +266,7 @@ class AutorizacaoResponsavel {
             $linhas[] = 'Turma: ' . $turma_label;
         }
         $linhas[] = 'Tipo: ' . $tipo_label;
-        $linhas[] = 'Data: ' . $data_fmt;
-        if ($hora_reg_fmt !== '') {
-            $linhas[] = 'Horário do registro: ' . $hora_reg_fmt;
-        }
-        $linhas[] = 'Horário previsto: ' . $hora_fmt;
+        $linhas[] = 'Dia/horário previstos: ' . $data_fmt . ($hora_fmt !== '' ? ' às ' . $hora_fmt : '');
         $linhas[] = 'Autorizado por: ' . $quem;
         if ($meio_label !== '') {
             $linhas[] = 'Como autorizou: ' . $meio_label;
@@ -550,7 +534,6 @@ class AutorizacaoResponsavel {
             ? date('d/m/Y', strtotime($auth['data_autorizacao']))
             : '';
         $hora_prev = !empty($auth['hora']) ? substr($auth['hora'], 0, 5) : '';
-        $hora_reg = !empty($auth['hora_registro']) ? substr($auth['hora_registro'], 0, 5) : '';
         $linhas = [];
         $linhas[] = 'Observações: ' . trim((string) ($auth['justificativa'] ?? ''));
 
@@ -569,11 +552,7 @@ class AutorizacaoResponsavel {
             $linhas[] = 'Como autorizou: Portal do responsável';
         }
 
-        $linhas[] = 'Data: ' . $data_fmt;
-        if ($hora_reg !== '') {
-            $linhas[] = 'Horário do registro: ' . $hora_reg;
-        }
-        $linhas[] = 'Horário previsto: ' . $hora_prev;
+        $linhas[] = 'Dia/horário previstos: ' . $data_fmt . ($hora_prev !== '' ? ' às ' . $hora_prev : '');
         return implode("\n", $linhas);
     }
 
