@@ -234,6 +234,21 @@ class User {
         return $stmt->fetchAll();
     }
 
+    /** Usuários do tipo Professor com e-mail cadastrado. */
+    public function listProfessoresComEmail() {
+        $query = "SELECT u.id, u.full_name, u.email
+                  FROM " . $this->table . " u
+                  INNER JOIN user_user_types uut ON uut.user_id = u.id
+                  INNER JOIN user_types ut ON ut.id = uut.user_type_id
+                  WHERE LOWER(ut.nome) = 'professor'
+                    AND u.email IS NOT NULL
+                    AND TRIM(u.email) <> ''
+                  ORDER BY u.full_name ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function update() {
         // Set default auth_type if not provided
         if (empty($this->auth_type)) {

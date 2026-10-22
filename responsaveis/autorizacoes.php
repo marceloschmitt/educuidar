@@ -138,17 +138,20 @@ require __DIR__ . '/header.php';
 <div class="card resp-card">
     <div class="card-body p-0">
         <div class="p-3 border-bottom">
-            <h2 class="h5 mb-0">Minhas autorizações</h2>
+            <h2 class="h5 mb-0">Autorizações</h2>
         </div>
         <?php if (empty($lista)): ?>
         <p class="text-muted text-center p-4 mb-0">Nenhuma autorização ainda.</p>
         <?php else: ?>
-            <?php foreach ($lista as $item): ?>
             <?php
+            $meios = AutorizacaoResponsavel::meiosLabels();
+            foreach ($lista as $item):
             $nome_aluno = !empty($item['aluno_nome_social']) ? $item['aluno_nome_social'] : $item['aluno_nome'];
             $tipo_label = $tipos[$item['tipo']] ?? $item['tipo'];
             $st = $item['status'] ?? 'pendente';
             $badge = AutorizacaoResponsavel::statusBadgeClass($st);
+            $escola = AutorizacaoResponsavel::ehRegistroEscola($item);
+            $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
             ?>
             <div class="p-3 border-bottom">
                 <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
@@ -160,6 +163,17 @@ require __DIR__ . '/header.php';
                     <?php echo date('d/m/y', strtotime($item['data_autorizacao'])); ?>
                     às <?php echo substr($item['hora'], 0, 5); ?>
                 </div>
+                <?php if ($escola): ?>
+                <div class="small text-muted mt-1">
+                    Registrado pela escola
+                    <?php if (!empty($item['autorizado_por_nome'])): ?>
+                    · autorizado por <?php echo htmlspecialchars($item['autorizado_por_nome']); ?>
+                    <?php endif; ?>
+                    <?php if ($meio_label !== ''): ?>
+                    · <?php echo htmlspecialchars($meio_label); ?>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
                 <div class="mt-1"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></div>
                 <?php if (AutorizacaoResponsavel::podeRemover($item)): ?>
                 <form method="POST" class="mt-2">
