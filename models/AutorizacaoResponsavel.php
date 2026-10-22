@@ -278,6 +278,8 @@ class AutorizacaoResponsavel {
             $linhas[] = 'Registrado na escola por: ' . $auth['registrado_por_nome'];
         }
         $linhas[] = '';
+        $linhas[] = 'Se o aluno sair durante a sua aula de forma antecipada, conforme autorizado aqui, entre no EduCuidar, vá em Autorizações/Entrada e Saída, e marque o evento como ocorrido, por favor.';
+        $linhas[] = '';
         $linhas[] = 'O EduCuidar é apenas um apoio à comunicação escolar.';
         $linhas[] = '';
         $linhas[] = '—';
@@ -570,6 +572,15 @@ class AutorizacaoResponsavel {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
+    }
+
+    /** Exclusão pelo administrador (qualquer status/origem). */
+    public function excluirByAdmin($id) {
+        $this->garantirSchema();
+        $stmt = $this->conn->prepare("DELETE FROM " . $this->table . " WHERE id = :id");
+        $stmt->bindValue(':id', (int) $id, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->rowCount() > 0;
     }

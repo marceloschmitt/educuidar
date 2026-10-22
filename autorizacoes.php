@@ -53,6 +53,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
         exit;
     }
+
+    if ($action === 'excluir') {
+        $id = (int) ($_POST['id'] ?? 0);
+        if (!$user->isAdmin()) {
+            $_SESSION['error'] = 'Apenas o administrador pode excluir uma autorização.';
+        } elseif ($id && $autorizacao->excluirByAdmin($id)) {
+            $_SESSION['success'] = 'Autorização excluída.';
+        } else {
+            $_SESSION['error'] = 'Não foi possível excluir.';
+        }
+        header('Location: autorizacoes.php' . (!empty($_POST['return_query']) ? '?' . ltrim($_POST['return_query'], '?') : ''));
+        exit;
+    }
 }
 
 $filtro_status = $_GET['status'] ?? '';
@@ -304,6 +317,18 @@ require_once 'includes/header.php';
                                         title="Marcar como não ocorrido"
                                         onclick="return confirm('Marcar que a entrada/saída NÃO ocorreu?');">
                                     <i class="bi bi-x-lg"></i>
+                                </button>
+                            </form>
+                            <?php endif; ?>
+                            <?php if ($user->isAdmin()): ?>
+                            <form method="POST" class="d-inline">
+                                <input type="hidden" name="action" value="excluir">
+                                <input type="hidden" name="id" value="<?php echo (int) $item['id']; ?>">
+                                <input type="hidden" name="return_query" value="<?php echo htmlspecialchars($return_query); ?>">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                        title="Excluir autorização"
+                                        onclick="return confirm('Excluir este registro de autorização? Esta ação não pode ser desfeita.');">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                             <?php endif; ?>
