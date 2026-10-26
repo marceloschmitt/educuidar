@@ -17,6 +17,28 @@ class Responsavel {
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->garantirColunasResetSenha();
+    }
+
+    private function garantirColunasResetSenha() {
+        static $ok = false;
+        if ($ok) {
+            return;
+        }
+        try {
+            $cols = $this->conn->query("SHOW COLUMNS FROM " . $this->table)->fetchAll(PDO::FETCH_COLUMN);
+            if ($cols && !in_array('reset_token_hash', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE " . $this->table . "
+                     ADD COLUMN reset_token_hash VARCHAR(64) NULL DEFAULT NULL AFTER password,
+                     ADD COLUMN reset_token_expires DATETIME NULL DEFAULT NULL AFTER reset_token_hash,
+                     ADD INDEX idx_reset_token_hash (reset_token_hash)"
+                );
+            }
+            $ok = true;
+        } catch (Exception $e) {
+            // Mantém o fluxo mesmo se a migração falhar (ex.: permissão).
+        }
     }
 
     public function create(array $vinculos) {
@@ -349,6 +371,131 @@ class Responsavel {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':password', $hash);
         $stmt->bindParam(':id', $id);
+        return $stmt->execute() ? true : false;
+    }
+
+    /**
+     * Gera token de redefinição e envia e-mail com o link.
+     * Sempre retorna true no fluxo público (não revela se o CPF existe).
+     * @return true|'email_config'|'envio'|false
+     */
+    public function solicitarRedefinicaoSenha($cpf, $link_base) {
+        $this->garantirColunasResetSenha();
+        $row = $this->findByCpf($cpf);
+        if (
+            !$row
+            || ($row['status'] ?? '') !== 'aprovado'
+            || empty($row['ativo'])
+            || empty($row['email'])
+        ) {
+            return true;
+        }
+
+        $token = bin2hex(random_bytes(32));
+        $token_hash = hash('sha256', $token);
+        $expires = date('Y-m-d H:i:s', time() + 3600);
+
+        $stmt = $this->conn->prepare(
+            "UPDATE " . $this->table . "
+             SET reset_token_hash = :hash, reset_token_expires = :expires
+             WHERE id = :id"
+        );
+        $stmt->bindValue(':hash', $token_hash);
+        $stmt->bindValue(':expires', $expires);
+        $stmt->bindValue(':id', (int) $row['id'], PDO::PARAM_INT);
+        if (!$stmt->execute()) {
+            return false;
+        }
+
+        $link = rtrim($link_base, '?&') . (strpos($link_base, '?') === false ? '?' : '&') . 'token=' . urlencode($token);
+        $corpo = self::montarCorpoEmailRedefinicao($row['nome'] ?? '', $link);
+
+        try {
+            $configuracao = new Configuracao($this->conn);
+            $mailer = new SmtpMailer($configuracao->getEmailConfig());
+            $mailer->send([(string) $row['email']], 'EduCuidar — Redefinição de senha', $corpo);
+        } catch (Exception $e) {
+            return 'envio';
+        }
+
+        return true;
+    }
+
+    public static function montarCorpoEmailRedefinicao($nome, $link) {
+        $nome = trim((string) $nome);
+        $saudacao = $nome !== '' ? ('Olá, ' . $nome . '.') : 'Olá.';
+        $linhas = [
+            $saudacao,
+            '',
+            'Recebemos um pedido para redefinir a senha do portal de responsáveis do EduCuidar.',
+            'Use o link abaixo (válido por 1 hora):',
+            '',
+            $link,
+            '',
+            'Se você não solicitou esta alteração, ignore este e-mail.',
+            '',
+            'EduCuidar',
+        ];
+        return implode("\n", $linhas);
+    }
+
+    public static function urlRedefinirSenha() {
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
+        $scheme = $https ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $dir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+        $dir = rtrim($dir, '/');
+        return $scheme . '://' . $host . $dir . '/redefinir_senha.php';
+    }
+
+    /** @return array|null */
+    public function findByResetToken($token) {
+        $this->garantirColunasResetSenha();
+        $token = trim((string) $token);
+        if ($token === '' || strlen($token) < 32) {
+            return null;
+        }
+        $hash = hash('sha256', $token);
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM " . $this->table . "
+             WHERE reset_token_hash = :hash
+               AND reset_token_expires IS NOT NULL
+               AND reset_token_expires >= NOW()
+             LIMIT 1"
+        );
+        $stmt->bindValue(':hash', $hash);
+        $stmt->execute();
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    /**
+     * @return true|'token'|'senha_curta'|false
+     */
+    public function redefinirSenhaComToken($token, $senha_nova) {
+        $this->garantirColunasResetSenha();
+        if (strlen((string) $senha_nova) < 6) {
+            return 'senha_curta';
+        }
+        $row = $this->findByResetToken($token);
+        if (!$row) {
+            return 'token';
+        }
+        if (($row['status'] ?? '') !== 'aprovado' || empty($row['ativo'])) {
+            return 'token';
+        }
+
+        $hash = password_hash($senha_nova, PASSWORD_DEFAULT);
+        $stmt = $this->conn->prepare(
+            "UPDATE " . $this->table . "
+             SET password = :password,
+                 reset_token_hash = NULL,
+                 reset_token_expires = NULL
+             WHERE id = :id"
+        );
+        $stmt->bindValue(':password', $hash);
+        $stmt->bindValue(':id', (int) $row['id'], PDO::PARAM_INT);
         return $stmt->execute() ? true : false;
     }
 

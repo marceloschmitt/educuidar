@@ -79,6 +79,9 @@ require __DIR__ . '/header.php';
                     <div class="mb-3">
                         <label class="form-label" for="senha">Senha</label>
                         <input type="password" class="form-control form-control-lg" id="senha" name="senha" required>
+                        <div class="form-text text-end">
+                            <a href="esqueci_senha.php" class="text-decoration-none">Esqueci a senha</a>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-success w-100 btn-lg btn-touch">Entrar</button>
                 </form>

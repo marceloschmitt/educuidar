@@ -7,6 +7,8 @@ CREATE TABLE IF NOT EXISTS responsaveis (
     cpf VARCHAR(11) NOT NULL,
     email VARCHAR(100) NOT NULL,
     password VARCHAR(255) NOT NULL,
+    reset_token_hash VARCHAR(64) NULL DEFAULT NULL,
+    reset_token_expires DATETIME NULL DEFAULT NULL,
     ativo TINYINT(1) DEFAULT 0,
     status ENUM('pendente', 'aprovado', 'rejeitado', 'suspendido') NOT NULL DEFAULT 'pendente',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -14,7 +16,8 @@ CREATE TABLE IF NOT EXISTS responsaveis (
     UNIQUE KEY unique_cpf (cpf),
     UNIQUE KEY unique_email (email),
     INDEX idx_status (status),
-    INDEX idx_ativo (ativo)
+    INDEX idx_ativo (ativo),
+    INDEX idx_reset_token_hash (reset_token_hash)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS responsavel_alunos (
