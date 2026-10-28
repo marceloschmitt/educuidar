@@ -453,9 +453,9 @@ require __DIR__ . '/includes/header.php';
                                     <span class="small text-muted">
                                         <?php echo date('d/m/Y H:i', strtotime($r['decidido_em'])); ?>
                                     </span>
-                                    <?php if ($ativo && (int) $r['pode_alterar']): ?>
+                                    <?php if ((int) $r['pode_alterar']): ?>
                                     <span class="badge bg-info">Pode alterar</span>
-                                    <?php elseif ($ativo && $user->isAdmin()): ?>
+                                    <?php elseif ($user->isAdmin()): ?>
                                     <form method="POST" class="d-inline" onsubmit="return confirm('Permitir que este responsável responda novamente?');">
                                         <input type="hidden" name="action" value="liberar">
                                         <input type="hidden" name="resposta_id" value="<?php echo (int) $r['id']; ?>">
