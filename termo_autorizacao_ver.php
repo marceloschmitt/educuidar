@@ -41,26 +41,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    if ($action === 'suspender') {
-        if ($termoModel->suspender($termo_id)) {
-            $_SESSION['success'] = 'Autorização suspensa. Os responsáveis não podem mais responder.';
-        } else {
-            $_SESSION['error'] = 'Não foi possível suspender.';
-        }
-        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
-        exit;
-    }
-
-    if ($action === 'reativar') {
-        if ($termoModel->reativar($termo_id)) {
-            $_SESSION['success'] = 'Autorização reativada.';
-        } else {
-            $_SESSION['error'] = 'Não foi possível reativar.';
-        }
-        header('Location: termo_autorizacao_ver.php?id=' . $termo_id);
-        exit;
-    }
-
     if ($action === 'excluir') {
         if (!$user->isAdmin()) {
             $_SESSION['error'] = 'Apenas o administrador pode excluir uma autorização.';
@@ -118,9 +98,8 @@ $historico = $termoModel->listHistorico($termo_id);
 $totais = $termoModel->totaisRespostas($termo_id);
 $total_respostas = $termoModel->contarRespostas($termo_id);
 $labels = TermoAutorizacao::decisoesLabels();
-$ativo = TermoAutorizacao::estaAtivo($termo);
 $visivel_pais = TermoAutorizacao::estaVisivelPais($termo);
-$destinatarios_email = $ativo ? $termoModel->listDestinatariosPendentesParaEmail($termo_id) : [];
+$destinatarios_email = $termoModel->listDestinatariosPendentesParaEmail($termo_id);
 $qtd_email_pendentes = count($destinatarios_email);
 
 $filtro_turma = (int) ($_GET['turma_id'] ?? 0);
@@ -267,11 +246,6 @@ require __DIR__ . '/includes/header.php';
             </button>
         </form>
         <?php endif; ?>
-        <?php if ($ativo): ?>
-        <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
-            <input type="hidden" name="action" value="suspender">
-            <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
-        </form>
         <?php if ($qtd_email_pendentes > 0): ?>
         <?php
         $msg_email = 'Enviar e-mail para ' . (int) $qtd_email_pendentes
@@ -289,12 +263,6 @@ require __DIR__ . '/includes/header.php';
             <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
         </button>
         <?php endif; ?>
-        <?php else: ?>
-        <form method="POST" class="d-inline">
-            <input type="hidden" name="action" value="reativar">
-            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
-        </form>
-        <?php endif; ?>
     </div>
     <?php endif; ?>
 
@@ -311,21 +279,11 @@ require __DIR__ . '/includes/header.php';
     <i class="bi bi-eye-slash"></i> Esta autorização está <strong>oculta</strong> dos responsáveis no portal.
 </div>
 <?php endif; ?>
-<?php if (!$ativo): ?>
-<div class="alert alert-warning">
-    <i class="bi bi-pause-circle"></i> Esta autorização está <strong>suspensa</strong>. Os responsáveis não podem responder enquanto ela não for reativada.
-</div>
-<?php endif; ?>
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-people"></i> <?php echo htmlspecialchars($termo['titulo']); ?></h5>
         <div class="d-flex gap-1 flex-wrap">
-            <?php if ($ativo): ?>
-            <span class="badge bg-success">Ativa</span>
-            <?php else: ?>
-            <span class="badge bg-secondary">Suspensa</span>
-            <?php endif; ?>
             <?php if ($visivel_pais): ?>
             <span class="badge bg-info">Visível aos pais</span>
             <?php else: ?>

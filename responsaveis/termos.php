@@ -34,8 +34,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'decid
             $_SESSION['flash_error'] = 'Você já respondeu. Para alterar, a escola precisa liberar uma nova resposta.';
         } elseif ($resultado === 'aluno_fora') {
             $_SESSION['flash_error'] = 'Este aluno não participa desta autorização.';
-        } elseif ($resultado === 'suspenso') {
-            $_SESSION['flash_error'] = 'Esta autorização está suspensa. Não é possível responder no momento.';
         } else {
             $_SESSION['flash_error'] = 'Não foi possível registrar a resposta.';
         }
@@ -53,7 +51,6 @@ $termo_id = (int) ($_GET['id'] ?? 0);
 $aluno_id = (int) ($_GET['aluno_id'] ?? 0);
 $termo = null;
 $aluno = null;
-$termo_ativo = true;
 
 if ($termo_id && $aluno_id) {
     $termo = $termoModel->getById($termo_id);
@@ -67,7 +64,6 @@ if ($termo_id && $aluno_id) {
         header('Location: termos.php');
         exit;
     }
-    $termo_ativo = TermoAutorizacao::estaAtivo($termo);
     $alunos_termo = $termoModel->listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id);
     foreach ($alunos_termo as $a) {
         if ((int) $a['id'] === $aluno_id) {
@@ -117,7 +113,7 @@ require __DIR__ . '/header.php';
 
 <?php
 $r = $aluno['resposta'] ?? null;
-$pode_responder = $termo_ativo && (!$r || (int) $r['pode_alterar']);
+$pode_responder = !$r || (int) $r['pode_alterar'];
 $texto_personalizado = TermoAutorizacao::temTexto($termo)
     ? TermoAutorizacao::renderTextoPersonalizado(
         $termo['texto_autorizacao'],
@@ -138,14 +134,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             <?php if (!empty($termo['hora'])): ?>
             às <?php echo substr($termo['hora'], 0, 5); ?>
             <?php endif; ?>
-            <?php if (!$termo_ativo): ?>
-            · <span class="badge bg-secondary">Suspensa</span>
-            <?php endif; ?>
         </div>
-
-        <?php if (!$termo_ativo): ?>
-        <div class="alert alert-warning py-2">Esta autorização está suspensa. Não é possível responder no momento.</div>
-        <?php endif; ?>
 
         <?php if (TermoAutorizacao::temTexto($termo)): ?>
         <div class="mb-4"><?php echo nl2br(htmlspecialchars($texto_personalizado)); ?></div>
@@ -230,9 +219,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             <div class="small"><?php echo htmlspecialchars($a['nome']); ?></div>
             <div class="small text-muted">
                 <?php echo htmlspecialchars($a['turma_label']); ?>
-                <?php if (!empty($t['status']) && $t['status'] === TermoAutorizacao::STATUS_SUSPENSO): ?>
-                · <span class="text-secondary">Suspensa</span>
-                <?php elseif ($pendente): ?>
+                <?php if ($pendente): ?>
                 · <span class="text-warning">Pendente</span>
                 <?php elseif ($eu_ok): ?>
                 · <span class="text-success">Respondido</span>

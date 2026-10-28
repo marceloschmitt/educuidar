@@ -3,7 +3,7 @@
  * Autorizações de passeios e eventos escolares (outro tipo além de entrada/saída).
  * A escola cadastra a atividade (PDF + turmas); os responsáveis respondem concordou/discordou.
  * Decisão irrevogável, salvo liberação do admin (com histórico).
- * Pode ser suspensa (ainda com respostas) ou excluída (só sem respostas).
+ * Visibilidade aos pais controlada por ocultar/tornar visível.
  */
 class TermoAutorizacao {
     public const DIRETORIO_PDF = 'uploads/termos';
@@ -12,9 +12,6 @@ class TermoAutorizacao {
 
     public const DECISAO_CONCORDOU = 'concordou';
     public const DECISAO_DISCORDOU = 'discordou';
-
-    public const STATUS_ATIVO = 'ativo';
-    public const STATUS_SUSPENSO = 'suspenso';
 
     private $conn;
     private $tabelas_ok = false;
@@ -30,13 +27,6 @@ class TermoAutorizacao {
         ];
     }
 
-    public static function statusLabels() {
-        return [
-            self::STATUS_ATIVO => 'Ativa',
-            self::STATUS_SUSPENSO => 'Suspensa',
-        ];
-    }
-
     public static function decisaoBadgeClass($decisao) {
         if ($decisao === self::DECISAO_CONCORDOU) {
             return 'success';
@@ -45,11 +35,6 @@ class TermoAutorizacao {
             return 'danger';
         }
         return 'secondary';
-    }
-
-    public static function estaAtivo(array $termo) {
-        $status = $termo['status'] ?? self::STATUS_ATIVO;
-        return $status === self::STATUS_ATIVO;
     }
 
     private function garantirTabelas() {
@@ -83,7 +68,7 @@ class TermoAutorizacao {
             if ($cols && !in_array('visivel_pais', $cols, true)) {
                 $this->conn->exec(
                     "ALTER TABLE termo_autorizacao
-                     ADD COLUMN visivel_pais TINYINT(1) NOT NULL DEFAULT 1 AFTER status,
+                     ADD COLUMN visivel_pais TINYINT(1) NOT NULL DEFAULT 0 AFTER status,
                      ADD INDEX idx_visivel_pais (visivel_pais)"
                 );
             }
@@ -107,7 +92,7 @@ class TermoAutorizacao {
     }
 
     public static function estaVisivelPais(array $termo) {
-        return (int) ($termo['visivel_pais'] ?? 1) === 1;
+        return (int) ($termo['visivel_pais'] ?? 0) === 1;
     }
 
     /** Placeholders disponíveis no texto digitado da autorização. */
@@ -199,9 +184,9 @@ class TermoAutorizacao {
             $stmt = $this->conn->prepare(
                 "INSERT INTO termo_autorizacao
                  (titulo, objetivo, data_evento, hora, texto_autorizacao,
-                  pdf_caminho, pdf_nome_original, pdf_mime, pdf_tamanho, criado_por)
+                  pdf_caminho, pdf_nome_original, pdf_mime, pdf_tamanho, criado_por, visivel_pais)
                  VALUES (:titulo, :objetivo, :data_evento, :hora, :texto,
-                         NULL, :pdf_nome, :pdf_mime, :pdf_tamanho, :criado_por)"
+                         NULL, :pdf_nome, :pdf_mime, :pdf_tamanho, :criado_por, 0)"
             );
             $stmt->bindValue(':titulo', $titulo);
             $stmt->bindValue(':objetivo', $objetivo);
@@ -254,14 +239,6 @@ class TermoAutorizacao {
         $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
         $stmt->execute();
         return (int) $stmt->fetchColumn();
-    }
-
-    public function suspender($termo_id) {
-        return $this->setStatus($termo_id, self::STATUS_SUSPENSO);
-    }
-
-    public function reativar($termo_id) {
-        return $this->setStatus($termo_id, self::STATUS_ATIVO);
     }
 
     public function setVisivelPais($termo_id, $visivel) {
@@ -423,20 +400,6 @@ class TermoAutorizacao {
             $this->conn->rollBack();
             return false;
         }
-    }
-
-    private function setStatus($termo_id, $status) {
-        $this->garantirTabelas();
-        if (!isset(self::statusLabels()[$status])) {
-            return false;
-        }
-        $stmt = $this->conn->prepare(
-            "UPDATE termo_autorizacao SET status = :status WHERE id = :id"
-        );
-        $stmt->bindValue(':status', $status);
-        $stmt->bindValue(':id', (int) $termo_id, PDO::PARAM_INT);
-        $stmt->execute();
-        return $stmt->rowCount() > 0 || $this->getById($termo_id) !== null;
     }
 
     /**
@@ -818,8 +781,8 @@ class TermoAutorizacao {
         if (!$termo) {
             return 'nao_encontrado';
         }
-        if (!self::estaAtivo($termo)) {
-            return 'suspenso';
+        if (!self::estaVisivelPais($termo)) {
+            return 'oculta';
         }
         if (!$this->alunoPertenceAoTermo($termo_id, $aluno_id)) {
             return 'aluno_fora';
@@ -976,10 +939,6 @@ class TermoAutorizacao {
             $stats['mensagens'][] = 'Autorização não encontrada.';
             return $stats;
         }
-        if (!self::estaAtivo($termo)) {
-            $stats['mensagens'][] = 'A autorização está suspensa. Reative antes de enviar e-mails.';
-            return $stats;
-        }
 
         $configuracao = new Configuracao($this->conn);
         if (!$configuracao->isEmailEnabled()) {
@@ -1074,7 +1033,7 @@ class TermoAutorizacao {
              INNER JOIN alunos a ON a.id = at.aluno_id
              WHERE ra.responsavel_id = :responsavel_id
                AND COALESCE(a.desistente, 0) = 0
-               AND COALESCE(t.visivel_pais, 1) = 1
+               AND COALESCE(t.visivel_pais, 0) = 1
              ORDER BY t.data_evento DESC, t.id DESC"
         );
         $stmt->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);
