@@ -231,6 +231,10 @@ require __DIR__ . '/includes/header.php';
         <i class="bi bi-file-pdf"></i> Ver PDF
     </a>
     <?php endif; ?>
+    <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
+       class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
+        <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
+    </a>
     <?php if ($pode_gerenciar): ?>
     <?php if ($visivel_pais): ?>
     <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
@@ -371,15 +375,9 @@ require __DIR__ . '/includes/header.php';
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-people"></i> Decisões dos responsáveis</h5>
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="small text-muted">
-                <?php echo count($alunos_filtrados); ?> de <?php echo count($alunos); ?> aluno(s)
-            </span>
-            <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
-               class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
-                <i class="bi bi-file-pdf"></i> Gerar PDF
-            </a>
-        </div>
+        <span class="small text-muted">
+            <?php echo count($alunos_filtrados); ?> de <?php echo count($alunos); ?> aluno(s)
+        </span>
     </div>
     <div class="card-body border-bottom">
         <form method="GET" action="termo_autorizacao_ver.php" class="row g-2 align-items-end" id="form-filtro-decisoes">

@@ -1,6 +1,6 @@
 <?php
 /**
- * Relatório imprimível das decisões do termo (Salvar como PDF).
+ * Relatório imprimível das autorizações do termo (Salvar como PDF).
  */
 require_once __DIR__ . '/config/init.php';
 
@@ -61,7 +61,7 @@ $secoes = [
     ],
 ];
 
-$page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
+$page_title = 'Autorizações — ' . ($termo['titulo'] ?? '');
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -70,6 +70,9 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($page_title); ?></title>
     <style>
+        @page {
+            margin: 15mm;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 12px;
@@ -122,6 +125,11 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
             background: #f0f0f0;
             font-weight: 600;
         }
+        th.num, td.num {
+            width: 40px;
+            text-align: right;
+            white-space: nowrap;
+        }
         .vazio {
             color: #666;
             font-style: italic;
@@ -129,7 +137,7 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
         }
         .count { font-weight: normal; color: #555; }
         @media print {
-            body { margin: 12mm; }
+            body { margin: 0; }
             .toolbar { display: none !important; }
             h2 { page-break-after: avoid; }
             table { page-break-inside: auto; }
@@ -137,13 +145,13 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
         }
     </style>
 </head>
-<body onload="window.print()">
+<body>
     <div class="toolbar">
-        <button type="button" onclick="window.print()">Imprimir / Salvar como PDF</button>
+        <button type="button" id="btn-imprimir">Imprimir / Salvar como PDF</button>
         <a href="termo_autorizacao_ver.php?id=<?php echo (int) $termo_id; ?>">Voltar</a>
     </div>
 
-    <h1><?php echo htmlspecialchars($termo['titulo'] ?? 'Autorização'); ?></h1>
+    <h1>Autorizações — <?php echo htmlspecialchars($termo['titulo'] ?? ''); ?></h1>
     <div class="meta">
         <div>
             <strong>Data do evento:</strong>
@@ -173,14 +181,16 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
     <table>
         <thead>
             <tr>
-                <th style="width: 34%;">Aluno</th>
+                <th class="num">Nº</th>
+                <th style="width: 32%;">Aluno</th>
                 <th style="width: 40%;">Responsável</th>
-                <th style="width: 26%;">Data</th>
+                <th style="width: 22%;">Data</th>
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($secao['itens'] as $linha): ?>
+            <?php $n = 0; foreach ($secao['itens'] as $linha): $n++; ?>
             <tr>
+                <td class="num"><?php echo $n; ?></td>
                 <td><?php echo htmlspecialchars($linha['aluno_nome']); ?></td>
                 <td><?php echo htmlspecialchars($fmtResponsavel($linha)); ?></td>
                 <td><?php echo htmlspecialchars($fmtData($linha['decidido_em'] ?? null)); ?></td>
@@ -190,5 +200,22 @@ $page_title = 'Decisões — ' . ($termo['titulo'] ?? '');
     </table>
     <?php endif; ?>
     <?php endforeach; ?>
+
+    <script>
+    (function () {
+        var tituloOriginal = document.title;
+        function imprimir() {
+            // Título vazio: o horário já aparece abaixo do nome do evento ("Gerado em").
+            // Assim o cabeçalho do navegador não repete data/hora nem "DECISÕES".
+            document.title = ' ';
+            window.print();
+            setTimeout(function () { document.title = tituloOriginal; }, 500);
+        }
+        document.getElementById('btn-imprimir').addEventListener('click', imprimir);
+        window.addEventListener('load', function () {
+            setTimeout(imprimir, 200);
+        });
+    })();
+    </script>
 </body>
 </html>
