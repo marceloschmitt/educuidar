@@ -83,6 +83,91 @@ class TermoAutorizacoesPdf extends FPDF
         $this->Cell(0, 8, (string) $this->PageNo() . '/{nb}', 0, 0, 'C');
         $this->SetTextColor(0, 0, 0);
     }
+
+    /** Quantidade de linhas que o texto ocupa na largura $w. */
+    public function NbLines($w, $txt)
+    {
+        $cw = $this->CurrentFont['cw'];
+        if ($w == 0) {
+            $w = $this->w - $this->rMargin - $this->x;
+        }
+        $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
+        $s = str_replace("\r", '', (string) $txt);
+        $nb = strlen($s);
+        if ($nb > 0 && $s[$nb - 1] == "\n") {
+            $nb--;
+        }
+        $sep = -1;
+        $i = 0;
+        $j = 0;
+        $l = 0;
+        $nl = 1;
+        while ($i < $nb) {
+            $c = $s[$i];
+            if ($c == "\n") {
+                $i++;
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+                continue;
+            }
+            if ($c == ' ') {
+                $sep = $i;
+            }
+            $l += $cw[$c] ?? 500;
+            if ($l > $wmax) {
+                if ($sep == -1) {
+                    if ($i == $j) {
+                        $i++;
+                    }
+                } else {
+                    $i = $sep + 1;
+                }
+                $sep = -1;
+                $j = $i;
+                $l = 0;
+                $nl++;
+            } else {
+                $i++;
+            }
+        }
+        return $nl;
+    }
+
+    /**
+     * Linha de tabela com quebra de texto (evita estouro de coluna).
+     * @param array $widths larguras
+     * @param array $texts  textos já convertidos para Latin-1
+     * @param array $aligns alinhamentos (R/L/C)
+     */
+    public function TabelaLinha(array $widths, array $texts, array $aligns, $lineHeight = 5)
+    {
+        $nb = 1;
+        foreach ($texts as $i => $txt) {
+            $nb = max($nb, $this->NbLines($widths[$i], $txt));
+        }
+        $h = $lineHeight * $nb;
+
+        if ($this->GetY() + $h > $this->PageBreakTrigger) {
+            $this->AddPage($this->CurOrientation);
+            return false; // chamador deve redesenhar cabeçalho e repetir a linha
+        }
+
+        $x = $this->GetX();
+        $y = $this->GetY();
+        foreach ($texts as $i => $txt) {
+            $w = $widths[$i];
+            $a = $aligns[$i] ?? 'L';
+            $this->Rect($x, $y, $w, $h);
+            $this->SetXY($x, $y);
+            $this->MultiCell($w, $lineHeight, $txt, 0, $a);
+            $x += $w;
+            $this->SetXY($x, $y);
+        }
+        $this->SetY($y + $h);
+        return true;
+    }
 }
 
 $pdf = new TermoAutorizacoesPdf('P', 'mm', 'A4');
@@ -106,20 +191,24 @@ $pdf->Cell(0, 5, $pdfTxt('Turmas: ' . (!empty($turmas_label) ? implode(', ', $tu
 $pdf->Cell(0, 5, $pdfTxt('Gerado em: ' . date('d/m/Y H:i')), 0, 1);
 $pdf->Ln(4);
 
-$wNum = 12;
-$wAluno = 55;
-$wResp = 75;
-$wData = 38;
+$wNum = 10;
+$wAluno = 58;
+$wResp = 78;
+$wData = 34;
 $wTotal = $wNum + $wAluno + $wResp + $wData;
+$widths = [$wNum, $wAluno, $wResp, $wData];
+$aligns = ['R', 'L', 'L', 'L'];
 
-$imprimirCabecalhoTabela = static function ($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData) {
+$imprimirCabecalhoTurma = static function ($pdf, $pdfTxt, $turma, $wTotal, $wNum, $wAluno, $wResp, $wData) {
     $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFillColor(220, 230, 240);
+    $pdf->Cell($wTotal, 6, $pdfTxt($turma), 1, 1, 'L', true);
     $pdf->SetFillColor(240, 240, 240);
     $pdf->Cell($wNum, 6, $pdfTxt('Nº'), 1, 0, 'R', true);
     $pdf->Cell($wAluno, 6, $pdfTxt('Aluno'), 1, 0, 'L', true);
     $pdf->Cell($wResp, 6, $pdfTxt('Responsável'), 1, 0, 'L', true);
     $pdf->Cell($wData, 6, $pdfTxt('Data'), 1, 1, 'L', true);
-    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetFont('Arial', '', 8);
 };
 
 foreach ($secoes as $secao) {
@@ -143,29 +232,26 @@ foreach ($secoes as $secao) {
     foreach ($secao['itens'] as $linha) {
         $turma = (string) ($linha['turma_label'] ?? '—');
         if ($turma !== $turma_atual) {
-            if ($pdf->GetY() > 255) {
+            if ($pdf->GetY() > 250) {
                 $pdf->AddPage();
             }
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetFillColor(220, 230, 240);
-            $pdf->Cell($wTotal, 6, $pdfTxt($turma), 1, 1, 'L', true);
-            $imprimirCabecalhoTabela($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData);
+            $imprimirCabecalhoTurma($pdf, $pdfTxt, $turma, $wTotal, $wNum, $wAluno, $wResp, $wData);
             $turma_atual = $turma;
         }
 
         $n++;
-        if ($pdf->GetY() > 270) {
-            $pdf->AddPage();
-            $pdf->SetFont('Arial', 'B', 9);
-            $pdf->SetFillColor(220, 230, 240);
-            $pdf->Cell($wTotal, 6, $pdfTxt($turma), 1, 1, 'L', true);
-            $imprimirCabecalhoTabela($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData);
-        }
+        $cells = [
+            (string) $n,
+            $pdfTxt($linha['aluno_nome'] ?? ''),
+            $pdfTxt($fmtResponsavel($linha)),
+            $pdfTxt($fmtData($linha['decidido_em'] ?? null)),
+        ];
 
-        $pdf->Cell($wNum, 6, (string) $n, 1, 0, 'R');
-        $pdf->Cell($wAluno, 6, $pdfTxt($linha['aluno_nome'] ?? ''), 1, 0, 'L');
-        $pdf->Cell($wResp, 6, $pdfTxt($fmtResponsavel($linha)), 1, 0, 'L');
-        $pdf->Cell($wData, 6, $pdfTxt($fmtData($linha['decidido_em'] ?? null)), 1, 1, 'L');
+        $ok = $pdf->TabelaLinha($widths, $cells, $aligns, 4.5);
+        if (!$ok) {
+            $imprimirCabecalhoTurma($pdf, $pdfTxt, $turma, $wTotal, $wNum, $wAluno, $wResp, $wData);
+            $pdf->TabelaLinha($widths, $cells, $aligns, 4.5);
+        }
     }
     $pdf->Ln(5);
 }

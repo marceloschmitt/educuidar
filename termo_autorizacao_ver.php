@@ -217,21 +217,20 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="mb-3 d-flex flex-wrap align-items-center gap-3">
-    <a href="termos_autorizacao.php" class="btn btn-outline-dark btn-sm">
+<div class="mb-3 d-flex flex-wrap align-items-center gap-2">
+    <a href="termos_autorizacao.php" class="btn btn-secondary btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
 
     <?php if ($pode_gerenciar || TermoAutorizacao::temPdf($termo) || $user->isAdmin()): ?>
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-muted text-uppercase">Cadastro</span>
+    <div class="d-flex flex-wrap align-items-center gap-2 border-start border-secondary border-2 ps-3 ms-1">
         <?php if ($pode_gerenciar): ?>
-        <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm">
+        <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-primary btn-sm">
             <i class="bi bi-pencil"></i> Editar
         </a>
         <?php endif; ?>
         <?php if (TermoAutorizacao::temPdf($termo)): ?>
-        <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
+        <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-info btn-sm text-white" target="_blank">
             <i class="bi bi-file-pdf"></i> Ver PDF
         </a>
         <?php endif; ?>
@@ -243,20 +242,19 @@ require __DIR__ . '/includes/header.php';
         ?>
         <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_excluir), ENT_QUOTES, 'UTF-8'); ?>);">
             <input type="hidden" name="action" value="excluir">
-            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
+            <button type="submit" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
         </form>
         <?php endif; ?>
     </div>
     <?php endif; ?>
 
     <?php if ($pode_gerenciar): ?>
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-muted text-uppercase">Pais</span>
+    <div class="d-flex flex-wrap align-items-center gap-2 border-start border-secondary border-2 ps-3 ms-1">
         <?php if ($visivel_pais): ?>
         <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
             <input type="hidden" name="action" value="visibilidade">
             <input type="hidden" name="visivel" value="0">
-            <button type="submit" class="btn btn-outline-dark btn-sm">
+            <button type="submit" class="btn btn-dark btn-sm">
                 <i class="bi bi-eye-slash"></i> Ocultar dos pais
             </button>
         </form>
@@ -264,7 +262,7 @@ require __DIR__ . '/includes/header.php';
         <form method="POST" class="d-inline">
             <input type="hidden" name="action" value="visibilidade">
             <input type="hidden" name="visivel" value="1">
-            <button type="submit" class="btn btn-outline-success btn-sm">
+            <button type="submit" class="btn btn-success btn-sm">
                 <i class="bi bi-eye"></i> Tornar visível aos pais
             </button>
         </form>
@@ -272,7 +270,7 @@ require __DIR__ . '/includes/header.php';
         <?php if ($ativo): ?>
         <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
             <input type="hidden" name="action" value="suspender">
-            <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
+            <button type="submit" class="btn btn-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
         </form>
         <?php if ($qtd_email_pendentes > 0): ?>
         <?php
@@ -281,29 +279,28 @@ require __DIR__ . '/includes/header.php';
         ?>
         <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_email), ENT_QUOTES, 'UTF-8'); ?>);">
             <input type="hidden" name="action" value="enviar_email">
-            <button type="submit" class="btn btn-outline-primary btn-sm">
+            <button type="submit" class="btn btn-primary btn-sm">
                 <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
-                <span class="badge text-bg-primary"><?php echo (int) $qtd_email_pendentes; ?></span>
+                <span class="badge text-bg-light text-primary"><?php echo (int) $qtd_email_pendentes; ?></span>
             </button>
         </form>
         <?php else: ?>
-        <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Não há responsáveis pendentes com e-mail">
+        <button type="button" class="btn btn-secondary btn-sm" disabled title="Não há responsáveis pendentes com e-mail">
             <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
         </button>
         <?php endif; ?>
         <?php else: ?>
         <form method="POST" class="d-inline">
             <input type="hidden" name="action" value="reativar">
-            <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
+            <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
         </form>
         <?php endif; ?>
     </div>
     <?php endif; ?>
 
-    <div class="d-flex flex-wrap align-items-center gap-2">
-        <span class="small text-muted text-uppercase">Relatório</span>
+    <div class="d-flex flex-wrap align-items-center gap-2 border-start border-secondary border-2 ps-3 ms-1">
         <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
-           class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+           class="btn btn-primary btn-sm" target="_blank" rel="noopener">
             <i class="bi bi-printer"></i> Gerar PDF
         </a>
     </div>
