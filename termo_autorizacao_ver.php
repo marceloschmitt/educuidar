@@ -218,7 +218,7 @@ require __DIR__ . '/includes/header.php';
 <?php endif; ?>
 
 <div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
-    <a href="termos_autorizacao.php" class="btn btn-outline-secondary btn-sm">
+    <a href="termos_autorizacao.php" class="btn btn-outline-dark btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
     <?php if ($pode_gerenciar): ?>
@@ -232,7 +232,7 @@ require __DIR__ . '/includes/header.php';
     </a>
     <?php endif; ?>
     <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
-       class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
+       class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
         <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
     </a>
     <?php if ($pode_gerenciar): ?>
@@ -240,7 +240,7 @@ require __DIR__ . '/includes/header.php';
     <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
         <input type="hidden" name="action" value="visibilidade">
         <input type="hidden" name="visivel" value="0">
-        <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <button type="submit" class="btn btn-outline-dark btn-sm">
             <i class="bi bi-eye-slash"></i> Ocultar dos pais
         </button>
     </form>
