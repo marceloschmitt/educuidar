@@ -595,6 +595,86 @@ class TermoAutorizacao {
         return (int) $stmt->fetchColumn() >= 2;
     }
 
+    /**
+     * Listas para PDF/impressão: concordaram, discordaram e não responderam.
+     * Cada linha é um par aluno + responsável, ordenado por nome do aluno e do responsável.
+     *
+     * @return array{concordaram: list<array>, discordaram: list<array>, nao_responderam: list<array>}
+     */
+    public function montarListasDecisoesParaPdf($termo_id) {
+        $alunos = $this->listAlunosDoTermo($termo_id);
+        $respostas = $this->listRespostasDoTermo($termo_id);
+
+        $por_aluno_resp = [];
+        foreach ($respostas as $r) {
+            $aid = (int) $r['aluno_id'];
+            $rid = (int) $r['responsavel_id'];
+            $por_aluno_resp[$aid][$rid] = $r;
+        }
+
+        $concordaram = [];
+        $discordaram = [];
+        $nao_responderam = [];
+
+        foreach ($alunos as $aluno) {
+            $aid = (int) $aluno['id'];
+            $aluno_nome = (string) ($aluno['nome'] ?? '');
+            $responsaveis = $aluno['responsaveis'] ?? [];
+
+            if (empty($responsaveis)) {
+                $nao_responderam[] = [
+                    'aluno_nome' => $aluno_nome,
+                    'responsavel_nome' => '—',
+                    'parentesco' => '',
+                    'decidido_em' => null,
+                ];
+                continue;
+            }
+
+            foreach ($responsaveis as $rv) {
+                $rid = (int) $rv['id'];
+                $linha = [
+                    'aluno_nome' => $aluno_nome,
+                    'responsavel_nome' => (string) ($rv['nome'] ?? '—'),
+                    'parentesco' => (string) ($rv['parentesco'] ?? ''),
+                    'decidido_em' => null,
+                ];
+                $r = $por_aluno_resp[$aid][$rid] ?? null;
+                if (!$r) {
+                    $nao_responderam[] = $linha;
+                    continue;
+                }
+                $linha['decidido_em'] = $r['decidido_em'] ?? null;
+                if (($r['decisao'] ?? '') === self::DECISAO_DISCORDOU) {
+                    $discordaram[] = $linha;
+                } elseif (($r['decisao'] ?? '') === self::DECISAO_CONCORDOU) {
+                    $concordaram[] = $linha;
+                } else {
+                    $nao_responderam[] = $linha;
+                }
+            }
+        }
+
+        $ordenar = static function (array &$lista) {
+            usort($lista, static function ($a, $b) {
+                $cmp = strcasecmp($a['aluno_nome'] ?? '', $b['aluno_nome'] ?? '');
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
+                return strcasecmp($a['responsavel_nome'] ?? '', $b['responsavel_nome'] ?? '');
+            });
+        };
+        $ordenar($concordaram);
+        $ordenar($discordaram);
+        $ordenar($nao_responderam);
+
+        return [
+            'concordaram' => $concordaram,
+            'discordaram' => $discordaram,
+            'nao_responderam' => $nao_responderam,
+        ];
+    }
+
     /** Alunos (não desistentes) das turmas do termo, com responsáveis aprovados. */
     public function listAlunosDoTermo($termo_id) {
         $this->garantirTabelas();
