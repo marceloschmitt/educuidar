@@ -217,82 +217,96 @@ require __DIR__ . '/includes/header.php';
 </div>
 <?php endif; ?>
 
-<div class="mb-3 d-flex flex-wrap gap-2 align-items-center">
+<div class="mb-3 d-flex flex-wrap align-items-center gap-3">
     <a href="termos_autorizacao.php" class="btn btn-outline-dark btn-sm">
         <i class="bi bi-arrow-left"></i> Voltar
     </a>
+
+    <?php if ($pode_gerenciar || TermoAutorizacao::temPdf($termo) || $user->isAdmin()): ?>
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-muted text-uppercase">Cadastro</span>
+        <?php if ($pode_gerenciar): ?>
+        <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-pencil"></i> Editar
+        </a>
+        <?php endif; ?>
+        <?php if (TermoAutorizacao::temPdf($termo)): ?>
+        <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
+            <i class="bi bi-file-pdf"></i> Ver PDF
+        </a>
+        <?php endif; ?>
+        <?php if ($user->isAdmin()): ?>
+        <?php
+        $msg_excluir = $total_respostas > 0
+            ? 'Atenção: esta autorização já possui ' . (int) $total_respostas . ' resposta(s) de responsáveis. Ao excluir, essas assinaturas serão removidas permanentemente. Deseja continuar?'
+            : 'Excluir esta autorização? Esta ação não pode ser desfeita.';
+        ?>
+        <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_excluir), ENT_QUOTES, 'UTF-8'); ?>);">
+            <input type="hidden" name="action" value="excluir">
+            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
+        </form>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <?php if ($pode_gerenciar): ?>
-    <a href="termo_autorizacao_editar.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm">
-        <i class="bi bi-pencil"></i> Editar
-    </a>
-    <?php endif; ?>
-    <?php if (TermoAutorizacao::temPdf($termo)): ?>
-    <a href="termo_autorizacao_pdf.php?id=<?php echo (int) $termo['id']; ?>" class="btn btn-outline-primary btn-sm" target="_blank">
-        <i class="bi bi-file-pdf"></i> Ver PDF
-    </a>
-    <?php endif; ?>
-    <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
-       class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
-        <i class="bi bi-file-earmark-pdf"></i> Gerar PDF
-    </a>
-    <?php if ($pode_gerenciar): ?>
-    <?php if ($visivel_pais): ?>
-    <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
-        <input type="hidden" name="action" value="visibilidade">
-        <input type="hidden" name="visivel" value="0">
-        <button type="submit" class="btn btn-outline-dark btn-sm">
-            <i class="bi bi-eye-slash"></i> Ocultar dos pais
-        </button>
-    </form>
-    <?php else: ?>
-    <form method="POST" class="d-inline">
-        <input type="hidden" name="action" value="visibilidade">
-        <input type="hidden" name="visivel" value="1">
-        <button type="submit" class="btn btn-outline-success btn-sm">
-            <i class="bi bi-eye"></i> Tornar visível aos pais
-        </button>
-    </form>
-    <?php endif; ?>
-    <?php if ($ativo): ?>
-    <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
-        <input type="hidden" name="action" value="suspender">
-        <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
-    </form>
-    <?php if ($qtd_email_pendentes > 0): ?>
-    <?php
-    $msg_email = 'Enviar e-mail para ' . (int) $qtd_email_pendentes
-        . ' responsável(is) que ainda não responderam?';
-    ?>
-    <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_email), ENT_QUOTES, 'UTF-8'); ?>);">
-        <input type="hidden" name="action" value="enviar_email">
-        <button type="submit" class="btn btn-outline-primary btn-sm">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-muted text-uppercase">Pais</span>
+        <?php if ($visivel_pais): ?>
+        <form method="POST" class="d-inline" onsubmit="return confirm('Ocultar esta autorização dos responsáveis? Eles não a verão no portal.');">
+            <input type="hidden" name="action" value="visibilidade">
+            <input type="hidden" name="visivel" value="0">
+            <button type="submit" class="btn btn-outline-dark btn-sm">
+                <i class="bi bi-eye-slash"></i> Ocultar dos pais
+            </button>
+        </form>
+        <?php else: ?>
+        <form method="POST" class="d-inline">
+            <input type="hidden" name="action" value="visibilidade">
+            <input type="hidden" name="visivel" value="1">
+            <button type="submit" class="btn btn-outline-success btn-sm">
+                <i class="bi bi-eye"></i> Tornar visível aos pais
+            </button>
+        </form>
+        <?php endif; ?>
+        <?php if ($ativo): ?>
+        <form method="POST" class="d-inline" onsubmit="return confirm('Suspender esta autorização? Os responsáveis não poderão mais responder. As respostas já dadas são mantidas.');">
+            <input type="hidden" name="action" value="suspender">
+            <button type="submit" class="btn btn-outline-warning btn-sm"><i class="bi bi-pause-circle"></i> Suspender</button>
+        </form>
+        <?php if ($qtd_email_pendentes > 0): ?>
+        <?php
+        $msg_email = 'Enviar e-mail para ' . (int) $qtd_email_pendentes
+            . ' responsável(is) que ainda não responderam?';
+        ?>
+        <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_email), ENT_QUOTES, 'UTF-8'); ?>);">
+            <input type="hidden" name="action" value="enviar_email">
+            <button type="submit" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
+                <span class="badge text-bg-primary"><?php echo (int) $qtd_email_pendentes; ?></span>
+            </button>
+        </form>
+        <?php else: ?>
+        <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Não há responsáveis pendentes com e-mail">
             <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
-            <span class="badge text-bg-primary"><?php echo (int) $qtd_email_pendentes; ?></span>
         </button>
-    </form>
-    <?php else: ?>
-    <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="Não há responsáveis pendentes com e-mail">
-        <i class="bi bi-envelope"></i> Enviar e-mail aos pendentes
-    </button>
+        <?php endif; ?>
+        <?php else: ?>
+        <form method="POST" class="d-inline">
+            <input type="hidden" name="action" value="reativar">
+            <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
+        </form>
+        <?php endif; ?>
+    </div>
     <?php endif; ?>
-    <?php else: ?>
-    <form method="POST" class="d-inline">
-        <input type="hidden" name="action" value="reativar">
-        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-play-circle"></i> Reativar</button>
-    </form>
-    <?php endif; ?>
-    <?php if ($user->isAdmin()): ?>
-    <?php
-    $msg_excluir = $total_respostas > 0
-        ? 'Atenção: esta autorização já possui ' . (int) $total_respostas . ' resposta(s) de responsáveis. Ao excluir, essas assinaturas serão removidas permanentemente. Deseja continuar?'
-        : 'Excluir esta autorização? Esta ação não pode ser desfeita.';
-    ?>
-    <form method="POST" class="d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode($msg_excluir), ENT_QUOTES, 'UTF-8'); ?>);">
-        <input type="hidden" name="action" value="excluir">
-        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Excluir</button>
-    </form>
-    <?php endif; ?>
-    <?php endif; ?>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="small text-muted text-uppercase">Relatório</span>
+        <a href="termo_autorizacao_respostas_pdf.php?id=<?php echo (int) $termo_id; ?>"
+           class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener">
+            <i class="bi bi-printer"></i> Gerar PDF
+        </a>
+    </div>
 </div>
 
 <?php if (!$visivel_pais): ?>

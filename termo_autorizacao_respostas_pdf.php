@@ -1,8 +1,9 @@
 <?php
 /**
- * Relatório imprimível das autorizações do termo (Salvar como PDF).
+ * PDF das autorizações do termo (gerado no servidor — sem cabeçalho/rodapé do navegador).
  */
 require_once __DIR__ . '/config/init.php';
+require_once __DIR__ . '/lib/fpdf/fpdf.php';
 
 $database = new Database();
 $db = $database->getConnection();
@@ -46,176 +47,129 @@ $fmtResponsavel = static function (array $linha) {
     return $nome !== '' ? $nome : '—';
 };
 
+$pdfTxt = static function ($texto) {
+    $texto = (string) $texto;
+    if ($texto === '') {
+        return '';
+    }
+    if (function_exists('iconv')) {
+        $convertido = @iconv('UTF-8', 'ISO-8859-1//TRANSLIT', $texto);
+        if ($convertido !== false) {
+            return $convertido;
+        }
+    }
+    return utf8_decode($texto);
+};
+
 $secoes = [
-    [
-        'titulo' => 'Discordaram',
-        'itens' => $listas['discordaram'],
-    ],
-    [
-        'titulo' => 'Concordaram',
-        'itens' => $listas['concordaram'],
-    ],
-    [
-        'titulo' => 'Não responderam',
-        'itens' => $listas['nao_responderam'],
-    ],
+    ['titulo' => 'Discordaram', 'itens' => $listas['discordaram']],
+    ['titulo' => 'Concordaram', 'itens' => $listas['concordaram']],
+    ['titulo' => 'Não responderam', 'itens' => $listas['nao_responderam']],
 ];
 
-$page_title = 'Autorizações — ' . ($termo['titulo'] ?? '');
-?>
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title); ?></title>
-    <style>
-        @page {
-            margin: 15mm;
-        }
-        body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 12px;
-            color: #111;
-            margin: 24px;
-            line-height: 1.35;
-        }
-        h1 {
-            font-size: 18px;
-            margin: 0 0 8px;
-        }
-        h2 {
-            font-size: 14px;
-            margin: 24px 0 8px;
-            border-bottom: 1px solid #333;
-            padding-bottom: 4px;
-        }
-        .meta {
-            margin-bottom: 16px;
-            color: #333;
-        }
-        .meta div { margin: 2px 0; }
-        .toolbar {
-            margin-bottom: 16px;
-        }
-        .toolbar button, .toolbar a {
-            display: inline-block;
-            margin-right: 8px;
-            padding: 8px 12px;
-            font-size: 13px;
-            text-decoration: none;
-            border: 1px solid #333;
-            background: #f5f5f5;
-            color: #111;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 6px 8px;
-            text-align: left;
-            vertical-align: top;
-        }
-        th {
-            background: #f0f0f0;
-            font-weight: 600;
-        }
-        th.num, td.num {
-            width: 40px;
-            text-align: right;
-            white-space: nowrap;
-        }
-        .vazio {
-            color: #666;
-            font-style: italic;
-            margin: 0 0 8px;
-        }
-        .count { font-weight: normal; color: #555; }
-        @media print {
-            body { margin: 0; }
-            .toolbar { display: none !important; }
-            h2 { page-break-after: avoid; }
-            table { page-break-inside: auto; }
-            tr { page-break-inside: avoid; page-break-after: auto; }
-        }
-    </style>
-</head>
-<body>
-    <div class="toolbar">
-        <button type="button" id="btn-imprimir">Imprimir / Salvar como PDF</button>
-        <a href="termo_autorizacao_ver.php?id=<?php echo (int) $termo_id; ?>">Voltar</a>
-    </div>
+class TermoAutorizacoesPdf extends FPDF
+{
+    public function Header()
+    {
+        // Sem cabeçalho (evita repetir título/data em todas as páginas).
+    }
 
-    <h1>Autorizações — <?php echo htmlspecialchars($termo['titulo'] ?? ''); ?></h1>
-    <div class="meta">
-        <div>
-            <strong>Data do evento:</strong>
-            <?php echo date('d/m/Y', strtotime($termo['data_evento'])); ?>
-            <?php if (!empty($termo['hora'])): ?>
-            às <?php echo substr($termo['hora'], 0, 5); ?>
-            <?php endif; ?>
-        </div>
-        <div>
-            <strong>Turmas:</strong>
-            <?php echo htmlspecialchars(!empty($turmas_label) ? implode(', ', $turmas_label) : '—'); ?>
-        </div>
-        <div>
-            <strong>Gerado em:</strong>
-            <?php echo date('d/m/Y H:i'); ?>
-        </div>
-    </div>
+    public function Footer()
+    {
+        // Sem rodapé com URL; apenas número da página, discreto.
+        $this->SetY(-12);
+        $this->SetFont('Arial', 'I', 8);
+        $this->SetTextColor(100, 100, 100);
+        $this->Cell(0, 8, (string) $this->PageNo() . '/{nb}', 0, 0, 'C');
+        $this->SetTextColor(0, 0, 0);
+    }
+}
 
-    <?php foreach ($secoes as $secao): ?>
-    <h2>
-        <?php echo htmlspecialchars($secao['titulo']); ?>
-        <span class="count">(<?php echo count($secao['itens']); ?>)</span>
-    </h2>
-    <?php if (empty($secao['itens'])): ?>
-    <p class="vazio">Nenhum registro nesta lista.</p>
-    <?php else: ?>
-    <table>
-        <thead>
-            <tr>
-                <th class="num">Nº</th>
-                <th style="width: 32%;">Aluno</th>
-                <th style="width: 40%;">Responsável</th>
-                <th style="width: 22%;">Data</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php $n = 0; foreach ($secao['itens'] as $linha): $n++; ?>
-            <tr>
-                <td class="num"><?php echo $n; ?></td>
-                <td><?php echo htmlspecialchars($linha['aluno_nome']); ?></td>
-                <td><?php echo htmlspecialchars($fmtResponsavel($linha)); ?></td>
-                <td><?php echo htmlspecialchars($fmtData($linha['decidido_em'] ?? null)); ?></td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-    <?php endif; ?>
-    <?php endforeach; ?>
+$pdf = new TermoAutorizacoesPdf('P', 'mm', 'A4');
+$pdf->AliasNbPages();
+$pdf->SetMargins(15, 15, 15);
+$pdf->SetAutoPageBreak(true, 18);
+$pdf->AddPage();
 
-    <script>
-    (function () {
-        var tituloOriginal = document.title;
-        function imprimir() {
-            // Título vazio: o horário já aparece abaixo do nome do evento ("Gerado em").
-            // Assim o cabeçalho do navegador não repete data/hora nem "DECISÕES".
-            document.title = ' ';
-            window.print();
-            setTimeout(function () { document.title = tituloOriginal; }, 500);
+$titulo = 'Autorizações — ' . ($termo['titulo'] ?? '');
+$pdf->SetFont('Arial', 'B', 14);
+$pdf->MultiCell(0, 7, $pdfTxt($titulo), 0, 'L');
+$pdf->Ln(2);
+
+$pdf->SetFont('Arial', '', 10);
+$data_evento = date('d/m/Y', strtotime($termo['data_evento']));
+if (!empty($termo['hora'])) {
+    $data_evento .= ' às ' . substr($termo['hora'], 0, 5);
+}
+$pdf->Cell(0, 5, $pdfTxt('Data do evento: ' . $data_evento), 0, 1);
+$pdf->Cell(0, 5, $pdfTxt('Turmas: ' . (!empty($turmas_label) ? implode(', ', $turmas_label) : '—')), 0, 1);
+$pdf->Cell(0, 5, $pdfTxt('Gerado em: ' . date('d/m/Y H:i')), 0, 1);
+$pdf->Ln(4);
+
+$wNum = 12;
+$wAluno = 55;
+$wResp = 75;
+$wData = 38;
+$wTotal = $wNum + $wAluno + $wResp + $wData;
+
+$imprimirCabecalhoTabela = static function ($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData) {
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFillColor(240, 240, 240);
+    $pdf->Cell($wNum, 6, $pdfTxt('Nº'), 1, 0, 'R', true);
+    $pdf->Cell($wAluno, 6, $pdfTxt('Aluno'), 1, 0, 'L', true);
+    $pdf->Cell($wResp, 6, $pdfTxt('Responsável'), 1, 0, 'L', true);
+    $pdf->Cell($wData, 6, $pdfTxt('Data'), 1, 1, 'L', true);
+    $pdf->SetFont('Arial', '', 9);
+};
+
+foreach ($secoes as $secao) {
+    if ($pdf->GetY() > 250) {
+        $pdf->AddPage();
+    }
+
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->Cell(0, 7, $pdfTxt($secao['titulo'] . ' (' . count($secao['itens']) . ')'), 0, 1);
+    $pdf->Ln(1);
+
+    if (empty($secao['itens'])) {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->Cell(0, 5, $pdfTxt('Nenhum registro nesta lista.'), 0, 1);
+        $pdf->Ln(4);
+        continue;
+    }
+
+    $turma_atual = null;
+    $n = 0;
+    foreach ($secao['itens'] as $linha) {
+        $turma = (string) ($linha['turma_label'] ?? '—');
+        if ($turma !== $turma_atual) {
+            if ($pdf->GetY() > 255) {
+                $pdf->AddPage();
+            }
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(220, 230, 240);
+            $pdf->Cell($wTotal, 6, $pdfTxt($turma), 1, 1, 'L', true);
+            $imprimirCabecalhoTabela($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData);
+            $turma_atual = $turma;
         }
-        document.getElementById('btn-imprimir').addEventListener('click', imprimir);
-        window.addEventListener('load', function () {
-            setTimeout(imprimir, 200);
-        });
-    })();
-    </script>
-</body>
-</html>
+
+        $n++;
+        if ($pdf->GetY() > 270) {
+            $pdf->AddPage();
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->SetFillColor(220, 230, 240);
+            $pdf->Cell($wTotal, 6, $pdfTxt($turma), 1, 1, 'L', true);
+            $imprimirCabecalhoTabela($pdf, $pdfTxt, $wNum, $wAluno, $wResp, $wData);
+        }
+
+        $pdf->Cell($wNum, 6, (string) $n, 1, 0, 'R');
+        $pdf->Cell($wAluno, 6, $pdfTxt($linha['aluno_nome'] ?? ''), 1, 0, 'L');
+        $pdf->Cell($wResp, 6, $pdfTxt($fmtResponsavel($linha)), 1, 0, 'L');
+        $pdf->Cell($wData, 6, $pdfTxt($fmtData($linha['decidido_em'] ?? null)), 1, 1, 'L');
+    }
+    $pdf->Ln(5);
+}
+
+$nome_arquivo = 'autorizacoes_' . $termo_id . '_' . date('Ymd_His') . '.pdf';
+$pdf->Output('I', $nome_arquivo);
+exit;

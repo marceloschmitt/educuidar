@@ -597,7 +597,7 @@ class TermoAutorizacao {
 
     /**
      * Listas para PDF/impressão: concordaram, discordaram e não responderam.
-     * Cada linha é um par aluno + responsável, ordenado por nome do aluno e do responsável.
+     * Cada linha é um par aluno + responsável, ordenado por turma e, dentro dela, pelo nome.
      *
      * @return array{concordaram: list<array>, discordaram: list<array>, nao_responderam: list<array>}
      */
@@ -619,11 +619,20 @@ class TermoAutorizacao {
         foreach ($alunos as $aluno) {
             $aid = (int) $aluno['id'];
             $aluno_nome = (string) ($aluno['nome'] ?? '');
+            $turma_label = (string) ($aluno['turma_label'] ?? '');
+            $turma_sort = sprintf(
+                '%s|%02d|%s',
+                (string) ($aluno['curso_nome'] ?? ''),
+                (int) ($aluno['ano_curso'] ?? 0),
+                $turma_label
+            );
             $responsaveis = $aluno['responsaveis'] ?? [];
 
             if (empty($responsaveis)) {
                 $nao_responderam[] = [
                     'aluno_nome' => $aluno_nome,
+                    'turma_label' => $turma_label,
+                    'turma_sort' => $turma_sort,
                     'responsavel_nome' => '—',
                     'parentesco' => '',
                     'decidido_em' => null,
@@ -635,6 +644,8 @@ class TermoAutorizacao {
                 $rid = (int) $rv['id'];
                 $linha = [
                     'aluno_nome' => $aluno_nome,
+                    'turma_label' => $turma_label,
+                    'turma_sort' => $turma_sort,
                     'responsavel_nome' => (string) ($rv['nome'] ?? '—'),
                     'parentesco' => (string) ($rv['parentesco'] ?? ''),
                     'decidido_em' => null,
@@ -657,6 +668,10 @@ class TermoAutorizacao {
 
         $ordenar = static function (array &$lista) {
             usort($lista, static function ($a, $b) {
+                $cmp = strcasecmp($a['turma_sort'] ?? '', $b['turma_sort'] ?? '');
+                if ($cmp !== 0) {
+                    return $cmp;
+                }
                 $cmp = strcasecmp($a['aluno_nome'] ?? '', $b['aluno_nome'] ?? '');
                 if ($cmp !== 0) {
                     return $cmp;
@@ -692,7 +707,7 @@ class TermoAutorizacao {
              INNER JOIN alunos a ON a.id = at.aluno_id
              WHERE tt.termo_id = :termo_id
                AND COALESCE(a.desistente, 0) = 0
-             ORDER BY nome ASC"
+             ORDER BY c.nome ASC, tu.ano_curso ASC, nome ASC"
         );
         $stmt->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
         $stmt->execute();
