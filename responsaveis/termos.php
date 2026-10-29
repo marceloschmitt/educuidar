@@ -130,7 +130,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
 <div class="card resp-card mb-3">
     <div class="card-body p-4">
         <h2 class="h5 mb-1"><?php echo htmlspecialchars($aluno['nome']); ?></h2>
-        <div class="small text-muted mb-3">
+        <div class="small text-muted mb-2">
             <?php echo htmlspecialchars($aluno['turma_label']); ?>
             · <?php echo htmlspecialchars($termo['titulo']); ?>
             · <?php echo date('d/m/Y', strtotime($termo['data_evento'])); ?>
@@ -140,10 +140,16 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
         </div>
 
         <?php if ($eh_maior): ?>
-        <div class="alert alert-success">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+            <span class="badge bg-success">Autorizado</span>
+            <span class="badge bg-primary">Maior de idade</span>
+            <?php if ($aluno['idade'] !== null): ?>
+            <span class="small text-muted"><?php echo (int) $aluno['idade']; ?> anos</span>
+            <?php endif; ?>
+        </div>
+        <div class="alert alert-success py-2">
             <i class="bi bi-person-check"></i>
-            Este aluno é <strong>maior de idade</strong><?php echo $aluno['idade'] !== null ? ' (' . (int) $aluno['idade'] . ' anos)' : ''; ?>
-            e está <strong>autorizado</strong> a participar. Não é necessária resposta dos responsáveis.
+            Não é necessária resposta dos responsáveis.
         </div>
         <?php endif; ?>
 
@@ -231,16 +237,19 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             <div class="small"><?php echo htmlspecialchars($a['nome']); ?></div>
             <div class="small text-muted">
                 <?php echo htmlspecialchars($a['turma_label']); ?>
-                <?php if ($eh_maior): ?>
-                · <span class="text-success">Maior de idade — autorizado</span>
-                <?php elseif ($pendente): ?>
-                · <span class="text-warning">Pendente</span>
-                <?php elseif ($eu_ok): ?>
-                · <span class="text-success">Respondido</span>
-                <?php elseif ($aguardando): ?>
-                · <span class="text-muted">Aguardando sua resposta</span>
-                <?php endif; ?>
             </div>
+            <?php if ($eh_maior): ?>
+            <div class="mt-1 d-flex flex-wrap gap-1">
+                <span class="badge bg-success">Autorizado</span>
+                <span class="badge bg-primary">Maior de idade</span>
+            </div>
+            <?php elseif ($pendente): ?>
+            <div class="small text-warning mt-1">Pendente</div>
+            <?php elseif ($eu_ok): ?>
+            <div class="small text-success mt-1">Respondido</div>
+            <?php elseif ($aguardando): ?>
+            <div class="small text-muted mt-1">Aguardando sua resposta</div>
+            <?php endif; ?>
         </div>
         <i class="bi bi-chevron-right text-muted"></i>
     </a>
