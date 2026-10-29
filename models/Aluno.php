@@ -436,18 +436,41 @@ class Aluno {
         }
         $ref_sql = $this->conn->quote($ref);
 
-        $join_turma = '';
+        // Subconsulta evita duplicar aluno quando há vínculo com turmas de outros anos.
         $select_turma = 'NULL AS turma_id, NULL AS ano_curso, NULL AS curso_nome';
+        $params = [];
         if ($ano_civil !== null) {
-            $join_turma = "
-                LEFT JOIN aluno_turmas at ON at.aluno_id = a.id
-                LEFT JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano_civil
-                LEFT JOIN cursos c ON c.id = t.curso_id
-            ";
-            $select_turma = 't.id AS turma_id, t.ano_curso, c.nome AS curso_nome';
+            $select_turma = "(
+                    SELECT t.id
+                    FROM aluno_turmas at
+                    INNER JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano_civil_id
+                    WHERE at.aluno_id = a.id
+                    ORDER BY t.id ASC
+                    LIMIT 1
+                 ) AS turma_id,
+                 (
+                    SELECT t.ano_curso
+                    FROM aluno_turmas at
+                    INNER JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano_civil_ano
+                    WHERE at.aluno_id = a.id
+                    ORDER BY t.id ASC
+                    LIMIT 1
+                 ) AS ano_curso,
+                 (
+                    SELECT c.nome
+                    FROM aluno_turmas at
+                    INNER JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano_civil_curso
+                    INNER JOIN cursos c ON c.id = t.curso_id
+                    WHERE at.aluno_id = a.id
+                    ORDER BY t.id ASC
+                    LIMIT 1
+                 ) AS curso_nome";
+            $params[':ano_civil_id'] = (int) $ano_civil;
+            $params[':ano_civil_ano'] = (int) $ano_civil;
+            $params[':ano_civil_curso'] = (int) $ano_civil;
         }
 
-        $query = "SELECT DISTINCT a.id,
+        $query = "SELECT a.id,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                          a.nome AS nome_civil,
                          a.numero_matricula,
@@ -455,7 +478,6 @@ class Aluno {
                          TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) AS idade,
                          {$select_turma}
                   FROM " . $this->table . " a
-                  {$join_turma}
                   WHERE COALESCE(a.desistente, 0) = 0
                     AND a.data_nascimento IS NOT NULL
                     AND a.data_nascimento > '1900-01-01'
@@ -463,8 +485,8 @@ class Aluno {
                   ORDER BY nome ASC";
 
         $stmt = $this->conn->prepare($query);
-        if ($ano_civil !== null) {
-            $stmt->bindValue(':ano_civil', (int) $ano_civil, PDO::PARAM_INT);
+        foreach ($params as $chave => $valor) {
+            $stmt->bindValue($chave, $valor, PDO::PARAM_INT);
         }
         $stmt->execute();
         return $stmt->fetchAll();
