@@ -458,7 +458,7 @@ class Aluno {
                   {$join_turma}
                   WHERE COALESCE(a.desistente, 0) = 0
                     AND a.data_nascimento IS NOT NULL
-                    AND a.data_nascimento <> '0000-00-00'
+                    AND a.data_nascimento > '1900-01-01'
                     AND TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) >= 18
                   ORDER BY nome ASC";
 

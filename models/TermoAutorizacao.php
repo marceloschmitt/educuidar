@@ -948,7 +948,7 @@ class TermoAutorizacao {
                AND r.email <> ''
                AND (
                    a.data_nascimento IS NULL
-                   OR a.data_nascimento = '0000-00-00'
+                   OR a.data_nascimento <= '1900-01-01'
                    OR TIMESTAMPDIFF(YEAR, a.data_nascimento, t.data_evento) < 18
                )
                AND NOT EXISTS (
