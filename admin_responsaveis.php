@@ -214,6 +214,12 @@ $total_alunos = count($alunos_contemplados);
                                         <?php if (!empty($a['parentesco'])): ?>
                                             <span class="text-muted">(<?php echo htmlspecialchars($a['parentesco']); ?>)</span>
                                         <?php endif; ?>
+                                        <?php if (!empty($a['maior_idade'])): ?>
+                                            <span class="badge bg-primary">Maior de idade</span>
+                                            <?php if (!empty($a['dependente_responsaveis'])): ?>
+                                            <span class="badge bg-warning text-dark">Dependente</span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </li>
                                     <?php endforeach; ?>
                                 </ul>

@@ -214,6 +214,14 @@ if ($voltar_status !== '') {
                             <tr>
                                 <td>
                                     <?php echo htmlspecialchars(!empty($a['nome_social']) ? $a['nome_social'] : $a['nome']); ?>
+                                    <?php if (!empty($a['maior_idade'])): ?>
+                                    <div class="mt-1">
+                                        <span class="badge bg-primary">Maior de idade</span>
+                                        <?php if (!empty($a['dependente_responsaveis'])): ?>
+                                        <span class="badge bg-warning text-dark">Dependente</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <?php endif; ?>
                                     <div class="small text-muted"><?php echo htmlspecialchars(normalizeCpf($a['cpf'] ?? '') ?: 'sem CPF'); ?></div>
                                 </td>
                                 <td>

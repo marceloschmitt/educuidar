@@ -208,7 +208,10 @@ class Responsavel {
     }
 
     public function getAlunosVinculados($responsavel_id) {
+        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
         $query = "SELECT a.id, a.nome, a.nome_social, a.numero_matricula, a.cpf, a.foto,
+                  a.data_nascimento,
+                  COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
                   ra.parentesco, ra.id as vinculo_id
                   FROM responsavel_alunos ra
                   INNER JOIN alunos a ON a.id = ra.aluno_id
@@ -217,7 +220,18 @@ class Responsavel {
         $stmt = $this->conn->prepare($query);
         $stmt->bindParam(':responsavel_id', $responsavel_id);
         $stmt->execute();
-        return $stmt->fetchAll();
+        $alunos = $stmt->fetchAll();
+        foreach ($alunos as &$aluno) {
+            $aluno['idade'] = calcularIdadeAnos($aluno['data_nascimento'] ?? null);
+            $aluno['maior_idade'] = ehMaiorIdade($aluno['data_nascimento'] ?? null);
+            $aluno['maior_idade_autonomo'] = ehMaiorIdadeAutonomo(
+                $aluno['data_nascimento'] ?? null,
+                null,
+                $aluno['dependente_responsaveis'] ?? 0
+            );
+        }
+        unset($aluno);
+        return $alunos;
     }
 
     /** Responsáveis aprovados/ativos vinculados ao aluno (para e-mail). */
