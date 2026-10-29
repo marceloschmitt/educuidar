@@ -432,15 +432,15 @@ require __DIR__ . '/includes/header.php';
                     ?>
                     <?php
                     $eh_maior = !empty($aluno['maior_idade']);
-                    $eh_dependente = !$eh_maior && !empty($aluno['dependente_responsaveis'])
+                    $eh_educacao_especial = !$eh_maior && !empty($aluno['educacao_especial'])
                         && ehMaiorIdade($aluno['data_nascimento'] ?? null, $termo['data_evento'] ?? null);
                     ?>
                     <tr class="<?php echo !$eh_maior && $tem_discordancia ? 'table-danger' : ''; ?>">
                         <td class="ps-3">
                             <?php echo htmlspecialchars($aluno['nome']); ?>
-                            <?php if ($eh_dependente): ?>
+                            <?php if ($eh_educacao_especial): ?>
                             <div>
-                                <span class="badge bg-warning text-dark">Dependente dos responsáveis</span>
+                                <span class="badge bg-warning text-dark">Educação especial</span>
                                 <?php if ($aluno['idade'] !== null): ?>
                                 <span class="small text-muted"><?php echo (int) $aluno['idade']; ?> anos</span>
                                 <?php endif; ?>

@@ -19,16 +19,16 @@ if (!$pode_ver) {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'dependente') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'educacao_especial') {
     if (!$pode_editar) {
         $_SESSION['error'] = 'Você não tem permissão para alterar este dado.';
     } else {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
-        $dependente = !empty($_POST['dependente']);
-        if ($aluno_id && $alunoModel->setDependenteResponsaveis($aluno_id, $dependente)) {
-            $_SESSION['success'] = $dependente
-                ? 'Aluno marcado como dependente dos responsáveis (tratado como menor nas autorizações).'
-                : 'Aluno desmarcado como dependente (autoriza sozinho por ser maior de idade).';
+        $educacao_especial = !empty($_POST['educacao_especial']);
+        if ($aluno_id && $alunoModel->setEducacaoEspecial($aluno_id, $educacao_especial)) {
+            $_SESSION['success'] = $educacao_especial
+                ? 'Aluno marcado como educação especial (continua precisando de autorização dos pais).'
+                : 'Aluno desmarcado de educação especial (autoriza sozinho por ser maior de idade).';
         } else {
             $_SESSION['error'] = 'Não foi possível atualizar o aluno.';
         }
@@ -66,8 +66,8 @@ require __DIR__ . '/includes/header.php';
         </span>
     </div>
     <div class="card-body border-bottom small text-muted">
-        Marque <strong>Dependente dos responsáveis</strong> quando o aluno for maior de idade, mas incapaz
-        ou sob curatela — nesses casos ele continua precisando de autorização dos pais nos eventos.
+        Marque <strong>Educação especial</strong> quando o aluno for maior de idade, mas continuar
+        precisando de autorização dos pais nos eventos.
     </div>
     <div class="card-body p-0">
         <?php if (empty($lista)): ?>
@@ -82,17 +82,17 @@ require __DIR__ . '/includes/header.php';
                         <th>Nascimento</th>
                         <th>Idade</th>
                         <th>Turma (<?php echo (int) $ano_corrente; ?>)</th>
-                        <th class="pe-3">Dependente dos responsáveis</th>
+                        <th class="pe-3">Educação especial</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($lista as $a): ?>
-                    <?php $dep = !empty($a['dependente_responsaveis']); ?>
-                    <tr class="<?php echo $dep ? 'table-warning' : ''; ?>">
+                    <?php $ee = !empty($a['educacao_especial']); ?>
+                    <tr class="<?php echo $ee ? 'table-warning' : ''; ?>">
                         <td class="ps-3">
                             <?php echo htmlspecialchars($a['nome']); ?>
-                            <?php if ($dep): ?>
-                            <div><span class="badge bg-warning text-dark">Dependente</span></div>
+                            <?php if ($ee): ?>
+                            <div><span class="badge bg-warning text-dark">Educação especial</span></div>
                             <?php endif; ?>
                         </td>
                         <td class="small text-muted"><?php echo htmlspecialchars($a['numero_matricula'] ?: '—'); ?></td>
@@ -108,24 +108,24 @@ require __DIR__ . '/includes/header.php';
                         <td class="pe-3">
                             <?php if ($pode_editar): ?>
                             <form method="POST" class="d-inline">
-                                <input type="hidden" name="action" value="dependente">
+                                <input type="hidden" name="action" value="educacao_especial">
                                 <input type="hidden" name="aluno_id" value="<?php echo (int) $a['id']; ?>">
-                                <?php if ($dep): ?>
-                                <input type="hidden" name="dependente" value="0">
+                                <?php if ($ee): ?>
+                                <input type="hidden" name="educacao_especial" value="0">
                                 <button type="submit" class="btn btn-outline-secondary btn-sm"
-                                        onclick="return confirm('Remover a marca de dependente? O aluno passará a autorizar sozinho.');">
-                                    Remover dependência
+                                        onclick="return confirm('Remover a marca de educação especial? O aluno passará a autorizar sozinho.');">
+                                    Remover educação especial
                                 </button>
                                 <?php else: ?>
-                                <input type="hidden" name="dependente" value="1">
+                                <input type="hidden" name="educacao_especial" value="1">
                                 <button type="submit" class="btn btn-warning btn-sm"
-                                        onclick="return confirm('Marcar como dependente dos responsáveis? Passará a precisar de autorização dos pais.');">
-                                    Marcar como dependente
+                                        onclick="return confirm('Marcar como educação especial? Passará a precisar de autorização dos pais.');">
+                                    Marcar educação especial
                                 </button>
                                 <?php endif; ?>
                             </form>
                             <?php else: ?>
-                            <?php echo $dep ? 'Sim' : 'Não'; ?>
+                            <?php echo $ee ? 'Sim' : 'Não'; ?>
                             <?php endif; ?>
                         </td>
                     </tr>

@@ -217,8 +217,8 @@ if ($voltar_status !== '') {
                                     <?php if (!empty($a['maior_idade'])): ?>
                                     <div class="mt-1">
                                         <span class="badge bg-primary">Maior de idade</span>
-                                        <?php if (!empty($a['dependente_responsaveis'])): ?>
-                                        <span class="badge bg-warning text-dark">Dependente</span>
+                                        <?php if (!empty($a['educacao_especial'])): ?>
+                                        <span class="badge bg-warning text-dark">Educação especial</span>
                                         <?php endif; ?>
                                     </div>
                                     <?php endif; ?>

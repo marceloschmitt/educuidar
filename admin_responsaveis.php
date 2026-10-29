@@ -216,8 +216,8 @@ $total_alunos = count($alunos_contemplados);
                                         <?php endif; ?>
                                         <?php if (!empty($a['maior_idade'])): ?>
                                             <span class="badge bg-primary">Maior de idade</span>
-                                            <?php if (!empty($a['dependente_responsaveis'])): ?>
-                                            <span class="badge bg-warning text-dark">Dependente</span>
+                                            <?php if (!empty($a['educacao_especial'])): ?>
+                                            <span class="badge bg-warning text-dark">Educação especial</span>
                                             <?php endif; ?>
                                         <?php endif; ?>
                                     </li>

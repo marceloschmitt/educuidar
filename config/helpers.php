@@ -78,11 +78,11 @@ if (!function_exists('ehMaiorIdade')) {
 
 if (!function_exists('ehMaiorIdadeAutonomo')) {
     /**
-     * Maior de idade que NÃO depende dos responsáveis (autoriza sozinho).
-     * Se marcado como dependente/incapaz, trata como menor para autorizações.
+     * Maior de idade que autoriza sozinho.
+     * Se marcado como educação especial, trata como menor para autorizações.
      */
-    function ehMaiorIdadeAutonomo($data_nascimento, $referencia = null, $dependente_responsaveis = false, $anos = 18) {
-        if (!empty($dependente_responsaveis)) {
+    function ehMaiorIdadeAutonomo($data_nascimento, $referencia = null, $educacao_especial = false, $anos = 18) {
+        if (!empty($educacao_especial)) {
             return false;
         }
         return ehMaiorIdade($data_nascimento, $referencia, $anos);

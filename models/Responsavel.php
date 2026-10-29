@@ -208,10 +208,10 @@ class Responsavel {
     }
 
     public function getAlunosVinculados($responsavel_id) {
-        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
+        (new Aluno($this->conn))->garantirColunaEducacaoEspecial();
         $query = "SELECT a.id, a.nome, a.nome_social, a.numero_matricula, a.cpf, a.foto,
                   a.data_nascimento,
-                  COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
+                  COALESCE(a.educacao_especial, 0) AS educacao_especial,
                   ra.parentesco, ra.id as vinculo_id
                   FROM responsavel_alunos ra
                   INNER JOIN alunos a ON a.id = ra.aluno_id
@@ -227,7 +227,7 @@ class Responsavel {
             $aluno['maior_idade_autonomo'] = ehMaiorIdadeAutonomo(
                 $aluno['data_nascimento'] ?? null,
                 null,
-                $aluno['dependente_responsaveis'] ?? 0
+                $aluno['educacao_especial'] ?? 0
             );
         }
         unset($aluno);

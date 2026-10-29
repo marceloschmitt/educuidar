@@ -675,7 +675,7 @@ class TermoAutorizacao {
     /** Alunos (não desistentes) das turmas do termo, com responsáveis aprovados. */
     public function listAlunosDoTermo($termo_id) {
         $this->garantirTabelas();
-        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
+        (new Aluno($this->conn))->garantirColunaEducacaoEspecial();
         $termo = $this->getById($termo_id);
         $ref_data = $termo['data_evento'] ?? date('Y-m-d');
 
@@ -684,7 +684,7 @@ class TermoAutorizacao {
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
                     a.data_nascimento,
-                    COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
+                    COALESCE(a.educacao_especial, 0) AS educacao_especial,
                     tu.id AS turma_id,
                     tu.ano_curso,
                     c.nome AS curso_nome
@@ -720,7 +720,7 @@ class TermoAutorizacao {
             $aluno['maior_idade'] = ehMaiorIdadeAutonomo(
                 $aluno['data_nascimento'] ?? null,
                 $ref_data,
-                $aluno['dependente_responsaveis'] ?? 0
+                $aluno['educacao_especial'] ?? 0
             );
         }
         unset($aluno);
@@ -819,12 +819,12 @@ class TermoAutorizacao {
             return 'aluno_fora';
         }
         $alunoModel = new Aluno($this->conn);
-        $alunoModel->garantirColunaDependenteResponsaveis();
+        $alunoModel->garantirColunaEducacaoEspecial();
         $aluno = $alunoModel->getById($aluno_id);
         if ($aluno && ehMaiorIdadeAutonomo(
             $aluno['data_nascimento'] ?? null,
             $termo['data_evento'] ?? null,
-            $aluno['dependente_responsaveis'] ?? 0
+            $aluno['educacao_especial'] ?? 0
         )) {
             return 'maior_idade';
         }
@@ -942,7 +942,7 @@ class TermoAutorizacao {
      */
     public function listDestinatariosPendentesParaEmail($termo_id) {
         $this->garantirTabelas();
-        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
+        (new Aluno($this->conn))->garantirColunaEducacaoEspecial();
         // Exclui maiores autônomos na data do evento (não precisam de autorização dos pais).
         $stmt = $this->conn->prepare(
             "SELECT r.id, r.nome, r.email,
@@ -960,7 +960,7 @@ class TermoAutorizacao {
                AND r.ativo = 1
                AND r.email <> ''
                AND (
-                   COALESCE(a.dependente_responsaveis, 0) = 1
+                   COALESCE(a.educacao_especial, 0) = 1
                    OR a.data_nascimento IS NULL
                    OR a.data_nascimento <= '1900-01-01'
                    OR TIMESTAMPDIFF(YEAR, a.data_nascimento, t.data_evento) < 18
@@ -1113,7 +1113,7 @@ class TermoAutorizacao {
     /** Alunos do responsável que estão em turmas do termo. */
     public function listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id) {
         $this->garantirTabelas();
-        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
+        (new Aluno($this->conn))->garantirColunaEducacaoEspecial();
         $termo = $this->getById($termo_id);
         $ref_data = $termo['data_evento'] ?? date('Y-m-d');
 
@@ -1122,7 +1122,7 @@ class TermoAutorizacao {
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
                     a.data_nascimento,
-                    COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
+                    COALESCE(a.educacao_especial, 0) AS educacao_especial,
                     tu.ano_curso,
                     c.nome AS curso_nome
              FROM termo_autorizacao_turma tt
@@ -1148,7 +1148,7 @@ class TermoAutorizacao {
             $aluno['maior_idade'] = ehMaiorIdadeAutonomo(
                 $aluno['data_nascimento'] ?? null,
                 $ref_data,
-                $aluno['dependente_responsaveis'] ?? 0
+                $aluno['educacao_especial'] ?? 0
             );
         }
         unset($aluno);
