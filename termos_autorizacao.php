@@ -249,7 +249,7 @@ require __DIR__ . '/includes/header.php';
                         <th class="text-center">Concordaram</th>
                         <th class="text-center">Discordaram</th>
                         <th class="text-center">Pendentes</th>
-                        <th class="text-center">Discordância</th>
+                        <th class="text-center">Maiores de idade</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -274,16 +274,7 @@ require __DIR__ . '/includes/header.php';
                         <td class="text-center"><span class="badge bg-success"><?php echo (int) $t['concordaram']; ?></span></td>
                         <td class="text-center"><span class="badge bg-danger"><?php echo (int) $t['discordaram']; ?></span></td>
                         <td class="text-center"><span class="badge bg-warning text-dark"><?php echo (int) $t['pendentes']; ?></span></td>
-                        <td class="text-center">
-                            <?php if ((int) $t['alunos_com_discordancia'] > 0): ?>
-                            <span class="badge bg-danger">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                                <?php echo (int) $t['alunos_com_discordancia']; ?>
-                            </span>
-                            <?php else: ?>
-                            <span class="text-muted">—</span>
-                            <?php endif; ?>
-                        </td>
+                        <td class="text-center"><span class="badge bg-primary"><?php echo (int) ($t['maiores_autorizados'] ?? 0); ?></span></td>
                         <td class="text-end pe-3">
                             <a href="termo_autorizacao_ver.php?id=<?php echo (int) $t['id']; ?>" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i> Ver
