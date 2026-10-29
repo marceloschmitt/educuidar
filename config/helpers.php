@@ -41,6 +41,41 @@ if (!function_exists('formatCpf')) {
     }
 }
 
+if (!function_exists('calcularIdadeAnos')) {
+    /**
+     * Idade em anos completos na data de referência (padrão: hoje).
+     * @return int|null null se data de nascimento inválida/ausente
+     */
+    function calcularIdadeAnos($data_nascimento, $referencia = null) {
+        $nasc_raw = trim((string) $data_nascimento);
+        if ($nasc_raw === '' || $nasc_raw === '0000-00-00') {
+            return null;
+        }
+        try {
+            $nasc = new DateTime(substr($nasc_raw, 0, 10));
+            if ($referencia === null || trim((string) $referencia) === '') {
+                $ref = new DateTime('today');
+            } else {
+                $ref = new DateTime(substr((string) $referencia, 0, 10));
+            }
+        } catch (Exception $e) {
+            return null;
+        }
+        if ($nasc > $ref) {
+            return null;
+        }
+        return (int) $nasc->diff($ref)->y;
+    }
+}
+
+if (!function_exists('ehMaiorIdade')) {
+    /** True se tiver 18 anos ou mais na data de referência. Sem nascimento = menor. */
+    function ehMaiorIdade($data_nascimento, $referencia = null, $anos = 18) {
+        $idade = calcularIdadeAnos($data_nascimento, $referencia);
+        return $idade !== null && $idade >= (int) $anos;
+    }
+}
+
 if (!function_exists('resolveIncluirSabadosSession')) {
     /**
      * Preferência de exibir eventos em sábado (persistida na sessão).

@@ -519,8 +519,14 @@ class TermoAutorizacao {
         $pendentes = 0;
         $discordancia = 0;
 
+        $maiores = 0;
+
         foreach ($alunos as $aluno) {
             $aid = (int) $aluno['id'];
+            if (!empty($aluno['maior_idade'])) {
+                $maiores++;
+                continue;
+            }
             $decs = $por_aluno[$aid] ?? [];
             $tem_sim = in_array(self::DECISAO_CONCORDOU, $decs, true);
             $tem_nao = in_array(self::DECISAO_DISCORDOU, $decs, true);
@@ -534,7 +540,6 @@ class TermoAutorizacao {
             } elseif ($tem_nao && !$tem_sim) {
                 $discordaram++;
             }
-            // discordância: conta nos dois lados via flags acima; aluno "discordância" não entra só em concordaram/discordaram puros
         }
 
         return [
@@ -542,6 +547,7 @@ class TermoAutorizacao {
             'concordaram' => $concordaram,
             'discordaram' => $discordaram,
             'pendentes' => $pendentes,
+            'maiores_autorizados' => $maiores,
             'alunos_com_discordancia' => $discordancia,
         ];
     }
@@ -589,6 +595,19 @@ class TermoAutorizacao {
                 (int) ($aluno['ano_curso'] ?? 0),
                 $turma_label
             );
+
+            if (!empty($aluno['maior_idade'])) {
+                $concordaram[] = [
+                    'aluno_nome' => $aluno_nome,
+                    'turma_label' => $turma_label,
+                    'turma_sort' => $turma_sort,
+                    'responsavel_nome' => 'Maior de idade (autorizado)',
+                    'parentesco' => '',
+                    'decidido_em' => null,
+                ];
+                continue;
+            }
+
             $responsaveis = $aluno['responsaveis'] ?? [];
 
             if (empty($responsaveis)) {
@@ -656,10 +675,14 @@ class TermoAutorizacao {
     /** Alunos (não desistentes) das turmas do termo, com responsáveis aprovados. */
     public function listAlunosDoTermo($termo_id) {
         $this->garantirTabelas();
+        $termo = $this->getById($termo_id);
+        $ref_data = $termo['data_evento'] ?? date('Y-m-d');
+
         $stmt = $this->conn->prepare(
             "SELECT DISTINCT a.id,
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
+                    a.data_nascimento,
                     tu.id AS turma_id,
                     tu.ano_curso,
                     c.nome AS curso_nome
@@ -691,6 +714,8 @@ class TermoAutorizacao {
             $respStmt->execute();
             $aluno['responsaveis'] = $respStmt->fetchAll();
             $aluno['turma_label'] = ($aluno['curso_nome'] ?? '') . ' - ' . (int) $aluno['ano_curso'] . 'º Ano';
+            $aluno['idade'] = calcularIdadeAnos($aluno['data_nascimento'] ?? null, $ref_data);
+            $aluno['maior_idade'] = ehMaiorIdade($aluno['data_nascimento'] ?? null, $ref_data);
         }
         unset($aluno);
         return $alunos;
@@ -786,6 +811,10 @@ class TermoAutorizacao {
         }
         if (!$this->alunoPertenceAoTermo($termo_id, $aluno_id)) {
             return 'aluno_fora';
+        }
+        $aluno = (new Aluno($this->conn))->getById($aluno_id);
+        if ($aluno && ehMaiorIdade($aluno['data_nascimento'] ?? null, $termo['data_evento'] ?? null)) {
+            return 'maior_idade';
         }
 
         $atual = $this->getResposta($termo_id, $responsavel_id, $aluno_id);
@@ -901,11 +930,13 @@ class TermoAutorizacao {
      */
     public function listDestinatariosPendentesParaEmail($termo_id) {
         $this->garantirTabelas();
+        // Exclui maiores de idade na data do evento (não precisam de autorização dos pais).
         $stmt = $this->conn->prepare(
             "SELECT r.id, r.nome, r.email,
                     GROUP_CONCAT(DISTINCT COALESCE(NULLIF(a.nome_social, ''), a.nome)
                                  ORDER BY a.nome SEPARATOR ', ') AS alunos
              FROM termo_autorizacao_turma tt
+             INNER JOIN termo_autorizacao t ON t.id = tt.termo_id
              INNER JOIN aluno_turmas at ON at.turma_id = tt.turma_id
              INNER JOIN alunos a ON a.id = at.aluno_id
              INNER JOIN responsavel_alunos ra ON ra.aluno_id = a.id
@@ -915,6 +946,11 @@ class TermoAutorizacao {
                AND r.status = 'aprovado'
                AND r.ativo = 1
                AND r.email <> ''
+               AND (
+                   a.data_nascimento IS NULL
+                   OR a.data_nascimento = '0000-00-00'
+                   OR TIMESTAMPDIFF(YEAR, a.data_nascimento, t.data_evento) < 18
+               )
                AND NOT EXISTS (
                    SELECT 1 FROM termo_autorizacao_resposta resp
                    WHERE resp.termo_id = tt.termo_id
@@ -1063,10 +1099,14 @@ class TermoAutorizacao {
     /** Alunos do responsável que estão em turmas do termo. */
     public function listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id) {
         $this->garantirTabelas();
+        $termo = $this->getById($termo_id);
+        $ref_data = $termo['data_evento'] ?? date('Y-m-d');
+
         $stmt = $this->conn->prepare(
             "SELECT DISTINCT a.id,
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
+                    a.data_nascimento,
                     tu.ano_curso,
                     c.nome AS curso_nome
              FROM termo_autorizacao_turma tt
@@ -1088,6 +1128,8 @@ class TermoAutorizacao {
             $aluno['resposta'] = $this->getResposta($termo_id, $responsavel_id, (int) $aluno['id']);
             $aluno['aluno_tem_resposta'] = $this->alunoTemAlgumaResposta($termo_id, (int) $aluno['id']);
             $aluno['turma_label'] = ($aluno['curso_nome'] ?? '') . ' - ' . (int) $aluno['ano_curso'] . 'º Ano';
+            $aluno['idade'] = calcularIdadeAnos($aluno['data_nascimento'] ?? null, $ref_data);
+            $aluno['maior_idade'] = ehMaiorIdade($aluno['data_nascimento'] ?? null, $ref_data);
         }
         unset($aluno);
         return $alunos;

@@ -425,6 +425,51 @@ class Aluno {
         return $stmt->execute();
     }
 
+    /**
+     * Alunos ativos com 18 anos ou mais na data de referência (padrão: hoje),
+     * com turma do ano civil informado quando houver.
+     */
+    public function listMaioresIdade($ano_civil = null, $referencia = null) {
+        $ref = $referencia ? substr((string) $referencia, 0, 10) : date('Y-m-d');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ref)) {
+            $ref = date('Y-m-d');
+        }
+        $ref_sql = $this->conn->quote($ref);
+
+        $join_turma = '';
+        $select_turma = 'NULL AS turma_id, NULL AS ano_curso, NULL AS curso_nome';
+        if ($ano_civil !== null) {
+            $join_turma = "
+                LEFT JOIN aluno_turmas at ON at.aluno_id = a.id
+                LEFT JOIN turmas t ON t.id = at.turma_id AND t.ano_civil = :ano_civil
+                LEFT JOIN cursos c ON c.id = t.curso_id
+            ";
+            $select_turma = 't.id AS turma_id, t.ano_curso, c.nome AS curso_nome';
+        }
+
+        $query = "SELECT DISTINCT a.id,
+                         COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
+                         a.nome AS nome_civil,
+                         a.numero_matricula,
+                         a.data_nascimento,
+                         TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) AS idade,
+                         {$select_turma}
+                  FROM " . $this->table . " a
+                  {$join_turma}
+                  WHERE COALESCE(a.desistente, 0) = 0
+                    AND a.data_nascimento IS NOT NULL
+                    AND a.data_nascimento <> '0000-00-00'
+                    AND TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) >= 18
+                  ORDER BY nome ASC";
+
+        $stmt = $this->conn->prepare($query);
+        if ($ano_civil !== null) {
+            $stmt->bindValue(':ano_civil', (int) $ano_civil, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
     public function getAlunosTurmasAnoCorrente($ano_corrente, $turma_id = null, $curso_id = null) {
         $query = "SELECT DISTINCT a.*, 
                   t.id as turma_id, t.ano_civil, t.ano_curso,

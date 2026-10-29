@@ -98,6 +98,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'alunos_maiores.php' ? 'active' : ''; ?>" href="alunos_maiores.php">
+            <i class="bi bi-person-check"></i> Alunos maiores de idade
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'alunos.php' && !empty($_GET['desistentes']) ? 'active' : ''; ?>" href="alunos.php?desistentes=1">
             <i class="bi bi-person-x"></i> Alunos desistentes
         </a>

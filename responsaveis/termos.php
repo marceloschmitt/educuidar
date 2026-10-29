@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'decid
             $_SESSION['flash_error'] = 'Você já respondeu. Para alterar, a escola precisa liberar uma nova resposta.';
         } elseif ($resultado === 'aluno_fora') {
             $_SESSION['flash_error'] = 'Este aluno não participa desta autorização.';
+        } elseif ($resultado === 'maior_idade') {
+            $_SESSION['flash_success'] = 'Este aluno é maior de idade e já está autorizado a participar.';
         } else {
             $_SESSION['flash_error'] = 'Não foi possível registrar a resposta.';
         }
@@ -113,7 +115,8 @@ require __DIR__ . '/header.php';
 
 <?php
 $r = $aluno['resposta'] ?? null;
-$pode_responder = !$r || (int) $r['pode_alterar'];
+$eh_maior = !empty($aluno['maior_idade']);
+$pode_responder = !$eh_maior && (!$r || (int) $r['pode_alterar']);
 $texto_personalizado = TermoAutorizacao::temTexto($termo)
     ? TermoAutorizacao::renderTextoPersonalizado(
         $termo['texto_autorizacao'],
@@ -136,6 +139,14 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             <?php endif; ?>
         </div>
 
+        <?php if ($eh_maior): ?>
+        <div class="alert alert-success">
+            <i class="bi bi-person-check"></i>
+            Este aluno é <strong>maior de idade</strong><?php echo $aluno['idade'] !== null ? ' (' . (int) $aluno['idade'] . ' anos)' : ''; ?>
+            e está <strong>autorizado</strong> a participar. Não é necessária resposta dos responsáveis.
+        </div>
+        <?php endif; ?>
+
         <?php if (TermoAutorizacao::temTexto($termo)): ?>
         <div class="mb-4"><?php echo nl2br(htmlspecialchars($texto_personalizado)); ?></div>
         <?php elseif (TermoAutorizacao::temPdf($termo)): ?>
@@ -146,7 +157,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
         </div>
         <?php endif; ?>
 
-        <?php if ($r && !(int) $r['pode_alterar']): ?>
+        <?php if (!$eh_maior && $r && !(int) $r['pode_alterar']): ?>
         <div class="mb-0">
             <span class="badge bg-<?php echo TermoAutorizacao::decisaoBadgeClass($r['decisao']); ?> mb-1">
                 <?php echo htmlspecialchars($labels[$r['decisao']] ?? $r['decisao']); ?>
@@ -187,7 +198,7 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
                 </button>
             </form>
         </div>
-        <?php elseif (!$r && !empty($aluno['aluno_tem_resposta'])): ?>
+        <?php elseif (!$eh_maior && !$r && !empty($aluno['aluno_tem_resposta'])): ?>
         <div class="small text-muted">Outro responsável já registrou uma resposta para este aluno.</div>
         <?php endif; ?>
     </div>
@@ -204,9 +215,10 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
     $t = $item['termo'];
     $a = $item['aluno'];
     $rr = $a['resposta'] ?? null;
+    $eh_maior = !empty($a['maior_idade']);
     $eu_ok = $rr && !(int) ($rr['pode_alterar'] ?? 0);
-    $pendente = !$eu_ok && empty($a['aluno_tem_resposta']);
-    $aguardando = !$eu_ok && !empty($a['aluno_tem_resposta']);
+    $pendente = !$eh_maior && !$eu_ok && empty($a['aluno_tem_resposta']);
+    $aguardando = !$eh_maior && !$eu_ok && !empty($a['aluno_tem_resposta']);
     ?>
     <a href="termos.php?id=<?php echo (int) $t['id']; ?>&aluno_id=<?php echo (int) $a['id']; ?>"
        class="resp-event text-decoration-none text-dark">
@@ -219,7 +231,9 @@ $texto_personalizado = TermoAutorizacao::temTexto($termo)
             <div class="small"><?php echo htmlspecialchars($a['nome']); ?></div>
             <div class="small text-muted">
                 <?php echo htmlspecialchars($a['turma_label']); ?>
-                <?php if ($pendente): ?>
+                <?php if ($eh_maior): ?>
+                · <span class="text-success">Maior de idade — autorizado</span>
+                <?php elseif ($pendente): ?>
                 · <span class="text-warning">Pendente</span>
                 <?php elseif ($eu_ok): ?>
                 · <span class="text-success">Respondido</span>

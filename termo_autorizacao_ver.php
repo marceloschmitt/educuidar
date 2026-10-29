@@ -108,6 +108,7 @@ $decisoes_filtro = [
     'concordou' => 'Concordaram',
     'discordou' => 'Discordaram',
     'pendente' => 'Pendentes',
+    'maior_idade' => 'Maiores de idade',
     'discordancia' => 'Com discordância',
 ];
 if ($filtro_decisao !== '' && !isset($decisoes_filtro[$filtro_decisao])) {
@@ -133,6 +134,10 @@ foreach ($respostas as $r) {
 $status_por_aluno = [];
 foreach ($alunos as $aluno) {
     $aid = (int) $aluno['id'];
+    if (!empty($aluno['maior_idade'])) {
+        $status_por_aluno[$aid] = 'maior_idade';
+        continue;
+    }
     $decs = array_column($respostas_por_aluno[$aid] ?? [], 'decisao');
     $tem_sim = in_array(TermoAutorizacao::DECISAO_CONCORDOU, $decs, true);
     $tem_nao = in_array(TermoAutorizacao::DECISAO_DISCORDOU, $decs, true);
@@ -164,11 +169,14 @@ $totais = [
     'concordaram' => 0,
     'discordaram' => 0,
     'pendentes' => 0,
+    'maiores_autorizados' => 0,
     'alunos_com_discordancia' => 0,
 ];
 foreach ($alunos_filtrados as $aluno) {
     $status = $status_por_aluno[(int) $aluno['id']] ?? 'pendente';
-    if ($status === 'concordou') {
+    if ($status === 'maior_idade') {
+        $totais['maiores_autorizados']++;
+    } elseif ($status === 'concordou') {
         $totais['concordaram']++;
     } elseif ($status === 'discordou') {
         $totais['discordaram']++;
@@ -385,6 +393,7 @@ require __DIR__ . '/includes/header.php';
             <span><span class="badge bg-success"><?php echo (int) $totais['concordaram']; ?></span> concordaram</span>
             <span><span class="badge bg-danger"><?php echo (int) $totais['discordaram']; ?></span> discordaram</span>
             <span><span class="badge bg-warning text-dark"><?php echo (int) $totais['pendentes']; ?></span> pendentes</span>
+            <span><span class="badge bg-primary"><?php echo (int) $totais['maiores_autorizados']; ?></span> maiores de idade</span>
             <?php if ((int) $totais['alunos_com_discordancia'] > 0): ?>
             <span class="text-danger">
                 <i class="bi bi-exclamation-triangle-fill"></i>
@@ -421,10 +430,18 @@ require __DIR__ . '/includes/header.php';
                         $por_resp[(int) $r['responsavel_id']] = $r;
                     }
                     ?>
-                    <tr class="<?php echo $tem_discordancia ? 'table-danger' : ''; ?>">
+                    <?php $eh_maior = !empty($aluno['maior_idade']); ?>
+                    <tr class="<?php echo !$eh_maior && $tem_discordancia ? 'table-danger' : ''; ?>">
                         <td class="ps-3">
                             <?php echo htmlspecialchars($aluno['nome']); ?>
-                            <?php if ($tem_discordancia): ?>
+                            <?php if ($eh_maior): ?>
+                            <div>
+                                <span class="badge bg-primary">Maior de idade</span>
+                                <?php if ($aluno['idade'] !== null): ?>
+                                <span class="small text-muted"><?php echo (int) $aluno['idade']; ?> anos</span>
+                                <?php endif; ?>
+                            </div>
+                            <?php elseif ($tem_discordancia): ?>
                             <div><span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill"></i> Discordância</span></div>
                             <?php endif; ?>
                             <?php if (!empty($aluno['numero_matricula'])): ?>
@@ -433,7 +450,10 @@ require __DIR__ . '/includes/header.php';
                         </td>
                         <td class="small"><?php echo htmlspecialchars($aluno['turma_label']); ?></td>
                         <td class="pe-3">
-                            <?php if (empty($aluno['responsaveis'])): ?>
+                            <?php if ($eh_maior): ?>
+                            <span class="badge bg-success">Autorizado</span>
+                            <span class="small text-muted">Não precisa de autorização dos responsáveis.</span>
+                            <?php elseif (empty($aluno['responsaveis'])): ?>
                             <span class="text-muted small">Nenhum responsável aprovado vinculado.</span>
                             <?php else: ?>
                             <ul class="list-unstyled mb-0">
