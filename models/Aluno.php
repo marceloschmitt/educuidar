@@ -55,10 +55,46 @@ class Aluno {
     public $auxilios_direitos_estudantis;
     public $observacoes_assistencia_estudantil;
     public $desistente;
+    /** Maior de idade que ainda depende dos responsáveis (incapaz / curatela). */
+    public $dependente_responsaveis;
     public $created_at;
+
+    private $coluna_dependente_ok = false;
 
     public function __construct($db) {
         $this->conn = $db;
+    }
+
+    public function garantirColunaDependenteResponsaveis() {
+        if ($this->coluna_dependente_ok) {
+            return;
+        }
+        try {
+            $cols = $this->conn->query("SHOW COLUMNS FROM {$this->table}")->fetchAll(PDO::FETCH_COLUMN);
+            if ($cols && !in_array('dependente_responsaveis', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE {$this->table}
+                     ADD COLUMN dependente_responsaveis TINYINT(1) NOT NULL DEFAULT 0
+                     AFTER data_nascimento"
+                );
+            }
+        } catch (Throwable $e) {
+            // sem permissão ALTER — falha nas queries que usam a coluna
+        }
+        $this->coluna_dependente_ok = true;
+    }
+
+    public function setDependenteResponsaveis($aluno_id, $dependente) {
+        $this->garantirColunaDependenteResponsaveis();
+        $stmt = $this->conn->prepare(
+            "UPDATE {$this->table}
+             SET dependente_responsaveis = :dep
+             WHERE id = :id"
+        );
+        $stmt->bindValue(':dep', $dependente ? 1 : 0, PDO::PARAM_INT);
+        $stmt->bindValue(':id', (int) $aluno_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->rowCount() > 0 || $this->getById($aluno_id) !== null;
     }
 
     public function create() {
@@ -430,6 +466,7 @@ class Aluno {
      * com turma do ano civil informado quando houver.
      */
     public function listMaioresIdade($ano_civil = null, $referencia = null) {
+        $this->garantirColunaDependenteResponsaveis();
         $ref = $referencia ? substr((string) $referencia, 0, 10) : date('Y-m-d');
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $ref)) {
             $ref = date('Y-m-d');
@@ -475,6 +512,7 @@ class Aluno {
                          a.nome AS nome_civil,
                          a.numero_matricula,
                          a.data_nascimento,
+                         COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
                          TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) AS idade,
                          {$select_turma}
                   FROM " . $this->table . " a
@@ -482,7 +520,7 @@ class Aluno {
                     AND a.data_nascimento IS NOT NULL
                     AND a.data_nascimento > '1900-01-01'
                     AND TIMESTAMPDIFF(YEAR, a.data_nascimento, {$ref_sql}) >= 18
-                  ORDER BY nome ASC";
+                  ORDER BY COALESCE(a.dependente_responsaveis, 0) DESC, nome ASC";
 
         $stmt = $this->conn->prepare($query);
         foreach ($params as $chave => $valor) {

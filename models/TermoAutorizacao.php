@@ -675,6 +675,7 @@ class TermoAutorizacao {
     /** Alunos (não desistentes) das turmas do termo, com responsáveis aprovados. */
     public function listAlunosDoTermo($termo_id) {
         $this->garantirTabelas();
+        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
         $termo = $this->getById($termo_id);
         $ref_data = $termo['data_evento'] ?? date('Y-m-d');
 
@@ -683,6 +684,7 @@ class TermoAutorizacao {
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
                     a.data_nascimento,
+                    COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
                     tu.id AS turma_id,
                     tu.ano_curso,
                     c.nome AS curso_nome
@@ -715,7 +717,11 @@ class TermoAutorizacao {
             $aluno['responsaveis'] = $respStmt->fetchAll();
             $aluno['turma_label'] = ($aluno['curso_nome'] ?? '') . ' - ' . (int) $aluno['ano_curso'] . 'º Ano';
             $aluno['idade'] = calcularIdadeAnos($aluno['data_nascimento'] ?? null, $ref_data);
-            $aluno['maior_idade'] = ehMaiorIdade($aluno['data_nascimento'] ?? null, $ref_data);
+            $aluno['maior_idade'] = ehMaiorIdadeAutonomo(
+                $aluno['data_nascimento'] ?? null,
+                $ref_data,
+                $aluno['dependente_responsaveis'] ?? 0
+            );
         }
         unset($aluno);
         return $alunos;
@@ -812,8 +818,14 @@ class TermoAutorizacao {
         if (!$this->alunoPertenceAoTermo($termo_id, $aluno_id)) {
             return 'aluno_fora';
         }
-        $aluno = (new Aluno($this->conn))->getById($aluno_id);
-        if ($aluno && ehMaiorIdade($aluno['data_nascimento'] ?? null, $termo['data_evento'] ?? null)) {
+        $alunoModel = new Aluno($this->conn);
+        $alunoModel->garantirColunaDependenteResponsaveis();
+        $aluno = $alunoModel->getById($aluno_id);
+        if ($aluno && ehMaiorIdadeAutonomo(
+            $aluno['data_nascimento'] ?? null,
+            $termo['data_evento'] ?? null,
+            $aluno['dependente_responsaveis'] ?? 0
+        )) {
             return 'maior_idade';
         }
 
@@ -930,7 +942,8 @@ class TermoAutorizacao {
      */
     public function listDestinatariosPendentesParaEmail($termo_id) {
         $this->garantirTabelas();
-        // Exclui maiores de idade na data do evento (não precisam de autorização dos pais).
+        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
+        // Exclui maiores autônomos na data do evento (não precisam de autorização dos pais).
         $stmt = $this->conn->prepare(
             "SELECT r.id, r.nome, r.email,
                     GROUP_CONCAT(DISTINCT COALESCE(NULLIF(a.nome_social, ''), a.nome)
@@ -947,7 +960,8 @@ class TermoAutorizacao {
                AND r.ativo = 1
                AND r.email <> ''
                AND (
-                   a.data_nascimento IS NULL
+                   COALESCE(a.dependente_responsaveis, 0) = 1
+                   OR a.data_nascimento IS NULL
                    OR a.data_nascimento <= '1900-01-01'
                    OR TIMESTAMPDIFF(YEAR, a.data_nascimento, t.data_evento) < 18
                )
@@ -1099,6 +1113,7 @@ class TermoAutorizacao {
     /** Alunos do responsável que estão em turmas do termo. */
     public function listAlunosDoResponsavelNoTermo($termo_id, $responsavel_id) {
         $this->garantirTabelas();
+        (new Aluno($this->conn))->garantirColunaDependenteResponsaveis();
         $termo = $this->getById($termo_id);
         $ref_data = $termo['data_evento'] ?? date('Y-m-d');
 
@@ -1107,6 +1122,7 @@ class TermoAutorizacao {
                     COALESCE(NULLIF(a.nome_social, ''), a.nome) AS nome,
                     a.numero_matricula,
                     a.data_nascimento,
+                    COALESCE(a.dependente_responsaveis, 0) AS dependente_responsaveis,
                     tu.ano_curso,
                     c.nome AS curso_nome
              FROM termo_autorizacao_turma tt
@@ -1129,7 +1145,11 @@ class TermoAutorizacao {
             $aluno['aluno_tem_resposta'] = $this->alunoTemAlgumaResposta($termo_id, (int) $aluno['id']);
             $aluno['turma_label'] = ($aluno['curso_nome'] ?? '') . ' - ' . (int) $aluno['ano_curso'] . 'º Ano';
             $aluno['idade'] = calcularIdadeAnos($aluno['data_nascimento'] ?? null, $ref_data);
-            $aluno['maior_idade'] = ehMaiorIdade($aluno['data_nascimento'] ?? null, $ref_data);
+            $aluno['maior_idade'] = ehMaiorIdadeAutonomo(
+                $aluno['data_nascimento'] ?? null,
+                $ref_data,
+                $aluno['dependente_responsaveis'] ?? 0
+            );
         }
         unset($aluno);
         return $alunos;

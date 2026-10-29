@@ -430,18 +430,22 @@ require __DIR__ . '/includes/header.php';
                         $por_resp[(int) $r['responsavel_id']] = $r;
                     }
                     ?>
-                    <?php $eh_maior = !empty($aluno['maior_idade']); ?>
+                    <?php
+                    $eh_maior = !empty($aluno['maior_idade']);
+                    $eh_dependente = !$eh_maior && !empty($aluno['dependente_responsaveis'])
+                        && ehMaiorIdade($aluno['data_nascimento'] ?? null, $termo['data_evento'] ?? null);
+                    ?>
                     <tr class="<?php echo !$eh_maior && $tem_discordancia ? 'table-danger' : ''; ?>">
                         <td class="ps-3">
                             <?php echo htmlspecialchars($aluno['nome']); ?>
-                            <?php if ($eh_maior): ?>
+                            <?php if ($eh_dependente): ?>
                             <div>
-                                <span class="badge bg-primary">Maior de idade</span>
+                                <span class="badge bg-warning text-dark">Dependente dos responsáveis</span>
                                 <?php if ($aluno['idade'] !== null): ?>
                                 <span class="small text-muted"><?php echo (int) $aluno['idade']; ?> anos</span>
                                 <?php endif; ?>
                             </div>
-                            <?php elseif ($tem_discordancia): ?>
+                            <?php elseif (!$eh_maior && $tem_discordancia): ?>
                             <div><span class="badge bg-danger"><i class="bi bi-exclamation-triangle-fill"></i> Discordância</span></div>
                             <?php endif; ?>
                             <?php if (!empty($aluno['numero_matricula'])): ?>
@@ -452,7 +456,7 @@ require __DIR__ . '/includes/header.php';
                         <td class="pe-3">
                             <?php if ($eh_maior): ?>
                             <span class="badge bg-success">Autorizado</span>
-                            <span class="small text-muted">Não precisa de autorização dos responsáveis.</span>
+                            <span class="badge bg-primary">Maior de idade</span>
                             <?php elseif (empty($aluno['responsaveis'])): ?>
                             <span class="text-muted small">Nenhum responsável aprovado vinculado.</span>
                             <?php else: ?>
