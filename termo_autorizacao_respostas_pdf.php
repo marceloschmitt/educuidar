@@ -61,10 +61,15 @@ $pdfTxt = static function ($texto) {
     return utf8_decode($texto);
 };
 
+$qtd_discordaram = count($listas['discordaram']);
+$qtd_concordaram = count($listas['concordaram']);
+$qtd_nao_responderam = count($listas['nao_responderam']);
+$qtd_total = $qtd_discordaram + $qtd_concordaram + $qtd_nao_responderam;
+
 $secoes = [
-    ['titulo' => 'Discordaram', 'itens' => $listas['discordaram']],
-    ['titulo' => 'Concordaram', 'itens' => $listas['concordaram']],
-    ['titulo' => 'Não responderam', 'itens' => $listas['nao_responderam']],
+    ['titulo' => 'Discordaram', 'rotulo_resumo' => 'Não autorizados (discordaram)', 'itens' => $listas['discordaram']],
+    ['titulo' => 'Concordaram', 'rotulo_resumo' => 'Autorizados (concordaram)', 'itens' => $listas['concordaram']],
+    ['titulo' => 'Não responderam', 'rotulo_resumo' => 'Não responderam', 'itens' => $listas['nao_responderam']],
 ];
 
 class TermoAutorizacoesPdf extends FPDF
@@ -189,6 +194,16 @@ if (!empty($termo['hora'])) {
 $pdf->Cell(0, 5, $pdfTxt('Data do evento: ' . $data_evento), 0, 1);
 $pdf->Cell(0, 5, $pdfTxt('Turmas: ' . (!empty($turmas_label) ? implode(', ', $turmas_label) : '—')), 0, 1);
 $pdf->Cell(0, 5, $pdfTxt('Gerado em: ' . date('d/m/Y H:i')), 0, 1);
+$pdf->Ln(3);
+
+$pdf->SetFont('Arial', 'B', 11);
+$pdf->Cell(0, 6, $pdfTxt('Resumo'), 0, 1);
+$pdf->SetFont('Arial', '', 10);
+$pdf->Cell(0, 5, $pdfTxt('Autorizados (concordaram): ' . $qtd_concordaram), 0, 1);
+$pdf->Cell(0, 5, $pdfTxt('Não autorizados (discordaram): ' . $qtd_discordaram), 0, 1);
+$pdf->Cell(0, 5, $pdfTxt('Não responderam: ' . $qtd_nao_responderam), 0, 1);
+$pdf->SetFont('Arial', 'B', 10);
+$pdf->Cell(0, 5, $pdfTxt('Total de alunos: ' . $qtd_total), 0, 1);
 $pdf->Ln(4);
 
 $wNum = 10;
@@ -220,6 +235,9 @@ foreach ($secoes as $secao) {
     $pdf->Cell(0, 7, $pdfTxt($secao['titulo'] . ' (' . count($secao['itens']) . ')'), 0, 1);
     $pdf->Ln(1);
 
+    // Numeração reinicia a cada categoria (Concordaram / Discordaram / Não responderam).
+    $n = 0;
+
     if (empty($secao['itens'])) {
         $pdf->SetFont('Arial', 'I', 9);
         $pdf->Cell(0, 5, $pdfTxt('Nenhum registro nesta lista.'), 0, 1);
@@ -228,7 +246,6 @@ foreach ($secoes as $secao) {
     }
 
     $turma_atual = null;
-    $n = 0;
     foreach ($secao['itens'] as $linha) {
         $turma = (string) ($linha['turma_label'] ?? '—');
         if ($turma !== $turma_atual) {
