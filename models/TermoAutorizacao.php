@@ -566,7 +566,11 @@ class TermoAutorizacao {
 
     /**
      * Listas para PDF/impressão: concordaram, discordaram e não responderam.
-     * Cada linha é um par aluno + responsável, ordenado por turma e, dentro dela, pelo nome.
+     * Uma linha por aluno (não por responsável). Critério alinhado à tela:
+     * - concordaram: ao menos um responsável concordou e nenhum discordou
+     *   (outros responsáveis sem resposta não tiram a autorização);
+     * - discordaram: ao menos um discordou (inclui discordância entre responsáveis);
+     * - não responderam: nenhuma resposta registrada.
      *
      * @return array{concordaram: list<array>, discordaram: list<array>, nao_responderam: list<array>}
      */
@@ -574,12 +578,19 @@ class TermoAutorizacao {
         $alunos = $this->listAlunosDoTermo($termo_id);
         $respostas = $this->listRespostasDoTermo($termo_id);
 
-        $por_aluno_resp = [];
+        $por_aluno = [];
         foreach ($respostas as $r) {
-            $aid = (int) $r['aluno_id'];
-            $rid = (int) $r['responsavel_id'];
-            $por_aluno_resp[$aid][$rid] = $r;
+            $por_aluno[(int) $r['aluno_id']][] = $r;
         }
+
+        $fmtResponsavel = static function (array $r) {
+            $nome = trim((string) ($r['responsavel_nome'] ?? '—'));
+            $parentesco = trim((string) ($r['parentesco'] ?? ''));
+            if ($parentesco !== '' && $nome !== '—') {
+                return $nome . ' (' . $parentesco . ')';
+            }
+            return $nome !== '' ? $nome : '—';
+        };
 
         $concordaram = [];
         $discordaram = [];
@@ -596,55 +607,78 @@ class TermoAutorizacao {
                 $turma_label
             );
 
+            $base = [
+                'aluno_nome' => $aluno_nome,
+                'turma_label' => $turma_label,
+                'turma_sort' => $turma_sort,
+                'responsavel_nome' => '—',
+                'parentesco' => '',
+                'decidido_em' => null,
+            ];
+
             if (!empty($aluno['maior_idade'])) {
-                $concordaram[] = [
-                    'aluno_nome' => $aluno_nome,
-                    'turma_label' => $turma_label,
-                    'turma_sort' => $turma_sort,
-                    'responsavel_nome' => 'Maior de idade (autorizado)',
-                    'parentesco' => '',
-                    'decidido_em' => null,
-                ];
+                $base['responsavel_nome'] = 'Maior de idade (autorizado)';
+                $concordaram[] = $base;
                 continue;
             }
 
-            $responsaveis = $aluno['responsaveis'] ?? [];
-
-            if (empty($responsaveis)) {
-                $nao_responderam[] = [
-                    'aluno_nome' => $aluno_nome,
-                    'turma_label' => $turma_label,
-                    'turma_sort' => $turma_sort,
-                    'responsavel_nome' => '—',
-                    'parentesco' => '',
-                    'decidido_em' => null,
-                ];
-                continue;
-            }
-
-            foreach ($responsaveis as $rv) {
-                $rid = (int) $rv['id'];
-                $linha = [
-                    'aluno_nome' => $aluno_nome,
-                    'turma_label' => $turma_label,
-                    'turma_sort' => $turma_sort,
-                    'responsavel_nome' => (string) ($rv['nome'] ?? '—'),
-                    'parentesco' => (string) ($rv['parentesco'] ?? ''),
-                    'decidido_em' => null,
-                ];
-                $r = $por_aluno_resp[$aid][$rid] ?? null;
-                if (!$r) {
-                    $nao_responderam[] = $linha;
-                    continue;
+            $resps = $por_aluno[$aid] ?? [];
+            if (empty($resps)) {
+                $nomes_resp = [];
+                foreach ($aluno['responsaveis'] ?? [] as $rv) {
+                    $n = trim((string) ($rv['nome'] ?? ''));
+                    $p = trim((string) ($rv['parentesco'] ?? ''));
+                    if ($n === '') {
+                        continue;
+                    }
+                    $nomes_resp[] = $p !== '' ? $n . ' (' . $p . ')' : $n;
                 }
-                $linha['decidido_em'] = $r['decidido_em'] ?? null;
-                if (($r['decisao'] ?? '') === self::DECISAO_DISCORDOU) {
-                    $discordaram[] = $linha;
-                } elseif (($r['decisao'] ?? '') === self::DECISAO_CONCORDOU) {
-                    $concordaram[] = $linha;
+                if (!empty($nomes_resp)) {
+                    $base['responsavel_nome'] = implode('; ', $nomes_resp);
+                }
+                $nao_responderam[] = $base;
+                continue;
+            }
+
+            $tem_sim = false;
+            $tem_nao = false;
+            $quem_sim = [];
+            $quem_nao = [];
+            $ultima_data = null;
+            foreach ($resps as $r) {
+                $dec = $r['decisao'] ?? '';
+                $rotulo = $fmtResponsavel($r);
+                $data = $r['decidido_em'] ?? null;
+                if ($data && ($ultima_data === null || strcmp((string) $data, (string) $ultima_data) > 0)) {
+                    $ultima_data = $data;
+                }
+                if ($dec === self::DECISAO_CONCORDOU) {
+                    $tem_sim = true;
+                    $quem_sim[] = $rotulo;
+                } elseif ($dec === self::DECISAO_DISCORDOU) {
+                    $tem_nao = true;
+                    $quem_nao[] = $rotulo;
+                }
+            }
+
+            $base['decidido_em'] = $ultima_data;
+
+            if ($tem_sim && !$tem_nao) {
+                $base['responsavel_nome'] = implode('; ', $quem_sim);
+                $concordaram[] = $base;
+            } elseif ($tem_nao) {
+                // Discordou (puro ou com discordância entre responsáveis).
+                if ($tem_sim) {
+                    $base['responsavel_nome'] = 'Discordância: '
+                        . implode('; ', $quem_nao)
+                        . ' × '
+                        . implode('; ', $quem_sim);
                 } else {
-                    $nao_responderam[] = $linha;
+                    $base['responsavel_nome'] = implode('; ', $quem_nao);
                 }
+                $discordaram[] = $base;
+            } else {
+                $nao_responderam[] = $base;
             }
         }
 
@@ -654,11 +688,7 @@ class TermoAutorizacao {
                 if ($cmp !== 0) {
                     return $cmp;
                 }
-                $cmp = strcasecmp($a['aluno_nome'] ?? '', $b['aluno_nome'] ?? '');
-                if ($cmp !== 0) {
-                    return $cmp;
-                }
-                return strcasecmp($a['responsavel_nome'] ?? '', $b['responsavel_nome'] ?? '');
+                return strcasecmp($a['aluno_nome'] ?? '', $b['aluno_nome'] ?? '');
             });
         };
         $ordenar($concordaram);
