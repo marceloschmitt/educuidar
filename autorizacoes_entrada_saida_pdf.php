@@ -177,19 +177,19 @@ if (!empty($filtros_txt)) {
 $pdf->Cell(0, 5, $pdfTxt('Total: ' . count($lista) . ' registro(s)'), 0, 1);
 $pdf->Ln(3);
 
-$wDataHora = 32;
+$wDataHora = 24;
 $wTipo = 40;
-$wAluno = 50;
-$wQuem = 48;
+$wAluno = 48;
+$wQuem = 55;
 $wObs = 55;
-$wStatus = 48;
+$wStatus = 51;
 $widths = [$wDataHora, $wTipo, $wAluno, $wQuem, $wObs, $wStatus];
 $aligns = ['L', 'L', 'L', 'L', 'L', 'L'];
 
 $imprimirCabecalho = static function ($pdf, $pdfTxt, $widths) {
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetFillColor(240, 240, 240);
-    $headers = ['Data e horário', 'Tipo', 'Aluno', 'Quem autorizou', 'Observações', 'Status'];
+    $headers = ['Data / horário', 'Tipo', 'Aluno', 'Quem autorizou', 'Observações', 'Status'];
     foreach ($headers as $i => $h) {
         $ln = ($i === count($headers) - 1) ? 1 : 0;
         $pdf->Cell($widths[$i], 6, $pdfTxt($h), 1, $ln, 'L', true);
@@ -210,16 +210,19 @@ if (empty($lista)) {
         if ($escola) {
             $meio = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
             if ($meio !== '') {
-                $quem .= ' (' . $meio . ')';
+                $quem .= "\n" . $meio;
             }
+        } else {
+            $quem .= "\nPortal";
+        }
+        if (!empty($item['created_at'])) {
+            $quem .= "\nCriado em " . date('d/m/Y H:i', strtotime($item['created_at']));
         }
         $hora_txt = substr((string) ($item['hora'] ?? ''), 0, 5);
         $data_hora = '—';
         if (!empty($item['data_autorizacao'])) {
             $data_hora = date('d/m/Y', strtotime($item['data_autorizacao']));
-            if ($hora_txt !== '') {
-                $data_hora .= ' às ' . $hora_txt;
-            }
+            $data_hora .= "\n" . ($hora_txt !== '' ? $hora_txt : '—');
         }
         $st = $item['status'] ?? 'pendente';
         $status_txt = $status_labels[$st] ?? $st;

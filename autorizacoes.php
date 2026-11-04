@@ -257,16 +257,16 @@ require_once 'includes/header.php';
                     $quem = AutorizacaoResponsavel::nomeQuemAutorizou($item);
                     $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
                     $hora_prev = substr((string) ($item['hora'] ?? ''), 0, 5);
-                    $data_hora = '—';
-                    if (!empty($item['data_autorizacao'])) {
-                        $data_hora = date('d/m/Y', strtotime($item['data_autorizacao']));
-                        if ($hora_prev !== '') {
-                            $data_hora .= ' às ' . $hora_prev;
-                        }
-                    }
                     ?>
                     <tr>
-                        <td class="text-nowrap"><?php echo htmlspecialchars($data_hora); ?></td>
+                        <td class="text-nowrap">
+                            <?php if (!empty($item['data_autorizacao'])): ?>
+                            <div><?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?></div>
+                            <div class="small text-muted"><?php echo $hora_prev !== '' ? htmlspecialchars($hora_prev) : '—'; ?></div>
+                            <?php else: ?>
+                            —
+                            <?php endif; ?>
+                        </td>
                         <td><?php echo htmlspecialchars($tipos[$item['tipo']] ?? $item['tipo']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($nome_aluno); ?>
@@ -285,6 +285,11 @@ require_once 'includes/header.php';
                             </div>
                             <?php else: ?>
                             <div class="small text-muted">Portal</div>
+                            <?php endif; ?>
+                            <?php if (!empty($item['created_at'])): ?>
+                            <div class="small text-muted mt-1">
+                                Criado em <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?>
+                            </div>
                             <?php endif; ?>
                         </td>
                         <td style="max-width: 280px;"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></td>
