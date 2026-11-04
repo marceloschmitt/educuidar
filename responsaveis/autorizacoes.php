@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $aluno_id = (int) ($_POST['aluno_id'] ?? 0);
         $tipo = $_POST['tipo'] ?? '';
         $data_raw = trim($_POST['data_autorizacao'] ?? '');
-        $hora = $_POST['hora'] ?? '';
+        $hora_raw = trim((string) ($_POST['hora'] ?? ''));
         $justificativa = trim($_POST['justificativa'] ?? '');
 
         $data = null;
@@ -42,16 +42,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (checkdate((int) $m[2], (int) $m[1], $y)) {
                 $data = sprintf('%04d-%02d-%02d', $y, (int) $m[2], (int) $m[1]);
             }
-        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_raw)) {
+        } elseif (preg_match('/^\d{4}-\d{2}-\d{2}$/', $data_raw) && strtotime($data_raw)) {
             $data = $data_raw;
+        }
+
+        $hora = null;
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $hora_raw, $hm)) {
+            $hh = (int) $hm[1];
+            $mm = (int) $hm[2];
+            if ($hh >= 0 && $hh <= 23 && $mm >= 0 && $mm <= 59) {
+                $hora = sprintf('%02d:%02d:00', $hh, $mm);
+            }
         }
 
         if (!$resp->jaVinculado($responsavel_id, $aluno_id)) {
             $_SESSION['flash_error'] = 'Aluno inválido.';
         } elseif (!isset($tipos[$tipo])) {
             $_SESSION['flash_error'] = 'Selecione o tipo de autorização.';
-        } elseif ($data === null || $hora === '') {
-            $_SESSION['flash_error'] = 'Informe a data (dd/mm/aa) e o horário em que o aluno poderá sair/entrar.';
+        } elseif ($data === null || $hora === null) {
+            $_SESSION['flash_error'] = 'Data e horário da saída/entrada são obrigatórios.';
         } elseif ($justificativa === '') {
             $_SESSION['flash_error'] = 'Informe a justificativa.';
         } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
@@ -114,17 +123,18 @@ require __DIR__ . '/header.php';
             </div>
             <div class="row g-2 mb-3">
                 <div class="col-6">
-                    <label class="form-label" for="data_autorizacao">Data da saída/entrada (dd/mm/aa)</label>
+                    <label class="form-label" for="data_autorizacao">Data da saída/entrada (dd/mm/aa) *</label>
                     <input type="text" class="form-control form-control-lg" id="data_autorizacao" name="data_autorizacao"
                            required inputmode="numeric" autocomplete="off" placeholder="dd/mm/aa"
                            maxlength="8" pattern="\d{2}/\d{2}/\d{2}"
                            value="<?php echo date('d/m/y'); ?>">
                 </div>
                 <div class="col-6">
-                    <label class="form-label" for="hora">Horário da saída/entrada</label>
+                    <label class="form-label" for="hora">Horário da saída/entrada *</label>
                     <input type="time" class="form-control form-control-lg" id="hora" name="hora" required>
                 </div>
             </div>
+            <p class="small text-muted mb-3">Data e horário são obrigatórios — a escola usa esses valores no relatório de autorizações.</p>
             <div class="mb-3">
                 <label class="form-label" for="justificativa">Justificativa</label>
                 <textarea class="form-control" id="justificativa" name="justificativa" rows="3" required

@@ -134,6 +134,10 @@ class AutorizacaoResponsavel {
         if ($justificativa === '' || empty($data) || empty($hora) || empty($responsavel_id)) {
             return false;
         }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data)
+            || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $hora)) {
+            return false;
+        }
 
         $query = "INSERT INTO " . $this->table . "
                   (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa, status)
@@ -168,6 +172,10 @@ class AutorizacaoResponsavel {
         $autorizado_por_nome = trim((string) $autorizado_por_nome);
         $observacoes = trim((string) $observacoes);
         if ($autorizado_por_nome === '' || empty($data) || empty($hora) || empty($aluno_id) || empty($registrado_por)) {
+            return false;
+        }
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data)
+            || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $hora)) {
             return false;
         }
         if ($observacoes === '') {

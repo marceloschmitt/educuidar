@@ -222,8 +222,12 @@ require_once 'includes/header.php';
                 <input type="text" class="form-control form-control-sm" id="nome" name="nome"
                        value="<?php echo htmlspecialchars($filtro_nome); ?>" placeholder="Buscar…">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button>
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm flex-grow-1">Filtrar</button>
+                <a href="autorizacoes_entrada_saida_pdf.php?<?php echo htmlspecialchars($return_query); ?>"
+                   class="btn btn-outline-primary btn-sm" target="_blank" rel="noopener" title="Gerar PDF">
+                    <i class="bi bi-printer"></i>
+                </a>
             </div>
         </form>
 
@@ -234,7 +238,8 @@ require_once 'includes/header.php';
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Saída/entrada</th>
+                        <th>Data</th>
+                        <th>Horário</th>
                         <th>Tipo</th>
                         <th>Aluno</th>
                         <th>Autorizado por</th>
@@ -253,15 +258,18 @@ require_once 'includes/header.php';
                     $quem = AutorizacaoResponsavel::nomeQuemAutorizou($item);
                     $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
                     $hora_prev = substr((string) ($item['hora'] ?? ''), 0, 5);
+                    if ($hora_prev === '') {
+                        $hora_prev = '—';
+                    }
                     ?>
                     <tr>
                         <td class="text-nowrap">
-                            <?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?>
-                            às <?php echo htmlspecialchars($hora_prev); ?>
+                            <?php echo !empty($item['data_autorizacao']) ? date('d/m/Y', strtotime($item['data_autorizacao'])) : '—'; ?>
                             <?php if (!empty($item['created_at'])): ?>
-                            <br><span class="small text-muted">Registrado em <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?></span>
+                            <br><span class="small text-muted">Reg. <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?></span>
                             <?php endif; ?>
                         </td>
+                        <td class="text-nowrap fw-semibold"><?php echo htmlspecialchars($hora_prev); ?></td>
                         <td><?php echo htmlspecialchars($tipos[$item['tipo']] ?? $item['tipo']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($nome_aluno); ?>

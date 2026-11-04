@@ -64,7 +64,15 @@ $voltar_alunos = 'alunos.php' . $voltar_qs;
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar_escola') {
     $tipo = $_POST['tipo'] ?? '';
     $data = trim($_POST['data_autorizacao'] ?? '');
-    $hora = trim($_POST['hora'] ?? '');
+    $hora_raw = trim($_POST['hora'] ?? '');
+    $hora = '';
+    if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?$/', $hora_raw, $hm)) {
+        $hh = (int) $hm[1];
+        $mm = (int) $hm[2];
+        if ($hh >= 0 && $hh <= 23 && $mm >= 0 && $mm <= 59) {
+            $hora = sprintf('%02d:%02d:00', $hh, $mm);
+        }
+    }
     $autorizado_por = trim($_POST['autorizado_por_nome'] ?? '');
     $meio = $_POST['meio_autorizacao'] ?? '';
     $observacoes = trim($_POST['observacoes'] ?? '');
@@ -81,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
 
     if (!isset($tipos[$tipo])) {
         $_SESSION['error'] = 'Selecione o tipo de autorização.';
-    } elseif ($data === '' || $hora === '') {
-        $_SESSION['error'] = 'Informe a data e o horário em que o aluno poderá sair/entrar.';
+    } elseif ($data === '' || $hora === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
+        $_SESSION['error'] = 'Data e horário da saída/entrada são obrigatórios.';
     } elseif ($autorizado_por === '') {
         $_SESSION['error'] = 'Informe quem autorizou.';
     } elseif (!isset($meios[$meio])) {
