@@ -177,21 +177,19 @@ if (!empty($filtros_txt)) {
 $pdf->Cell(0, 5, $pdfTxt('Total: ' . count($lista) . ' registro(s)'), 0, 1);
 $pdf->Ln(3);
 
-$wData = 22;
-$wHora = 16;
-$wTipo = 42;
-$wAluno = 55;
-$wQuem = 50;
-$wStatus = 28;
-$wObs = 60;
-$widths = [$wData, $wHora, $wTipo, $wAluno, $wQuem, $wStatus, $wObs];
-$aligns = ['L', 'C', 'L', 'L', 'L', 'L', 'L'];
-$wTotal = array_sum($widths);
+$wDataHora = 32;
+$wTipo = 40;
+$wAluno = 50;
+$wQuem = 48;
+$wObs = 55;
+$wStatus = 48;
+$widths = [$wDataHora, $wTipo, $wAluno, $wQuem, $wObs, $wStatus];
+$aligns = ['L', 'L', 'L', 'L', 'L', 'L'];
 
 $imprimirCabecalho = static function ($pdf, $pdfTxt, $widths) {
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetFillColor(240, 240, 240);
-    $headers = ['Data', 'Horário', 'Tipo', 'Aluno', 'Autorizado por', 'Status', 'Observações'];
+    $headers = ['Data e horário', 'Tipo', 'Aluno', 'Quem autorizou', 'Observações', 'Status'];
     foreach ($headers as $i => $h) {
         $ln = ($i === count($headers) - 1) ? 1 : 0;
         $pdf->Cell($widths[$i], 6, $pdfTxt($h), 1, $ln, 'L', true);
@@ -215,22 +213,29 @@ if (empty($lista)) {
                 $quem .= ' (' . $meio . ')';
             }
         }
-        $data_txt = !empty($item['data_autorizacao'])
-            ? date('d/m/Y', strtotime($item['data_autorizacao']))
-            : '—';
         $hora_txt = substr((string) ($item['hora'] ?? ''), 0, 5);
-        if ($hora_txt === '') {
-            $hora_txt = '—';
+        $data_hora = '—';
+        if (!empty($item['data_autorizacao'])) {
+            $data_hora = date('d/m/Y', strtotime($item['data_autorizacao']));
+            if ($hora_txt !== '') {
+                $data_hora .= ' às ' . $hora_txt;
+            }
         }
         $st = $item['status'] ?? 'pendente';
+        $status_txt = $status_labels[$st] ?? $st;
+        if (($st === 'ocorrido' || $st === 'nao_ocorrido') && !empty($item['confirmado_por_nome'])) {
+            $status_txt .= "\n" . $item['confirmado_por_nome'];
+            if (!empty($item['confirmado_em'])) {
+                $status_txt .= "\n" . date('d/m/Y H:i', strtotime($item['confirmado_em']));
+            }
+        }
         $cells = [
-            $pdfTxt($data_txt),
-            $pdfTxt($hora_txt),
+            $pdfTxt($data_hora),
             $pdfTxt($tipos[$item['tipo'] ?? ''] ?? ($item['tipo'] ?? '')),
             $pdfTxt($nome_aluno),
             $pdfTxt($quem),
-            $pdfTxt($status_labels[$st] ?? $st),
             $pdfTxt(trim((string) ($item['justificativa'] ?? ''))),
+            $pdfTxt($status_txt),
         ];
         $ok = $pdf->TabelaLinha($widths, $cells, $aligns, 4);
         if (!$ok) {

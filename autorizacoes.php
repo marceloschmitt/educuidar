@@ -238,11 +238,10 @@ require_once 'includes/header.php';
             <table class="table table-hover align-middle">
                 <thead>
                     <tr>
-                        <th>Data</th>
-                        <th>Horário</th>
+                        <th>Data e horário</th>
                         <th>Tipo</th>
                         <th>Aluno</th>
-                        <th>Autorizado por</th>
+                        <th>Quem autorizou</th>
                         <th>Observações</th>
                         <th>Status</th>
                         <th></th>
@@ -258,18 +257,16 @@ require_once 'includes/header.php';
                     $quem = AutorizacaoResponsavel::nomeQuemAutorizou($item);
                     $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
                     $hora_prev = substr((string) ($item['hora'] ?? ''), 0, 5);
-                    if ($hora_prev === '') {
-                        $hora_prev = '—';
+                    $data_hora = '—';
+                    if (!empty($item['data_autorizacao'])) {
+                        $data_hora = date('d/m/Y', strtotime($item['data_autorizacao']));
+                        if ($hora_prev !== '') {
+                            $data_hora .= ' às ' . $hora_prev;
+                        }
                     }
                     ?>
                     <tr>
-                        <td class="text-nowrap">
-                            <?php echo !empty($item['data_autorizacao']) ? date('d/m/Y', strtotime($item['data_autorizacao'])) : '—'; ?>
-                            <?php if (!empty($item['created_at'])): ?>
-                            <br><span class="small text-muted">Reg. <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?></span>
-                            <?php endif; ?>
-                        </td>
-                        <td class="text-nowrap fw-semibold"><?php echo htmlspecialchars($hora_prev); ?></td>
+                        <td class="text-nowrap"><?php echo htmlspecialchars($data_hora); ?></td>
                         <td><?php echo htmlspecialchars($tipos[$item['tipo']] ?? $item['tipo']); ?></td>
                         <td>
                             <?php echo htmlspecialchars($nome_aluno); ?>
@@ -297,12 +294,9 @@ require_once 'includes/header.php';
                             <div class="small text-muted mt-1">
                                 <?php echo htmlspecialchars($item['confirmado_por_nome']); ?>
                                 <?php if (!empty($item['confirmado_em'])): ?>
-                                · <?php echo date('d/m/Y H:i', strtotime($item['confirmado_em'])); ?>
+                                <br><?php echo date('d/m/Y H:i', strtotime($item['confirmado_em'])); ?>
                                 <?php endif; ?>
                             </div>
-                            <?php endif; ?>
-                            <?php if (!empty($item['evento_id'])): ?>
-                            <div class="small"><span class="badge bg-info">Evento #<?php echo (int) $item['evento_id']; ?></span></div>
                             <?php endif; ?>
                         </td>
                         <td class="text-nowrap">
