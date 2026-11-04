@@ -61,6 +61,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_error'] = 'Selecione o tipo de autorização.';
         } elseif ($data === null || $hora === null) {
             $_SESSION['flash_error'] = 'Data e horário da saída/entrada são obrigatórios.';
+        } elseif (!AutorizacaoResponsavel::dataHoraNaoRetroativa($data, $hora)) {
+            $_SESSION['flash_error'] = 'Não é permitido registrar autorização com data/horário anteriores ao momento atual.';
         } elseif ($justificativa === '') {
             $_SESSION['flash_error'] = 'Informe a justificativa.';
         } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
@@ -134,7 +136,7 @@ require __DIR__ . '/header.php';
                     <input type="time" class="form-control form-control-lg" id="hora" name="hora" required>
                 </div>
             </div>
-            <p class="small text-muted mb-3">Data e horário são obrigatórios — a escola usa esses valores no relatório de autorizações.</p>
+            <p class="small text-muted mb-3">Data e horário são obrigatórios e não podem ser anteriores ao momento atual (sem autorização retroativa).</p>
             <div class="mb-3">
                 <label class="form-label" for="justificativa">Justificativa</label>
                 <textarea class="form-control" id="justificativa" name="justificativa" rows="3" required
@@ -209,6 +211,8 @@ require __DIR__ . '/header.php';
 <script>
 (function () {
     var el = document.getElementById('data_autorizacao');
+    var horaEl = document.getElementById('hora');
+    var form = el ? el.closest('form') : null;
     if (!el) return;
     el.addEventListener('input', function () {
         var d = this.value.replace(/\D/g, '').slice(0, 6);
@@ -218,6 +222,27 @@ require __DIR__ . '/header.php';
             this.value = d.slice(0, 2) + '/' + d.slice(2);
         } else {
             this.value = d;
+        }
+    });
+    if (!form || !horaEl) return;
+    form.addEventListener('submit', function (e) {
+        var raw = el.value.replace(/\D/g, '');
+        var hora = horaEl.value;
+        if (raw.length !== 6 || !hora) return;
+        var dd = raw.slice(0, 2);
+        var mm = raw.slice(2, 4);
+        var yy = raw.slice(4, 6);
+        var dataIso = '20' + yy + '-' + mm + '-' + dd;
+        var agora = new Date();
+        var y = agora.getFullYear();
+        var m = String(agora.getMonth() + 1).padStart(2, '0');
+        var d = String(agora.getDate()).padStart(2, '0');
+        var hh = String(agora.getHours()).padStart(2, '0');
+        var mi = String(agora.getMinutes()).padStart(2, '0');
+        var agoraStr = y + '-' + m + '-' + d + 'T' + hh + ':' + mi;
+        if ((dataIso + 'T' + hora.slice(0, 5)) < agoraStr) {
+            e.preventDefault();
+            alert('Não é permitido registrar autorização com data/horário anteriores ao momento atual.');
         }
     });
 })();

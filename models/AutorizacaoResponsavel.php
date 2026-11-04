@@ -124,6 +124,24 @@ class AutorizacaoResponsavel {
         $this->schema_ok = true;
     }
 
+    /**
+     * Data/hora previstas não podem ser anteriores ao momento do registro (sem autorização retroativa).
+     * Compara no minuto atual, pois o campo de horário é HH:MM.
+     */
+    public static function dataHoraNaoRetroativa($data, $hora) {
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data)
+            || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $hora)) {
+            return false;
+        }
+        $hora_norm = substr((string) $hora, 0, 5) . ':00';
+        $ts = strtotime($data . ' ' . $hora_norm);
+        if ($ts === false) {
+            return false;
+        }
+        $agora_minuto = strtotime(date('Y-m-d H:i:00'));
+        return $ts >= $agora_minuto;
+    }
+
     /** Criação pelo responsável no portal. $data/$hora = dia e horário previstos da entrada/saída. */
     public function create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa) {
         $this->garantirSchema();
@@ -136,6 +154,9 @@ class AutorizacaoResponsavel {
         }
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data)
             || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $hora)) {
+            return false;
+        }
+        if (!self::dataHoraNaoRetroativa($data, $hora)) {
             return false;
         }
 
@@ -176,6 +197,9 @@ class AutorizacaoResponsavel {
         }
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $data)
             || !preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $hora)) {
+            return false;
+        }
+        if (!self::dataHoraNaoRetroativa($data, $hora)) {
             return false;
         }
         if ($observacoes === '') {

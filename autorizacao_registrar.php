@@ -91,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
         $_SESSION['error'] = 'Selecione o tipo de autorização.';
     } elseif ($data === '' || $hora === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $data)) {
         $_SESSION['error'] = 'Data e horário da saída/entrada são obrigatórios.';
+    } elseif (!AutorizacaoResponsavel::dataHoraNaoRetroativa($data, $hora)) {
+        $_SESSION['error'] = 'Não é permitido registrar autorização com data/horário anteriores ao momento atual.';
     } elseif ($autorizado_por === '') {
         $_SESSION['error'] = 'Informe quem autorizou.';
     } elseif (!isset($meios[$meio])) {
@@ -203,11 +205,13 @@ require_once 'includes/header.php';
                 <div class="col-md-3">
                     <label class="form-label" for="data_autorizacao">Data da saída/entrada *</label>
                     <input type="date" class="form-control" id="data_autorizacao" name="data_autorizacao"
-                           value="<?php echo htmlspecialchars(date('Y-m-d')); ?>" required>
+                           value="<?php echo htmlspecialchars(date('Y-m-d')); ?>"
+                           min="<?php echo htmlspecialchars(date('Y-m-d')); ?>" required>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label" for="hora">Horário da saída/entrada *</label>
                     <input type="time" class="form-control" id="hora" name="hora" required>
+                    <div class="form-text">Não pode ser anterior ao horário atual.</div>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label" for="meio_autorizacao">Como autorizou *</label>
@@ -263,5 +267,30 @@ require_once 'includes/header.php';
         </form>
     </div>
 </div>
+
+<script>
+(function () {
+    var form = document.querySelector('form');
+    var dataEl = document.getElementById('data_autorizacao');
+    var horaEl = document.getElementById('hora');
+    if (!form || !dataEl || !horaEl) return;
+    form.addEventListener('submit', function (e) {
+        var data = dataEl.value;
+        var hora = horaEl.value;
+        if (!data || !hora) return;
+        var agora = new Date();
+        var y = agora.getFullYear();
+        var m = String(agora.getMonth() + 1).padStart(2, '0');
+        var d = String(agora.getDate()).padStart(2, '0');
+        var hh = String(agora.getHours()).padStart(2, '0');
+        var mm = String(agora.getMinutes()).padStart(2, '0');
+        var agoraStr = y + '-' + m + '-' + d + 'T' + hh + ':' + mm;
+        if ((data + 'T' + hora.slice(0, 5)) < agoraStr) {
+            e.preventDefault();
+            alert('Não é permitido registrar autorização com data/horário anteriores ao momento atual.');
+        }
+    });
+})();
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
