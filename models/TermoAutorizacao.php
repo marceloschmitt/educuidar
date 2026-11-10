@@ -77,6 +77,13 @@ class TermoAutorizacao {
                 $this->conn->exec("ALTER TABLE termo_autorizacao MODIFY pdf_caminho VARCHAR(255) NULL");
                 $this->conn->exec("ALTER TABLE termo_autorizacao MODIFY pdf_nome_original VARCHAR(255) NULL");
             }
+            $colsResp = $this->conn->query("SHOW COLUMNS FROM termo_autorizacao_resposta")->fetchAll(PDO::FETCH_COLUMN);
+            if ($colsResp && !in_array('ip_origem', $colsResp, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE termo_autorizacao_resposta
+                     ADD COLUMN ip_origem VARCHAR(45) NULL AFTER decidido_em"
+                );
+            }
         } catch (Throwable $e) {
             // tabela ainda inexistente ou sem permissão ALTER
         }
@@ -614,6 +621,7 @@ class TermoAutorizacao {
                 'responsavel_nome' => '—',
                 'parentesco' => '',
                 'decidido_em' => null,
+                'ip_origem' => '',
             ];
 
             if (!empty($aluno['maior_idade'])) {
@@ -645,12 +653,17 @@ class TermoAutorizacao {
             $quem_sim = [];
             $quem_nao = [];
             $ultima_data = null;
+            $ips = [];
             foreach ($resps as $r) {
                 $dec = $r['decisao'] ?? '';
                 $rotulo = $fmtResponsavel($r);
                 $data = $r['decidido_em'] ?? null;
                 if ($data && ($ultima_data === null || strcmp((string) $data, (string) $ultima_data) > 0)) {
                     $ultima_data = $data;
+                }
+                $ip = trim((string) ($r['ip_origem'] ?? ''));
+                if ($ip !== '') {
+                    $ips[] = $ip;
                 }
                 if ($dec === self::DECISAO_CONCORDOU) {
                     $tem_sim = true;
@@ -662,6 +675,7 @@ class TermoAutorizacao {
             }
 
             $base['decidido_em'] = $ultima_data;
+            $base['ip_origem'] = implode(', ', array_values(array_unique($ips)));
 
             if ($tem_sim && !$tem_nao) {
                 $base['responsavel_nome'] = implode('; ', $quem_sim);
@@ -861,6 +875,10 @@ class TermoAutorizacao {
 
         $atual = $this->getResposta($termo_id, $responsavel_id, $aluno_id);
         $agora = date('Y-m-d H:i:s');
+        $ip = function_exists('obterIpCliente') ? obterIpCliente() : '';
+        if ($ip === '') {
+            $ip = null;
+        }
 
         if ($atual && !(int) $atual['pode_alterar']) {
             return 'ja_respondeu';
@@ -891,6 +909,7 @@ class TermoAutorizacao {
                     "UPDATE termo_autorizacao_resposta
                      SET decisao = :decisao,
                          decidido_em = :decidido_em,
+                         ip_origem = :ip_origem,
                          pode_alterar = 0,
                          liberado_por = NULL,
                          liberado_em = NULL
@@ -898,6 +917,7 @@ class TermoAutorizacao {
                 );
                 $upd->bindValue(':decisao', $decisao);
                 $upd->bindValue(':decidido_em', $agora);
+                $upd->bindValue(':ip_origem', $ip, $ip === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
                 $upd->bindValue(':id', (int) $atual['id'], PDO::PARAM_INT);
                 $upd->execute();
                 $this->conn->commit();
@@ -910,14 +930,15 @@ class TermoAutorizacao {
 
         $ins = $this->conn->prepare(
             "INSERT INTO termo_autorizacao_resposta
-             (termo_id, responsavel_id, aluno_id, decisao, decidido_em)
-             VALUES (:termo_id, :responsavel_id, :aluno_id, :decisao, :decidido_em)"
+             (termo_id, responsavel_id, aluno_id, decisao, decidido_em, ip_origem)
+             VALUES (:termo_id, :responsavel_id, :aluno_id, :decisao, :decidido_em, :ip_origem)"
         );
         $ins->bindValue(':termo_id', (int) $termo_id, PDO::PARAM_INT);
         $ins->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);
         $ins->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
         $ins->bindValue(':decisao', $decisao);
         $ins->bindValue(':decidido_em', $agora);
+        $ins->bindValue(':ip_origem', $ip, $ip === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         if (!$ins->execute()) {
             return 'erro';
         }

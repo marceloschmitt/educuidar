@@ -291,6 +291,11 @@ require_once 'includes/header.php';
                                 Criado em <?php echo date('d/m/Y H:i', strtotime($item['created_at'])); ?>
                             </div>
                             <?php endif; ?>
+                            <?php if (!empty($item['ip_origem'])): ?>
+                            <div class="small text-muted">
+                                IP <?php echo htmlspecialchars($item['ip_origem']); ?>
+                            </div>
+                            <?php endif; ?>
                         </td>
                         <td style="max-width: 280px;"><?php echo nl2br(htmlspecialchars($item['justificativa'])); ?></td>
                         <td>

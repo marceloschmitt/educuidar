@@ -476,6 +476,9 @@ require __DIR__ . '/includes/header.php';
                                     </span>
                                     <span class="small text-muted">
                                         <?php echo date('d/m/Y H:i', strtotime($r['decidido_em'])); ?>
+                                        <?php if (!empty($r['ip_origem'])): ?>
+                                        · IP <?php echo htmlspecialchars($r['ip_origem']); ?>
+                                        <?php endif; ?>
                                     </span>
                                     <?php if ((int) $r['pode_alterar']): ?>
                                     <span class="badge bg-info">Pode alterar</span>

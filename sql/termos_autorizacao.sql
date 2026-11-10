@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS termo_autorizacao_resposta (
     aluno_id INT NOT NULL,
     decisao ENUM('concordou', 'discordou') NOT NULL,
     decidido_em DATETIME NOT NULL,
+    ip_origem VARCHAR(45) NULL,
     pode_alterar TINYINT(1) NOT NULL DEFAULT 0,
     liberado_por INT NULL,
     liberado_em DATETIME NULL,

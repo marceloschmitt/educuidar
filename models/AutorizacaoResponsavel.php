@@ -118,6 +118,12 @@ class AutorizacaoResponsavel {
             if ($colInfo && strtoupper((string) ($colInfo['Null'] ?? '')) === 'NO') {
                 $this->conn->exec("ALTER TABLE {$this->table} MODIFY responsavel_id INT NULL");
             }
+            if (!in_array('ip_origem', $cols, true)) {
+                $this->conn->exec(
+                    "ALTER TABLE {$this->table}
+                     ADD COLUMN ip_origem VARCHAR(45) NULL AFTER evento_id"
+                );
+            }
         } catch (Throwable $e) {
             // tabela inexistente ou sem permissão ALTER
         }
@@ -160,9 +166,14 @@ class AutorizacaoResponsavel {
             return false;
         }
 
+        $ip = function_exists('obterIpCliente') ? obterIpCliente() : '';
+        if ($ip === '') {
+            $ip = null;
+        }
+
         $query = "INSERT INTO " . $this->table . "
-                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa, status)
-                  VALUES (:responsavel_id, 'portal', :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'pendente')";
+                  (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa, status, ip_origem)
+                  VALUES (:responsavel_id, 'portal', :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa, 'pendente', :ip_origem)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':responsavel_id', (int) $responsavel_id, PDO::PARAM_INT);
         $stmt->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
@@ -170,6 +181,7 @@ class AutorizacaoResponsavel {
         $stmt->bindValue(':data_autorizacao', $data);
         $stmt->bindValue(':hora', $hora);
         $stmt->bindValue(':justificativa', $justificativa);
+        $stmt->bindValue(':ip_origem', $ip, $ip === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         if (!$stmt->execute()) {
             return false;
         }
@@ -206,11 +218,16 @@ class AutorizacaoResponsavel {
             $observacoes = 'Aviso recebido pela escola.';
         }
 
+        $ip = function_exists('obterIpCliente') ? obterIpCliente() : '';
+        if ($ip === '') {
+            $ip = null;
+        }
+
         $query = "INSERT INTO " . $this->table . "
                   (responsavel_id, origem, aluno_id, tipo, data_autorizacao, hora, justificativa,
-                   autorizado_por_nome, meio_autorizacao, registrado_por, status)
+                   autorizado_por_nome, meio_autorizacao, registrado_por, status, ip_origem)
                   VALUES (NULL, 'escola', :aluno_id, :tipo, :data_autorizacao, :hora, :justificativa,
-                          :autorizado_por_nome, :meio, :registrado_por, 'pendente')";
+                          :autorizado_por_nome, :meio, :registrado_por, 'pendente', :ip_origem)";
         $stmt = $this->conn->prepare($query);
         $stmt->bindValue(':aluno_id', (int) $aluno_id, PDO::PARAM_INT);
         $stmt->bindValue(':tipo', $tipo);
@@ -220,6 +237,7 @@ class AutorizacaoResponsavel {
         $stmt->bindValue(':autorizado_por_nome', $autorizado_por_nome);
         $stmt->bindValue(':meio', $meio);
         $stmt->bindValue(':registrado_por', (int) $registrado_por, PDO::PARAM_INT);
+        $stmt->bindValue(':ip_origem', $ip, $ip === null ? PDO::PARAM_NULL : PDO::PARAM_STR);
         if (!$stmt->execute()) {
             return false;
         }

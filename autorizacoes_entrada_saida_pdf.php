@@ -218,6 +218,9 @@ if (empty($lista)) {
         if (!empty($item['created_at'])) {
             $quem .= "\nCriado em " . date('d/m/Y H:i', strtotime($item['created_at']));
         }
+        if (!empty($item['ip_origem'])) {
+            $quem .= "\nIP " . $item['ip_origem'];
+        }
         $hora_txt = substr((string) ($item['hora'] ?? ''), 0, 5);
         $data_hora = '—';
         if (!empty($item['data_autorizacao'])) {

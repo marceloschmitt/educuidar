@@ -30,12 +30,17 @@ foreach ($termo['turmas'] ?? [] as $tu) {
     $turmas_label[] = ($tu['curso_nome'] ?? '') . ' - ' . (int) ($tu['ano_curso'] ?? 0) . 'º';
 }
 
-$fmtData = static function ($valor) {
+$fmtData = static function ($valor, $ip = '') {
     if (empty($valor)) {
         return '—';
     }
     $ts = strtotime($valor);
-    return $ts ? date('d/m/Y H:i', $ts) : '—';
+    $txt = $ts ? date('d/m/Y H:i', $ts) : '—';
+    $ip = trim((string) $ip);
+    if ($ip !== '') {
+        $txt .= "\nIP " . $ip;
+    }
+    return $txt;
 };
 
 $fmtResponsavel = static function (array $linha) {
@@ -261,7 +266,7 @@ foreach ($secoes as $secao) {
             (string) $n,
             $pdfTxt($linha['aluno_nome'] ?? ''),
             $pdfTxt($fmtResponsavel($linha)),
-            $pdfTxt($fmtData($linha['decidido_em'] ?? null)),
+            $pdfTxt($fmtData($linha['decidido_em'] ?? null, $linha['ip_origem'] ?? '')),
         ];
 
         $ok = $pdf->TabelaLinha($widths, $cells, $aligns, 4.5);

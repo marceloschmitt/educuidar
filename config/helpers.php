@@ -3,6 +3,30 @@
  * Shared helper functions.
  */
 
+if (!function_exists('obterIpCliente')) {
+    /** IP do cliente (IPv4/IPv6). Considera proxy via X-Forwarded-For quando válido. */
+    function obterIpCliente() {
+        $candidatos = [];
+        if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            foreach (explode(',', (string) $_SERVER['HTTP_X_FORWARDED_FOR']) as $parte) {
+                $candidatos[] = trim($parte);
+            }
+        }
+        if (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+            $candidatos[] = trim((string) $_SERVER['HTTP_CLIENT_IP']);
+        }
+        if (!empty($_SERVER['REMOTE_ADDR'])) {
+            $candidatos[] = trim((string) $_SERVER['REMOTE_ADDR']);
+        }
+        foreach ($candidatos as $ip) {
+            if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
+                return $ip;
+            }
+        }
+        return '';
+    }
+}
+
 if (!function_exists('normalizeSearchText')) {
     function normalizeSearchText($value) {
         $value = mb_strtolower((string)$value, 'UTF-8');

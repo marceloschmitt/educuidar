@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS autorizacoes_responsavel (
     confirmado_por INT NULL,
     confirmado_em TIMESTAMP NULL,
     evento_id INT NULL,
+    ip_origem VARCHAR(45) NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_aluno (aluno_id),
