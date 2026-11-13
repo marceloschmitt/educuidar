@@ -19,6 +19,7 @@ class AlertaDetector {
         $resultados = [];
 
         foreach ($regras as $regra) {
+            $regra = $this->resolverTiposEventoRegra($regra);
             if (empty($regra['tipos_evento'])) {
                 continue;
             }
@@ -42,6 +43,7 @@ class AlertaDetector {
     }
 
     public function avaliarRegra(array $regra, array $filtros = []) {
+        $regra = $this->resolverTiposEventoRegra($regra);
         $eventos_por_aluno = $this->buscarEventosPorAluno($regra, $filtros);
         $ocorrencias = [];
 
@@ -91,6 +93,24 @@ class AlertaDetector {
         }
 
         return $ocorrencias;
+    }
+
+    /**
+     * Faltas completas usam o tipo SIGAA configurado; não dependem da seleção manual.
+     */
+    private function resolverTiposEventoRegra(array $regra) {
+        if (($regra['tipo_criterio'] ?? '') !== 'faltas_todas_disciplinas') {
+            return $regra;
+        }
+        if (!empty($regra['tipos_evento'])) {
+            return $regra;
+        }
+        $config = new Configuracao($this->conn);
+        $tipo_id = $config->getApiSigaaTipoEventoFaltaId();
+        if ($tipo_id) {
+            $regra['tipos_evento'] = [$tipo_id];
+        }
+        return $regra;
     }
 
     private function buscarEventosPorAluno(array $regra, array $filtros) {

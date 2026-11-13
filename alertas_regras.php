@@ -13,13 +13,23 @@ if (!$user->isLoggedIn() || !$user->isAdmin()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'delete' && !empty($_POST['id'])) {
+        if ($alerta_regra->delete((int) $_POST['id'])) {
+            header('Location: alertas_regras.php?success=deleted');
+            exit;
+        }
+        $_SESSION['error'] = 'Erro ao excluir regra de alerta.';
+        header('Location: alertas_regras.php');
+        exit;
+    }
+
     $parsed = parseAlertaRegraFromPost();
 
     if (!empty($parsed['errors'])) {
         $_SESSION['error'] = implode(' ', $parsed['errors']);
-        $redirect = 'alertas_regras.php';
+        $redirect = 'alertas_regras.php?nova=1';
         if ($_POST['action'] === 'update' && !empty($_POST['id'])) {
-            $redirect .= '?edit=' . (int) $_POST['id'];
+            $redirect = 'alertas_regras.php?edit=' . (int) $_POST['id'];
         }
         header('Location: ' . $redirect);
         exit;
@@ -41,23 +51,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
         $_SESSION['error'] = 'Erro ao criar regra de alerta.';
     } elseif ($_POST['action'] === 'update' && !empty($_POST['id'])) {
+        $existente = $alerta_regra->getById((int) $_POST['id']);
+        if ($existente && ($existente['tipo_criterio'] ?? '') === 'faltas_todas_disciplinas') {
+            header('Location: alertas_faltas_dia_completo.php?edit=' . (int) $_POST['id']);
+            exit;
+        }
         $alerta_regra->id = (int) $_POST['id'];
         if ($alerta_regra->update() && $alerta_regra->setTiposEvento($alerta_regra->id, $parsed['tipos_evento'])) {
             header('Location: alertas_regras.php?success=updated');
             exit;
         }
         $_SESSION['error'] = 'Erro ao atualizar regra de alerta.';
-    } elseif ($_POST['action'] === 'delete' && !empty($_POST['id'])) {
-        if ($alerta_regra->delete((int) $_POST['id'])) {
-            header('Location: alertas_regras.php?success=deleted');
-            exit;
-        }
-        $_SESSION['error'] = 'Erro ao excluir regra de alerta.';
     }
 
     header('Location: alertas_regras.php');
     exit;
 }
+
+$regra_edit = null;
+if (isset($_GET['edit'])) {
+    $regra_edit = $alerta_regra->getById((int) $_GET['edit']);
+    if ($regra_edit && ($regra_edit['tipo_criterio'] ?? '') === 'faltas_todas_disciplinas') {
+        header('Location: alertas_faltas_dia_completo.php?edit=' . (int) $_GET['edit']);
+        exit;
+    }
+}
+
+$mostrar_formulario = $regra_edit !== null || isset($_GET['nova']);
 
 $page_title = 'Regras de Alerta';
 require_once 'includes/header.php';
@@ -80,16 +100,13 @@ if (isset($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
-$regra_edit = null;
-if (isset($_GET['edit'])) {
-    $regra_edit = $alerta_regra->getById((int) $_GET['edit']);
-    if (!$regra_edit) {
-        $error = 'Regra de alerta não encontrada.';
-    }
+if (isset($_GET['edit']) && !$regra_edit) {
+    $error = 'Regra de alerta não encontrada.';
+    $mostrar_formulario = false;
 }
 
 $regras = $alerta_regra->getAll();
-$tipos_eventos = $tipo_evento->getAll(false); // Inclui não visíveis (ex.: registro automático)
+$tipos_eventos = $tipo_evento->getAll(false);
 $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 ?>
 
@@ -107,11 +124,12 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 </div>
 <?php endif; ?>
 
-<div class="row">
-    <div class="col-lg-5">
+<?php if ($mostrar_formulario): ?>
+<div class="row mb-4">
+    <div class="col-lg-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-bell"></i> <?php echo $regra_edit ? 'Editar' : 'Nova'; ?> Regra de Alerta</h5>
+                <h5 class="mb-0"><i class="bi bi-bell"></i> <?php echo $regra_edit ? 'Editar' : 'Nova'; ?> regra de evento</h5>
             </div>
             <div class="card-body">
                 <form method="POST" action="" id="alertaRegraForm">
@@ -160,7 +178,6 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         $tipo_atual = $regra_edit['tipo_criterio'] ?? 'dias_consecutivos';
                         $criterios = [
                             'dias_consecutivos' => 'Dias consecutivos',
-                            'faltas_todas_disciplinas' => 'Faltas em todas as disciplinas (dias consecutivos)',
                             'intervalo_dias' => 'Intervalo de dias',
                             'mesmo_dia' => 'Mesmo dia',
                         ];
@@ -182,10 +199,6 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         <label for="quantidade_consecutivos" class="form-label">Dias seguidos</label>
                         <input type="number" class="form-control alerta-quantidade-input" id="quantidade_consecutivos"
                                min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>">
-                        <small class="text-muted d-none" id="ajuda_faltas_todas">
-                            Conta só dias em que o aluno faltou a todas as disciplinas com aula prevista (grade SIGAA).
-                            Selecione o tipo de falta automática do SIGAA nos tipos de evento.
-                        </small>
                     </div>
 
                     <div class="mb-3 d-none" id="campo_intervalo">
@@ -236,86 +249,104 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-save"></i> <?php echo $regra_edit ? 'Atualizar' : 'Criar'; ?> Regra
+                        <i class="bi bi-save"></i> <?php echo $regra_edit ? 'Atualizar' : 'Criar'; ?> regra
                     </button>
-                    <?php if ($regra_edit): ?>
                     <a href="alertas_regras.php" class="btn btn-secondary w-100 mt-2">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </a>
-                    <?php endif; ?>
                 </form>
             </div>
         </div>
     </div>
-
-    <div class="col-lg-7">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-list-check"></i> Regras Cadastradas</h5>
-                <a href="alertas.php" class="btn btn-outline-primary btn-sm">
-                    <i class="bi bi-exclamation-triangle"></i> Ver alertas
-                </a>
-            </div>
-            <div class="card-body">
-                <?php if (empty($regras)): ?>
-                <p class="text-muted text-center mb-0">Nenhuma regra cadastrada ainda.</p>
-                <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Critério</th>
-                                <th>Ativo</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($regras as $r): ?>
-                            <tr <?php echo empty($r['ativo']) ? 'class="table-secondary"' : ''; ?>>
-                                <td>
-                                    <div><?php echo htmlspecialchars($r['nome']); ?></div>
-                                    <?php if (!empty($r['tipos_evento_nomes'])): ?>
-                                    <div class="mt-1">
-                                        <?php foreach ($r['tipos_evento_nomes'] as $te): ?>
-                                        <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1 mb-1">
-                                            <?php echo htmlspecialchars($te['nome']); ?>
-                                        </span>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo htmlspecialchars(formatAlertaCriterioResumo($r)); ?></td>
-                                <td>
-                                    <?php if (!empty($r['ativo'])): ?>
-                                        <span class="badge bg-success">Sim</span>
-                                    <?php else: ?>
-                                        <span class="badge bg-secondary">Não</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="d-flex gap-2">
-                                    <a href="alertas_regras.php?edit=<?php echo (int) $r['id']; ?>" class="btn btn-primary btn-sm">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form method="POST" action="" onsubmit="return confirm('Excluir esta regra de alerta?');">
-                                        <input type="hidden" name="action" value="delete">
-                                        <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-                <?php endif; ?>
-            </div>
+</div>
+<?php else: ?>
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="mb-0"><i class="bi bi-bell"></i> Regras de alerta</h5>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="alertas_regras.php?nova=1" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle"></i> Nova regra de evento
+            </a>
+            <a href="alertas_faltas_dia_completo.php" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-calendar-x"></i> Configurar faltas completas
+            </a>
+            <a href="alertas.php" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-exclamation-triangle"></i> Ver alertas
+            </a>
         </div>
     </div>
+    <div class="card-body">
+        <?php if (empty($regras)): ?>
+        <p class="text-muted text-center mb-0">Nenhuma regra cadastrada ainda.</p>
+        <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Tipo</th>
+                        <th>Critério</th>
+                        <th>Ativo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($regras as $r): ?>
+                    <?php $eh_dia_completo = ($r['tipo_criterio'] ?? '') === 'faltas_todas_disciplinas'; ?>
+                    <tr <?php echo empty($r['ativo']) ? 'class="table-secondary"' : ''; ?>>
+                        <td>
+                            <div><?php echo htmlspecialchars($r['nome']); ?></div>
+                            <?php if (!$eh_dia_completo && !empty($r['tipos_evento_nomes'])): ?>
+                            <div class="mt-1">
+                                <?php foreach ($r['tipos_evento_nomes'] as $te): ?>
+                                <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1 mb-1">
+                                    <?php echo htmlspecialchars($te['nome']); ?>
+                                </span>
+                                <?php endforeach; ?>
+                            </div>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($eh_dia_completo): ?>
+                                <span class="badge bg-info text-dark">Faltas completas</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Eventos</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo htmlspecialchars(formatAlertaCriterioResumo($r)); ?></td>
+                        <td>
+                            <?php if (!empty($r['ativo'])): ?>
+                                <span class="badge bg-success">Sim</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Não</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="d-flex gap-2">
+                            <a href="<?php echo $eh_dia_completo
+                                ? 'alertas_faltas_dia_completo.php?edit=' . (int) $r['id']
+                                : 'alertas_regras.php?edit=' . (int) $r['id']; ?>"
+                               class="btn btn-primary btn-sm">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <form method="POST" action="" onsubmit="return confirm('Excluir esta regra de alerta?');">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="id" value="<?php echo (int) $r['id']; ?>">
+                                <button type="submit" class="btn btn-danger btn-sm">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+    </div>
 </div>
+<?php endif; ?>
 
+<?php if ($mostrar_formulario): ?>
 <script>
 (function() {
     var form = document.getElementById('alertaRegraForm');
@@ -335,7 +366,7 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 
     function syncQuantidadeHidden() {
         var tipo = tipoSelecionado();
-        if (tipo === 'dias_consecutivos' || tipo === 'faltas_todas_disciplinas') {
+        if (tipo === 'dias_consecutivos') {
             quantidadeHidden.value = document.getElementById('quantidade_consecutivos').value;
         } else if (tipo === 'intervalo_dias') {
             quantidadeHidden.value = document.getElementById('quantidade_intervalo').value;
@@ -346,15 +377,10 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 
     function atualizarCampos() {
         var tipo = tipoSelecionado();
-        var usaDiasSeguidos = (tipo === 'dias_consecutivos' || tipo === 'faltas_todas_disciplinas');
-        campoConsecutivos.classList.toggle('d-none', !usaDiasSeguidos);
+        campoConsecutivos.classList.toggle('d-none', tipo !== 'dias_consecutivos');
         campoIntervalo.classList.toggle('d-none', tipo !== 'intervalo_dias');
         campoMesmoDia.classList.toggle('d-none', tipo !== 'mesmo_dia');
-        campoCalendario.classList.toggle('d-none', !usaDiasSeguidos);
-        var ajuda = document.getElementById('ajuda_faltas_todas');
-        if (ajuda) {
-            ajuda.classList.toggle('d-none', tipo !== 'faltas_todas_disciplinas');
-        }
+        campoCalendario.classList.toggle('d-none', tipo !== 'dias_consecutivos');
         syncQuantidadeHidden();
     }
 
@@ -370,5 +396,6 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
     atualizarCampos();
 })();
 </script>
+<?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>

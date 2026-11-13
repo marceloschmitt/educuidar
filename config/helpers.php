@@ -352,7 +352,7 @@ if (!function_exists('parseAlertaRegraFromPost')) {
         if (empty(trim($_POST['nome'] ?? ''))) {
             $errors[] = 'Informe o nome da regra.';
         }
-        if (!in_array($tipo, ['dias_consecutivos', 'faltas_todas_disciplinas', 'intervalo_dias', 'mesmo_dia'], true)) {
+        if (!in_array($tipo, ['dias_consecutivos', 'intervalo_dias', 'mesmo_dia'], true)) {
             $errors[] = 'Selecione um tipo de critério válido.';
         }
         if ($quantidade < 1) {
@@ -376,6 +376,29 @@ if (!function_exists('parseAlertaRegraFromPost')) {
             'ignorar_sabados' => isset($_POST['ignorar_sabados']),
             'ativo' => isset($_POST['ativo']),
             'tipos_evento' => $tipo_ids,
+        ];
+    }
+}
+
+if (!function_exists('parseAlertaFaltasDiaCompletoFromPost')) {
+    function parseAlertaFaltasDiaCompletoFromPost() {
+        $quantidade = (int) ($_POST['quantidade'] ?? 0);
+        $errors = [];
+        if (empty(trim($_POST['nome'] ?? ''))) {
+            $errors[] = 'Informe o nome da regra.';
+        }
+        if ($quantidade < 1) {
+            $errors[] = 'A quantidade de dias deve ser pelo menos 1.';
+        }
+
+        return [
+            'errors' => $errors,
+            'nome' => trim($_POST['nome'] ?? ''),
+            'descricao' => trim($_POST['descricao'] ?? ''),
+            'quantidade' => $quantidade,
+            'ignorar_domingos' => isset($_POST['ignorar_domingos']),
+            'ignorar_sabados' => isset($_POST['ignorar_sabados']),
+            'ativo' => isset($_POST['ativo']),
         ];
     }
 }
