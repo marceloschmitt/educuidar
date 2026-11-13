@@ -488,6 +488,24 @@ CREATE TABLE IF NOT EXISTS frequencia_disciplina (
     FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Grade de aulas (turno_turma do SIGAA expandido) para alertas de dia completo
+CREATE TABLE IF NOT EXISTS disciplina_aulas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo_disciplina VARCHAR(50) NOT NULL,
+    disciplina_nome VARCHAR(255) NULL,
+    curso_nome VARCHAR(255) NULL,
+    id_turma_sigaa INT NOT NULL DEFAULT 0,
+    data_aula DATE NOT NULL,
+    periodos INT NOT NULL DEFAULT 1,
+    periodo_letivo VARCHAR(10) NULL,
+    UNIQUE KEY uq_disciplina_aula (
+        codigo_disciplina, curso_nome, id_turma_sigaa, data_aula
+    ),
+    INDEX idx_data_aula (data_aula),
+    INDEX idx_codigo_data (codigo_disciplina, data_aula),
+    INDEX idx_periodo_letivo (periodo_letivo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Registros feitos direto no prontuário de um tipo de usuário, sem criar evento
 CREATE TABLE IF NOT EXISTS prontuario_registros (
     id INT AUTO_INCREMENT PRIMARY KEY,
