@@ -49,9 +49,11 @@ class AlertaDetector {
             $matches = [];
             switch ($regra['tipo_criterio']) {
                 case 'dias_consecutivos':
-                    // Todas as sequências que atingem o mínimo (não só a maior)
+                    // Faltas SIGAA ([AUTO] + grade): só conta dia em que faltou
+                    // a todas as disciplinas previstas — regra da fonte de dados,
+                    // não opção da configuração da regra de alerta.
                     $eventos = $dados['eventos'];
-                    if (!empty($regra['exigir_todas_disciplinas'])) {
+                    if ($this->regraUsaFaltaSigaa($regra)) {
                         $eventos = $this->filtrarEventosDiaCompleto(
                             $eventos,
                             (int) $aluno_id,
@@ -230,6 +232,20 @@ class AlertaDetector {
         }
         $ano = $row['ano_curso'] ?? '';
         return trim($row['curso_nome'] . ($ano !== '' ? ' - ' . $ano . 'º Ano' : ''));
+    }
+
+    /**
+     * Regra só do tipo de falta automática do SIGAA: aí o "dia completo"
+     * (faltou todas as disciplinas previstas) vem da grade/frequência.
+     */
+    private function regraUsaFaltaSigaa(array $regra) {
+        $config = new Configuracao($this->conn);
+        $tipo_sigaa = $config->getApiSigaaTipoEventoFaltaId();
+        if (!$tipo_sigaa) {
+            return false;
+        }
+        $tipos = array_values(array_unique(array_map('intval', $regra['tipos_evento'] ?? [])));
+        return count($tipos) === 1 && (int) $tipos[0] === (int) $tipo_sigaa;
     }
 
     /**

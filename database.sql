@@ -288,7 +288,6 @@ CREATE TABLE IF NOT EXISTS alertas_regras (
     intervalo_dias INT NULL,
     ignorar_domingos TINYINT(1) DEFAULT 1,
     ignorar_sabados TINYINT(1) DEFAULT 0,
-    exigir_todas_disciplinas TINYINT(1) NOT NULL DEFAULT 0,
     ativo TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

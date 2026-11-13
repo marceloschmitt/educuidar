@@ -15,40 +15,18 @@ class AlertaRegra {
     public $intervalo_dias;
     public $ignorar_domingos;
     public $ignorar_sabados;
-    public $exigir_todas_disciplinas;
     public $ativo;
-    private $schema_ok = false;
 
     public function __construct($db) {
         $this->conn = $db;
-        $this->garantirSchema();
-    }
-
-    private function garantirSchema() {
-        if ($this->schema_ok) {
-            return;
-        }
-        try {
-            $cols = $this->conn->query("SHOW COLUMNS FROM {$this->table}")->fetchAll(PDO::FETCH_COLUMN);
-            if ($cols && !in_array('exigir_todas_disciplinas', $cols, true)) {
-                $this->conn->exec(
-                    "ALTER TABLE {$this->table}
-                     ADD COLUMN exigir_todas_disciplinas TINYINT(1) NOT NULL DEFAULT 0
-                     AFTER ignorar_sabados"
-                );
-            }
-        } catch (Throwable $e) {
-            // sem ALTER
-        }
-        $this->schema_ok = true;
     }
 
     public function create() {
         $query = "INSERT INTO " . $this->table . "
                   (nome, descricao, tipo_criterio, quantidade, intervalo_dias,
-                   ignorar_domingos, ignorar_sabados, exigir_todas_disciplinas, ativo)
+                   ignorar_domingos, ignorar_sabados, ativo)
                   VALUES (:nome, :descricao, :tipo_criterio, :quantidade, :intervalo_dias,
-                          :ignorar_domingos, :ignorar_sabados, :exigir_todas_disciplinas, :ativo)";
+                          :ignorar_domingos, :ignorar_sabados, :ativo)";
 
         $stmt = $this->conn->prepare($query);
         $this->bindRegraFields($stmt);
@@ -69,7 +47,6 @@ class AlertaRegra {
                       intervalo_dias = :intervalo_dias,
                       ignorar_domingos = :ignorar_domingos,
                       ignorar_sabados = :ignorar_sabados,
-                      exigir_todas_disciplinas = :exigir_todas_disciplinas,
                       ativo = :ativo
                   WHERE id = :id";
 
@@ -203,11 +180,9 @@ class AlertaRegra {
         }
         $ignorar_domingos = !empty($this->ignorar_domingos) ? 1 : 0;
         $ignorar_sabados = !empty($this->ignorar_sabados) ? 1 : 0;
-        $exigir_todas = !empty($this->exigir_todas_disciplinas) ? 1 : 0;
         $ativo = !empty($this->ativo) ? 1 : 0;
         $stmt->bindParam(':ignorar_domingos', $ignorar_domingos);
         $stmt->bindParam(':ignorar_sabados', $ignorar_sabados);
-        $stmt->bindParam(':exigir_todas_disciplinas', $exigir_todas);
         $stmt->bindParam(':ativo', $ativo);
     }
 }
