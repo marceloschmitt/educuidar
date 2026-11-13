@@ -311,6 +311,10 @@ if (!function_exists('formatAlertaCriterioResumo')) {
         switch ($regra['tipo_criterio'] ?? '') {
             case 'dias_consecutivos':
                 return $qtd . ' dia' . ($qtd === 1 ? '' : 's') . ' consecutivo' . ($qtd === 1 ? '' : 's');
+            case 'faltas_todas_disciplinas':
+                return $qtd . ' dia' . ($qtd === 1 ? '' : 's')
+                    . ' consecutivo' . ($qtd === 1 ? '' : 's')
+                    . ' com falta em todas as disciplinas';
             case 'intervalo_dias':
                 $dias = (int) ($regra['intervalo_dias'] ?? 0);
                 return $qtd . ' ocorrência' . ($qtd === 1 ? '' : 's') . ' em ' . $dias . ' dia' . ($dias === 1 ? '' : 's');
@@ -348,7 +352,7 @@ if (!function_exists('parseAlertaRegraFromPost')) {
         if (empty(trim($_POST['nome'] ?? ''))) {
             $errors[] = 'Informe o nome da regra.';
         }
-        if (!in_array($tipo, ['dias_consecutivos', 'intervalo_dias', 'mesmo_dia'], true)) {
+        if (!in_array($tipo, ['dias_consecutivos', 'faltas_todas_disciplinas', 'intervalo_dias', 'mesmo_dia'], true)) {
             $errors[] = 'Selecione um tipo de critério válido.';
         }
         if ($quantidade < 1) {

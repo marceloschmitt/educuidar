@@ -16,9 +16,35 @@ class AlertaRegra {
     public $ignorar_domingos;
     public $ignorar_sabados;
     public $ativo;
+    private $schema_ok = false;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->garantirSchema();
+    }
+
+    private function garantirSchema() {
+        if ($this->schema_ok) {
+            return;
+        }
+        try {
+            $col = $this->conn->query("SHOW COLUMNS FROM {$this->table} LIKE 'tipo_criterio'")->fetch();
+            $tipo = (string) ($col['Type'] ?? '');
+            if ($tipo !== '' && strpos($tipo, 'faltas_todas_disciplinas') === false) {
+                $this->conn->exec(
+                    "ALTER TABLE {$this->table}
+                     MODIFY tipo_criterio ENUM(
+                        'dias_consecutivos',
+                        'intervalo_dias',
+                        'mesmo_dia',
+                        'faltas_todas_disciplinas'
+                     ) NOT NULL"
+                );
+            }
+        } catch (Throwable $e) {
+            // sem ALTER
+        }
+        $this->schema_ok = true;
     }
 
     public function create() {

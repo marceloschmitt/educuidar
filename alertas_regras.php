@@ -160,6 +160,7 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         $tipo_atual = $regra_edit['tipo_criterio'] ?? 'dias_consecutivos';
                         $criterios = [
                             'dias_consecutivos' => 'Dias consecutivos',
+                            'faltas_todas_disciplinas' => 'Faltas em todas as disciplinas (dias consecutivos)',
                             'intervalo_dias' => 'Intervalo de dias',
                             'mesmo_dia' => 'Mesmo dia',
                         ];
@@ -181,6 +182,10 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         <label for="quantidade_consecutivos" class="form-label">Dias seguidos</label>
                         <input type="number" class="form-control alerta-quantidade-input" id="quantidade_consecutivos"
                                min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>">
+                        <small class="text-muted d-none" id="ajuda_faltas_todas">
+                            Conta só dias em que o aluno faltou a todas as disciplinas com aula prevista (grade SIGAA).
+                            Selecione o tipo de falta automática do SIGAA nos tipos de evento.
+                        </small>
                     </div>
 
                     <div class="mb-3 d-none" id="campo_intervalo">
@@ -330,7 +335,7 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 
     function syncQuantidadeHidden() {
         var tipo = tipoSelecionado();
-        if (tipo === 'dias_consecutivos') {
+        if (tipo === 'dias_consecutivos' || tipo === 'faltas_todas_disciplinas') {
             quantidadeHidden.value = document.getElementById('quantidade_consecutivos').value;
         } else if (tipo === 'intervalo_dias') {
             quantidadeHidden.value = document.getElementById('quantidade_intervalo').value;
@@ -341,10 +346,15 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 
     function atualizarCampos() {
         var tipo = tipoSelecionado();
-        campoConsecutivos.classList.toggle('d-none', tipo !== 'dias_consecutivos');
+        var usaDiasSeguidos = (tipo === 'dias_consecutivos' || tipo === 'faltas_todas_disciplinas');
+        campoConsecutivos.classList.toggle('d-none', !usaDiasSeguidos);
         campoIntervalo.classList.toggle('d-none', tipo !== 'intervalo_dias');
         campoMesmoDia.classList.toggle('d-none', tipo !== 'mesmo_dia');
-        campoCalendario.classList.toggle('d-none', tipo !== 'dias_consecutivos');
+        campoCalendario.classList.toggle('d-none', !usaDiasSeguidos);
+        var ajuda = document.getElementById('ajuda_faltas_todas');
+        if (ajuda) {
+            ajuda.classList.toggle('d-none', tipo !== 'faltas_todas_disciplinas');
+        }
         syncQuantidadeHidden();
     }
 
