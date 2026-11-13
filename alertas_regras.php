@@ -32,6 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $alerta_regra->intervalo_dias = $parsed['intervalo_dias'];
     $alerta_regra->ignorar_domingos = $parsed['ignorar_domingos'];
     $alerta_regra->ignorar_sabados = $parsed['ignorar_sabados'];
+    $alerta_regra->exigir_todas_disciplinas = $parsed['exigir_todas_disciplinas'];
     $alerta_regra->ativo = $parsed['ativo'];
 
     if ($_POST['action'] === 'create') {
@@ -219,6 +220,13 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                             <input class="form-check-input" type="checkbox" id="ignorar_sabados" name="ignorar_sabados" value="1"
                                    <?php echo (!empty($regra_edit['ignorar_sabados'])) ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="ignorar_sabados">Ignorar sábados (dias consecutivos)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="exigir_todas_disciplinas" name="exigir_todas_disciplinas" value="1"
+                                   <?php echo (!empty($regra_edit['exigir_todas_disciplinas'])) ? 'checked' : ''; ?>>
+                            <label class="form-check-label" for="exigir_todas_disciplinas">
+                                Exigir falta em todas as disciplinas do dia (usa a grade SIGAA)
+                            </label>
                         </div>
                     </div>
 

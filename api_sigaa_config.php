@@ -54,7 +54,52 @@ $tipoEventoModel = new TipoEvento($db);
 $tipos_evento = $tipoEventoModel->getAll();
 $tipos_evento_ids = array_map('intval', array_column($tipos_evento, 'id'));
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'importar_grade') {
+    if (!function_exists('proc_open')) {
+        $error = 'O PHP deste servidor não permite executar scripts (proc_open desabilitado).';
+    } else {
+        $dir_python = realpath(__DIR__ . '/python');
+        $python = '/usr/bin/python3';
+        foreach (['/usr/bin/python3', '/usr/local/bin/python3', '/opt/homebrew/bin/python3'] as $caminho) {
+            if (is_executable($caminho)) {
+                $python = $caminho;
+                break;
+            }
+        }
+        $comando = [$python, $dir_python . '/importar_grade.py', '--salvar-json'];
+        set_time_limit(600);
+        $ambiente = array_merge(getenv() ?: [], ['PYTHONIOENCODING' => 'utf-8']);
+        $processo = proc_open(
+            $comando,
+            [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+            $pipes,
+            $dir_python,
+            $ambiente
+        );
+        if (!is_resource($processo)) {
+            $error = 'Não foi possível iniciar importar_grade.py.';
+        } else {
+            $saida = trim((string) stream_get_contents($pipes[1]));
+            $erros = trim((string) stream_get_contents($pipes[2]));
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            $codigo = proc_close($processo);
+            if ($codigo === 0) {
+                $success = 'Grade de aulas atualizada.';
+                if ($saida !== '') {
+                    $success .= ' ' . preg_replace('/\s+/', ' ', $saida);
+                }
+            } else {
+                $error = 'Falha ao produzir a grade.';
+                if ($erros !== '') {
+                    $error .= ' ' . preg_replace('/\s+/', ' ', $erros);
+                } elseif ($saida !== '') {
+                    $error .= ' ' . preg_replace('/\s+/', ' ', $saida);
+                }
+            }
+        }
+    }
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $base_url = trim($_POST['api_sigaa_base_url'] ?? '');
     $oauth_url = trim($_POST['api_sigaa_oauth_url'] ?? '');
     $client_id = trim($_POST['api_sigaa_client_id'] ?? '');
@@ -144,6 +189,10 @@ $api_data_inicial = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenci
 $api_data_final = api_sigaa_data_para_html($configuracao->getApiSigaaFrequenciaDataFinal());
 $api_tipo_falta_id = $configuracao->getApiSigaaTipoEventoFaltaId();
 $api_tipo_falta_existe = $api_tipo_falta_id !== null && in_array($api_tipo_falta_id, $tipos_evento_ids, true);
+$grade_gerada_em = $configuracao->get('api_sigaa_grade_gerada_em') ?: '';
+$grade_resumo = $configuracao->get('api_sigaa_grade_resumo') ?: '';
+$disciplinaAula = new DisciplinaAula($db);
+$grade_stats = $disciplinaAula->resumo();
 
 ob_end_flush();
 
@@ -312,6 +361,46 @@ require_once 'includes/header.php';
                             <i class="bi bi-save"></i> Salvar
                         </button>
                     </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-calendar3"></i> Grade de aulas</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-2">
+                    Consulta os matriculados no SIGAA (<code>turno_turma</code>), expande os dias de aula
+                    e grava a grade usada nos alertas de “faltou todas as disciplinas do dia”.
+                    Rode apenas quando a grade mudar (início do período ou alteração de horários).
+                </p>
+                <?php if ($grade_gerada_em !== '' || $grade_stats): ?>
+                <div class="alert alert-secondary py-2">
+                    <?php if ($grade_gerada_em !== ''): ?>
+                    <div><strong>Última geração:</strong> <?php echo htmlspecialchars($grade_gerada_em); ?></div>
+                    <?php endif; ?>
+                    <?php if ($grade_resumo !== ''): ?>
+                    <div><?php echo htmlspecialchars($grade_resumo); ?></div>
+                    <?php elseif ($grade_stats): ?>
+                    <div>
+                        <?php echo (int) $grade_stats['disciplinas']; ?> disciplina(s),
+                        <?php echo (int) $grade_stats['turmas']; ?> turma(s),
+                        <?php echo (int) $grade_stats['dias']; ?> dia(s),
+                        <?php echo (int) $grade_stats['encontros']; ?> encontro(s)
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php else: ?>
+                <div class="alert alert-warning py-2">
+                    Nenhuma grade gravada ainda. Os alertas de dia completo só funcionam depois da primeira geração.
+                </div>
+                <?php endif; ?>
+                <form method="POST" action="" onsubmit="return confirm('Produzir/atualizar a grade agora? A consulta ao SIGAA pode demorar alguns minutos.');">
+                    <input type="hidden" name="action" value="importar_grade">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-repeat"></i> Produzir / atualizar grade
+                    </button>
                 </form>
             </div>
         </div>

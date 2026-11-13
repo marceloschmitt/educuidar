@@ -310,7 +310,11 @@ if (!function_exists('formatAlertaCriterioResumo')) {
         $qtd = (int) ($regra['quantidade'] ?? 0);
         switch ($regra['tipo_criterio'] ?? '') {
             case 'dias_consecutivos':
-                return $qtd . ' dia' . ($qtd === 1 ? '' : 's') . ' consecutivo' . ($qtd === 1 ? '' : 's');
+                $txt = $qtd . ' dia' . ($qtd === 1 ? '' : 's') . ' consecutivo' . ($qtd === 1 ? '' : 's');
+                if (!empty($regra['exigir_todas_disciplinas'])) {
+                    $txt .= ' (todas as disciplinas do dia)';
+                }
+                return $txt;
             case 'intervalo_dias':
                 $dias = (int) ($regra['intervalo_dias'] ?? 0);
                 return $qtd . ' ocorrência' . ($qtd === 1 ? '' : 's') . ' em ' . $dias . ' dia' . ($dias === 1 ? '' : 's');
@@ -370,6 +374,7 @@ if (!function_exists('parseAlertaRegraFromPost')) {
             'intervalo_dias' => $intervalo_dias,
             'ignorar_domingos' => isset($_POST['ignorar_domingos']),
             'ignorar_sabados' => isset($_POST['ignorar_sabados']),
+            'exigir_todas_disciplinas' => isset($_POST['exigir_todas_disciplinas']),
             'ativo' => isset($_POST['ativo']),
             'tipos_evento' => $tipo_ids,
         ];

@@ -5,9 +5,12 @@
 
 class AlertaDetector {
     private $conn;
+    /** @var DisciplinaAula|null */
+    private $disciplina_aula;
 
     public function __construct($db) {
         $this->conn = $db;
+        $this->disciplina_aula = new DisciplinaAula($db);
     }
 
     public function avaliarTodasRegrasAtivas(array $filtros = []) {
@@ -47,7 +50,15 @@ class AlertaDetector {
             switch ($regra['tipo_criterio']) {
                 case 'dias_consecutivos':
                     // Todas as sequências que atingem o mínimo (não só a maior)
-                    $matches = $this->avaliarDiasConsecutivos($dados['eventos'], $regra);
+                    $eventos = $dados['eventos'];
+                    if (!empty($regra['exigir_todas_disciplinas'])) {
+                        $eventos = $this->filtrarEventosDiaCompleto(
+                            $eventos,
+                            (int) $aluno_id,
+                            (int) ($filtros['ano_corrente'] ?? date('Y'))
+                        );
+                    }
+                    $matches = $this->avaliarDiasConsecutivos($eventos, $regra);
                     break;
                 case 'intervalo_dias':
                     $match = $this->avaliarIntervaloDias($dados['eventos'], $regra);
@@ -95,7 +106,7 @@ class AlertaDetector {
 
         $placeholders = implode(',', array_fill(0, count($tipo_ids), '?'));
 
-        $query = "SELECT e.id, e.aluno_id, e.data_evento, e.tipo_evento_id,
+        $query = "SELECT e.id, e.aluno_id, e.data_evento, e.tipo_evento_id, e.observacoes,
                          COALESCE(NULLIF(a.nome_social, ''), a.nome) AS aluno_nome,
                          t.id AS turma_id, t.ano_curso, c.id AS curso_id, c.nome AS curso_nome
                   FROM eventos e
@@ -219,6 +230,67 @@ class AlertaDetector {
         }
         $ano = $row['ano_curso'] ?? '';
         return trim($row['curso_nome'] . ($ano !== '' ? ' - ' . $ano . 'º Ano' : ''));
+    }
+
+    /**
+     * Mantém só eventos de dias em que o aluno faltou a todas as disciplinas
+     * com aula prevista (grade) entre as que ele cursa.
+     */
+    private function filtrarEventosDiaCompleto(array $eventos, $aluno_id, $ano) {
+        if (empty($eventos) || !$this->disciplina_aula) {
+            return [];
+        }
+        $matriculadas = $this->disciplina_aula->codigosDoAlunoNoAno($aluno_id, $ano);
+        if (empty($matriculadas)) {
+            return [];
+        }
+
+        $faltas_por_dia = [];
+        foreach ($eventos as $evento) {
+            $data = $evento['data_evento'] ?? '';
+            $codigo = $this->codigoDisciplinaObservacao($evento['observacoes'] ?? '');
+            if ($data === '' || $codigo === null) {
+                continue;
+            }
+            $faltas_por_dia[$data][$codigo] = true;
+        }
+
+        $dias_completos = [];
+        foreach ($faltas_por_dia as $data => $codigos_falta) {
+            $previstas = $this->disciplina_aula->codigosComAulaNaData($data, $matriculadas);
+            if (empty($previstas)) {
+                continue;
+            }
+            $ok = true;
+            foreach ($previstas as $codigo) {
+                if (empty($codigos_falta[$codigo])) {
+                    $ok = false;
+                    break;
+                }
+            }
+            if ($ok) {
+                $dias_completos[$data] = true;
+            }
+        }
+
+        if (empty($dias_completos)) {
+            return [];
+        }
+
+        return array_values(array_filter($eventos, function ($evento) use ($dias_completos) {
+            return !empty($dias_completos[$evento['data_evento'] ?? '']);
+        }));
+    }
+
+    private function codigoDisciplinaObservacao($observacoes) {
+        $texto = trim((string) $observacoes);
+        if (preg_match('/^\[AUTO\]\s*(\S+)\s*-/', $texto, $m)) {
+            return $m[1];
+        }
+        if (preg_match('/^\[AUTO\]\s*(\S+)\s*$/', $texto, $m)) {
+            return $m[1];
+        }
+        return null;
     }
 
     /**
