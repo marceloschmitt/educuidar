@@ -139,7 +139,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <?php
-    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'horarios_periodos.php', 'ldap_config.php', 'email_config.php'];
+    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'horarios_periodos.php', 'ldap_config.php', 'email_config.php', 'rede_ifrs_config.php'];
     $menu_config_aberto = in_array($current_page, $paginas_config, true);
     if (!isset($menu_config_uid)) {
         $menu_config_uid = 0;
@@ -175,6 +175,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
                 <li class="nav-item">
                     <a class="nav-link <?php echo $current_page === 'email_config.php' ? 'active' : ''; ?>" href="email_config.php">
                         <i class="bi bi-envelope"></i> E-mail
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <?php echo $current_page === 'rede_ifrs_config.php' ? 'active' : ''; ?>" href="rede_ifrs_config.php">
+                        <i class="bi bi-router"></i> Rede IFRS
                     </a>
                 </li>
             </ul>

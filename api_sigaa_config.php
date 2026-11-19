@@ -86,9 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
             $codigo = proc_close($processo);
             if ($codigo === 0) {
                 $success = 'Grade de aulas e docentes atualizados.';
-                if ($saida !== '') {
-                    $success .= ' ' . preg_replace('/\s+/', ' ', $saida);
-                }
             } else {
                 $error = 'Falha ao produzir a grade.';
                 if ($erros !== '') {

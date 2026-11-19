@@ -27,6 +27,118 @@ if (!function_exists('obterIpCliente')) {
     }
 }
 
+if (!function_exists('normalizarListaCidrs')) {
+    /**
+     * Quebra texto (um CIDR/IP por linha; aceita vírgula ou ;) em lista limpa.
+     * @return list<string>
+     */
+    function normalizarListaCidrs($texto) {
+        $texto = str_replace(["\r\n", "\r"], "\n", (string) $texto);
+        $texto = str_replace([',', ';'], "\n", $texto);
+        $lista = [];
+        foreach (explode("\n", $texto) as $linha) {
+            $linha = trim($linha);
+            if ($linha === '' || $linha[0] === '#') {
+                continue;
+            }
+            $lista[] = $linha;
+        }
+        return array_values(array_unique($lista));
+    }
+}
+
+if (!function_exists('ipPertenceCidr')) {
+    /**
+     * Verifica se $ip está em $cidr (ex.: 10.0.0.0/8, 2001:db8::/32) ou é IP único.
+     */
+    function ipPertenceCidr($ip, $cidr) {
+        $ip = trim((string) $ip);
+        $cidr = trim((string) $cidr);
+        if ($ip === '' || $cidr === '') {
+            return false;
+        }
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        if (strpos($cidr, '/') === false) {
+            if (!filter_var($cidr, FILTER_VALIDATE_IP)) {
+                return false;
+            }
+            $binIp = @inet_pton($ip);
+            $binCidr = @inet_pton($cidr);
+            return $binIp !== false && $binCidr !== false && $binIp === $binCidr;
+        }
+
+        [$rede, $prefixo] = array_pad(explode('/', $cidr, 2), 2, null);
+        $rede = trim((string) $rede);
+        if ($rede === '' || !filter_var($rede, FILTER_VALIDATE_IP) || !ctype_digit((string) $prefixo)) {
+            return false;
+        }
+        $prefixo = (int) $prefixo;
+
+        $binIp = @inet_pton($ip);
+        $binRede = @inet_pton($rede);
+        if ($binIp === false || $binRede === false || strlen($binIp) !== strlen($binRede)) {
+            return false;
+        }
+
+        $bits = strlen($binIp) * 8;
+        if ($prefixo < 0 || $prefixo > $bits) {
+            return false;
+        }
+        if ($prefixo === 0) {
+            return true;
+        }
+
+        $bytesCompletos = intdiv($prefixo, 8);
+        $bitsRestantes = $prefixo % 8;
+        if ($bytesCompletos > 0 && substr($binIp, 0, $bytesCompletos) !== substr($binRede, 0, $bytesCompletos)) {
+            return false;
+        }
+        if ($bitsRestantes === 0) {
+            return true;
+        }
+        $mascara = (0xFF << (8 - $bitsRestantes)) & 0xFF;
+        return (ord($binIp[$bytesCompletos]) & $mascara) === (ord($binRede[$bytesCompletos]) & $mascara);
+    }
+}
+
+if (!function_exists('ipPertenceAlgumCidr')) {
+    /** @param list<string>|string $cidrs */
+    function ipPertenceAlgumCidr($ip, $cidrs) {
+        if (is_string($cidrs)) {
+            $cidrs = normalizarListaCidrs($cidrs);
+        }
+        if (!is_array($cidrs) || $cidrs === []) {
+            return false;
+        }
+        foreach ($cidrs as $cidr) {
+            if (ipPertenceCidr($ip, $cidr)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
+if (!function_exists('ipNaRedeIfrs')) {
+    /**
+     * True se o IP está em algum intervalo IPv4/IPv6 configurado como rede IFRS.
+     * @param Configuracao|null $configuracao
+     */
+    function ipNaRedeIfrs($ip, $configuracao = null) {
+        $ip = trim((string) $ip);
+        if ($ip === '' || !filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+        if ($configuracao === null) {
+            return false;
+        }
+        return ipPertenceAlgumCidr($ip, $configuracao->getRedeIfrsCidrsLista());
+    }
+}
+
 if (!function_exists('normalizeSearchText')) {
     function normalizeSearchText($value) {
         $value = mb_strtolower((string)$value, 'UTF-8');

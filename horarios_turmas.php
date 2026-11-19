@@ -143,6 +143,12 @@ function fmt_hora($valor) {
             .grade-turma-table .disc-nome { font-weight: 600; line-height: 1.2; }
             .grade-turma-table .disc-meta { color: #6c757d; font-size: 0.65rem; line-height: 1.2; }
             .grade-turma-table .disc-docente { font-size: 0.68rem; line-height: 1.2; }
+            .grade-turma-table tr.turno-espaco td {
+                border: 0 !important;
+                height: 0.65rem;
+                padding: 0 !important;
+                background: transparent;
+            }
         </style>
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle mb-0 grade-turma-table">
@@ -155,6 +161,7 @@ function fmt_hora($valor) {
                     </tr>
                 </thead>
                 <tbody>
+                    <?php $turno_anterior = null; ?>
                     <?php foreach ($grade['linhas'] as $linha): ?>
                     <?php
                     $turno = $linha['turno'];
@@ -164,6 +171,14 @@ function fmt_hora($valor) {
                         ? fmt_hora($faixa['hora_inicio']) . '–' . fmt_hora($faixa['hora_fim'])
                         : '';
                     $turno_nome = $turnos_labels[$turno] ?? $turno;
+                    if ($turno_anterior !== null && $turno_anterior !== $turno):
+                    ?>
+                    <tr class="turno-espaco" aria-hidden="true">
+                        <td colspan="6"></td>
+                    </tr>
+                    <?php
+                    endif;
+                    $turno_anterior = $turno;
                     ?>
                     <tr>
                         <td>

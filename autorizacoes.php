@@ -108,6 +108,15 @@ $page_title = 'Autorizações — Entrada e saída';
 require_once 'includes/header.php';
 ?>
 
+<style>
+    tr.autorizacao-rede-ifrs > td {
+        background-color: #e7f6ee !important;
+    }
+    tr.autorizacao-rede-ifrs:hover > td {
+        background-color: #d8f0e3 !important;
+    }
+</style>
+
 <?php if ($success): ?>
 <div class="alert alert-success alert-dismissible fade show" role="alert">
     <i class="bi bi-check-circle"></i> <?php echo htmlspecialchars($success); ?>
@@ -234,6 +243,15 @@ require_once 'includes/header.php';
         <?php if (empty($lista)): ?>
         <p class="text-muted text-center mb-0">Nenhuma autorização encontrada.</p>
         <?php else: ?>
+        <p class="small text-muted mb-2">
+            <span class="d-inline-block align-middle me-1"
+                  style="width:1rem;height:1rem;background:#e7f6ee;border:1px solid #b7dfc8;border-radius:2px;"></span>
+            Fundo verde: pedido feito de dentro da rede IFRS
+            <?php if ($user->isAdmin()): ?>
+            (<a href="rede_ifrs_config.php">configurar intervalos</a>).
+            <?php else: ?>.
+            <?php endif; ?>
+        </p>
         <div class="table-responsive">
             <table class="table table-hover align-middle">
                 <thead>
@@ -257,8 +275,10 @@ require_once 'includes/header.php';
                     $quem = AutorizacaoResponsavel::nomeQuemAutorizou($item);
                     $meio_label = $meios[$item['meio_autorizacao'] ?? ''] ?? '';
                     $hora_prev = substr((string) ($item['hora'] ?? ''), 0, 5);
+                    $na_rede_ifrs = ipNaRedeIfrs($item['ip_origem'] ?? '', $configuracao);
                     ?>
-                    <tr>
+                    <tr class="<?php echo $na_rede_ifrs ? 'autorizacao-rede-ifrs' : ''; ?>"
+                        <?php if ($na_rede_ifrs): ?>title="Pedido feito de dentro da rede IFRS"<?php endif; ?>>
                         <td class="text-nowrap">
                             <?php if (!empty($item['data_autorizacao'])): ?>
                             <div><?php echo date('d/m/Y', strtotime($item['data_autorizacao'])); ?></div>

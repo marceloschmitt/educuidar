@@ -248,6 +248,46 @@ class Configuracao {
         return $this->set($chave, $valor, $desc);
     }
 
+    /** Intervalos IPv4 da rede IFRS (um CIDR/IP por linha). */
+    public function getRedeIfrsCidrsIpv4() {
+        return (string) ($this->get('rede_ifrs_cidrs_ipv4') ?: '');
+    }
+
+    public function setRedeIfrsCidrsIpv4($texto) {
+        return $this->set(
+            'rede_ifrs_cidrs_ipv4',
+            trim((string) $texto),
+            'Intervalos IPv4 da rede IFRS (CIDR, um por linha)'
+        );
+    }
+
+    /** Intervalos IPv6 da rede IFRS (um CIDR/IP por linha). */
+    public function getRedeIfrsCidrsIpv6() {
+        return (string) ($this->get('rede_ifrs_cidrs_ipv6') ?: '');
+    }
+
+    public function setRedeIfrsCidrsIpv6($texto) {
+        return $this->set(
+            'rede_ifrs_cidrs_ipv6',
+            trim((string) $texto),
+            'Intervalos IPv6 da rede IFRS (CIDR, um por linha)'
+        );
+    }
+
+    /**
+     * Lista unificada de CIDRs IPv4 + IPv6 configurados.
+     * @return list<string>
+     */
+    public function getRedeIfrsCidrsLista() {
+        if (!function_exists('normalizarListaCidrs')) {
+            return [];
+        }
+        return array_values(array_unique(array_merge(
+            normalizarListaCidrs($this->getRedeIfrsCidrsIpv4()),
+            normalizarListaCidrs($this->getRedeIfrsCidrsIpv6())
+        )));
+    }
+
     // E-mail SMTP (mesmos parâmetros do projeto MAPA)
     public const HORA_RESUMO_PADRAO = '19:30';
 

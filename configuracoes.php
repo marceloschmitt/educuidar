@@ -117,6 +117,9 @@ require_once 'includes/header.php';
                         <a href="email_config.php" class="btn btn-outline-primary me-2 mb-2">
                             <i class="bi bi-envelope"></i> Configuração de e-mail
                         </a>
+                        <a href="rede_ifrs_config.php" class="btn btn-outline-primary me-2 mb-2">
+                            <i class="bi bi-router"></i> Rede IFRS
+                        </a>
                         <a href="admin_responsaveis.php" class="btn btn-outline-primary mb-2">
                             <i class="bi bi-people"></i> Responsáveis
                         </a>
