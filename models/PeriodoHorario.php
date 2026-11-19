@@ -102,12 +102,13 @@ class PeriodoHorario {
         $stmt = $this->conn->prepare(
             "SELECT * FROM {$this->table}
              WHERE turno = :turno
-               AND hora_inicio <= :hora
-               AND hora_fim > :hora
+               AND hora_inicio <= :hora_ini
+               AND hora_fim > :hora_fim
              ORDER BY periodo ASC"
         );
         $stmt->bindValue(':turno', $turno);
-        $stmt->bindValue(':hora', $hora);
+        $stmt->bindValue(':hora_ini', $hora);
+        $stmt->bindValue(':hora_fim', $hora);
         $stmt->execute();
         return $stmt->fetchAll() ?: [];
     }
