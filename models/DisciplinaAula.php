@@ -194,19 +194,20 @@ class DisciplinaAula {
     }
 
     /**
-     * Cursos distintos presentes na grade.
-     * @return list<array{curso_nome:string,disciplinas:int,encontros:int}>
+     * Turmas SIGAA distintas presentes na grade.
+     * @return list<array{curso_nome:string,id_turma_sigaa:int,disciplinas:int,encontros:int,label:string}>
      */
-    public function listarCursosGrade() {
+    public function listarTurmasSigaa() {
         $this->garantirSchema();
         try {
             $stmt = $this->conn->query(
                 "SELECT curso_nome,
+                        id_turma_sigaa,
                         COUNT(DISTINCT codigo_disciplina) AS disciplinas,
                         COUNT(*) AS encontros
                  FROM {$this->table}
-                 GROUP BY curso_nome
-                 ORDER BY curso_nome ASC"
+                 GROUP BY curso_nome, id_turma_sigaa
+                 ORDER BY curso_nome ASC, id_turma_sigaa ASC"
             );
             $rows = $stmt ? $stmt->fetchAll() : [];
         } catch (Throwable $e) {
@@ -215,18 +216,26 @@ class DisciplinaAula {
         $lista = [];
         foreach ($rows as $row) {
             $curso = trim((string) ($row['curso_nome'] ?? ''));
+            $id = (int) ($row['id_turma_sigaa'] ?? 0);
+            $label = $curso !== '' ? $curso : 'Curso não informado';
+            if ($id > 0) {
+                $label .= ' — turma #' . $id;
+            } else {
+                $label .= ' — turma sem id SIGAA';
+            }
             $lista[] = [
                 'curso_nome' => $curso,
+                'id_turma_sigaa' => $id,
                 'disciplinas' => (int) ($row['disciplinas'] ?? 0),
                 'encontros' => (int) ($row['encontros'] ?? 0),
-                'label' => $curso !== '' ? $curso : 'Curso não informado',
+                'label' => $label,
             ];
         }
         return $lista;
     }
 
     /**
-     * Grade semanal do curso (todas as turmas SIGAA): seg–sex.
+     * Grade semanal de uma turma SIGAA: seg–sex.
      * weekday 0=seg…4=sex; linhas = turno+período.
      *
      * @return array{
@@ -235,21 +244,24 @@ class DisciplinaAula {
      * }
      * chave de celulas: "{weekday}|{turno}|{periodo}"
      */
-    public function gradeSemanalCurso($curso_nome) {
+    public function gradeSemanalTurma($curso_nome, $id_turma_sigaa) {
         $this->garantirSchema();
         $curso_nome = (string) $curso_nome;
+        $id_turma_sigaa = (int) $id_turma_sigaa;
 
         $stmt = $this->conn->prepare(
-            "SELECT codigo_disciplina, disciplina_nome, turno, periodos_nums, data_aula, id_turma_sigaa
+            "SELECT codigo_disciplina, disciplina_nome, turno, periodos_nums, data_aula
              FROM {$this->table}
-             WHERE curso_nome = :curso"
+             WHERE curso_nome = :curso
+               AND id_turma_sigaa = :id_turma"
         );
         $stmt->bindValue(':curso', $curso_nome);
+        $stmt->bindValue(':id_turma', $id_turma_sigaa, PDO::PARAM_INT);
         $stmt->execute();
         $encontros = $stmt->fetchAll() ?: [];
 
         $docenteModel = new DisciplinaDocente($this->conn);
-        $docentes_rows = $docenteModel->porCurso($curso_nome);
+        $docentes_rows = $docenteModel->porCursoTurma($curso_nome, $id_turma_sigaa);
         $docentes_por_codigo = [];
         foreach ($docentes_rows as $d) {
             $cod = (string) ($d['codigo_disciplina'] ?? '');

@@ -15,7 +15,7 @@ if (!$user->isLoggedIn() || !$user->isAdmin()) {
 $disciplina_aula->garantirSchema();
 $periodo_horario->garantirSchema();
 
-$cursos_grade = $disciplina_aula->listarCursosGrade();
+$turmas_sigaa = $disciplina_aula->listarTurmasSigaa();
 $mapa = $periodo_horario->getAll();
 $mapa_por_turno = [];
 foreach ($mapa as $linha) {
@@ -28,20 +28,23 @@ foreach ($mapa as $linha) {
 }
 
 $curso_sel = isset($_GET['curso']) ? (string) $_GET['curso'] : '';
-if ($curso_sel === '' && !empty($cursos_grade)) {
-    $curso_sel = $cursos_grade[0]['curso_nome'];
+$id_turma_sel = isset($_GET['id_turma']) ? (int) $_GET['id_turma'] : -1;
+
+if ($curso_sel === '' && $id_turma_sel < 0 && !empty($turmas_sigaa)) {
+    $curso_sel = $turmas_sigaa[0]['curso_nome'];
+    $id_turma_sel = (int) $turmas_sigaa[0]['id_turma_sigaa'];
 }
 
-$curso_ok = false;
-foreach ($cursos_grade as $c) {
-    if ($c['curso_nome'] === $curso_sel) {
-        $curso_ok = true;
+$turma_ok = false;
+foreach ($turmas_sigaa as $t) {
+    if ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel) {
+        $turma_ok = true;
         break;
     }
 }
 
-$grade = $curso_ok
-    ? $disciplina_aula->gradeSemanalCurso($curso_sel)
+$grade = $turma_ok
+    ? $disciplina_aula->gradeSemanalTurma($curso_sel, $id_turma_sel)
     : ['linhas' => [], 'celulas' => []];
 
 $dias_labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
@@ -61,7 +64,7 @@ function fmt_hora($valor) {
 
 <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Horários por curso</h5>
+        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Horários das turmas</h5>
         <div class="d-flex flex-wrap gap-2">
             <a href="horarios_periodos.php" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock"></i> Períodos
@@ -72,7 +75,7 @@ function fmt_hora($valor) {
         </div>
     </div>
     <div class="card-body">
-        <?php if (empty($cursos_grade)): ?>
+        <?php if (empty($turmas_sigaa)): ?>
         <div class="alert alert-warning mb-0">
             Nenhuma grade importada. Em
             <a href="api_sigaa_config.php">API SIGAA</a>, use
@@ -81,16 +84,21 @@ function fmt_hora($valor) {
         <?php else: ?>
         <form method="GET" action="" class="row g-2 align-items-end mb-3">
             <div class="col-md-8">
-                <label for="curso" class="form-label">Curso</label>
-                <select class="form-select" id="curso" name="curso">
-                    <?php foreach ($cursos_grade as $c): ?>
-                    <option value="<?php echo htmlspecialchars($c['curso_nome']); ?>"
-                        <?php echo $c['curso_nome'] === $curso_sel ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($c['label']); ?>
-                        (<?php echo (int) $c['disciplinas']; ?> disciplina<?php echo (int) $c['disciplinas'] === 1 ? '' : 's'; ?>)
+                <label for="turma" class="form-label">Turma</label>
+                <select class="form-select" id="turma" name="sel" onchange="aplicarTurma(this)">
+                    <?php foreach ($turmas_sigaa as $t): ?>
+                    <?php
+                    $val = rawurlencode($t['curso_nome']) . '|' . (int) $t['id_turma_sigaa'];
+                    $sel = ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel);
+                    ?>
+                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo $sel ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($t['label']); ?>
+                        (<?php echo (int) $t['disciplinas']; ?> disciplina<?php echo (int) $t['disciplinas'] === 1 ? '' : 's'; ?>)
                     </option>
                     <?php endforeach; ?>
                 </select>
+                <input type="hidden" name="curso" id="campo_curso" value="<?php echo htmlspecialchars($curso_sel); ?>">
+                <input type="hidden" name="id_turma" id="campo_id_turma" value="<?php echo (int) $id_turma_sel; ?>">
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary w-100">Exibir</button>
@@ -106,7 +114,7 @@ function fmt_hora($valor) {
         <?php endif; ?>
 
         <?php if (empty($grade['linhas'])): ?>
-        <p class="text-muted mb-0">Nenhum horário encontrado para este curso (faltam turno/períodos na grade).</p>
+        <p class="text-muted mb-0">Nenhum horário encontrado para esta turma (faltam turno/períodos na grade).</p>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle mb-0">
@@ -179,5 +187,16 @@ function fmt_hora($valor) {
         <?php endif; ?>
     </div>
 </div>
+
+<script>
+function aplicarTurma(sel) {
+    var raw = sel.value || '';
+    var parts = raw.split('|');
+    var curso = parts.length ? decodeURIComponent(parts[0]) : '';
+    var id = parts.length > 1 ? parts[1] : '0';
+    document.getElementById('campo_curso').value = curso;
+    document.getElementById('campo_id_turma').value = id;
+}
+</script>
 
 <?php require_once 'includes/footer.php'; ?>
