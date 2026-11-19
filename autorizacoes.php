@@ -110,10 +110,10 @@ require_once 'includes/header.php';
 
 <style>
     tr.autorizacao-rede-ifrs > td {
-        background-color: #e7f6ee !important;
+        background-color: #ffc9c9 !important;
     }
     tr.autorizacao-rede-ifrs:hover > td {
-        background-color: #d8f0e3 !important;
+        background-color: #ffb3b3 !important;
     }
 </style>
 
@@ -245,8 +245,8 @@ require_once 'includes/header.php';
         <?php else: ?>
         <p class="small text-muted mb-2">
             <span class="d-inline-block align-middle me-1"
-                  style="width:1rem;height:1rem;background:#e7f6ee;border:1px solid #b7dfc8;border-radius:2px;"></span>
-            Fundo verde: pedido feito de dentro da rede IFRS
+                  style="width:1rem;height:1rem;background:#ffc9c9;border:1px solid #e53935;border-radius:2px;"></span>
+            Fundo vermelho: pedido feito de dentro da rede IFRS
             <?php if ($user->isAdmin()): ?>
             (<a href="rede_ifrs_config.php">configurar intervalos</a>).
             <?php else: ?>.
