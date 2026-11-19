@@ -33,6 +33,23 @@ class DisciplinaDocente {
     }
 
     /**
+     * Docentes de um curso + turma SIGAA.
+     * @return list<array>
+     */
+    public function porCursoTurma($curso_nome, $id_turma_sigaa) {
+        $this->garantirSchema();
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE curso_nome = :curso AND id_turma_sigaa = :id_turma
+             ORDER BY codigo_disciplina ASC, docente_nome ASC"
+        );
+        $stmt->bindValue(':curso', (string) $curso_nome);
+        $stmt->bindValue(':id_turma', (int) $id_turma_sigaa, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
      * Docentes das turmas SIGAA informadas.
      * @param list<array{codigo_disciplina:string,id_turma_sigaa:int}> $turmas
      * @return list<array>

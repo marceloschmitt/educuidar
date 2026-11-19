@@ -194,6 +194,157 @@ class DisciplinaAula {
     }
 
     /**
+     * Turmas SIGAA distintas presentes na grade.
+     * @return list<array{curso_nome:string,id_turma_sigaa:int,disciplinas:int,encontros:int,label:string}>
+     */
+    public function listarTurmasSigaa() {
+        $this->garantirSchema();
+        try {
+            $stmt = $this->conn->query(
+                "SELECT curso_nome,
+                        id_turma_sigaa,
+                        COUNT(DISTINCT codigo_disciplina) AS disciplinas,
+                        COUNT(*) AS encontros,
+                        MIN(disciplina_nome) AS amostra_disciplina
+                 FROM {$this->table}
+                 GROUP BY curso_nome, id_turma_sigaa
+                 ORDER BY curso_nome ASC, id_turma_sigaa ASC"
+            );
+            $rows = $stmt ? $stmt->fetchAll() : [];
+        } catch (Throwable $e) {
+            return [];
+        }
+        $lista = [];
+        foreach ($rows as $row) {
+            $curso = trim((string) ($row['curso_nome'] ?? ''));
+            $id = (int) ($row['id_turma_sigaa'] ?? 0);
+            $label = $curso !== '' ? $curso : 'Curso não informado';
+            if ($id > 0) {
+                $label .= ' — turma SIGAA #' . $id;
+            }
+            $lista[] = [
+                'curso_nome' => $curso,
+                'id_turma_sigaa' => $id,
+                'disciplinas' => (int) ($row['disciplinas'] ?? 0),
+                'encontros' => (int) ($row['encontros'] ?? 0),
+                'label' => $label,
+            ];
+        }
+        return $lista;
+    }
+
+    /**
+     * Grade semanal da turma SIGAA: weekday (0=seg…6=dom) → período → células.
+     * Cada célula: codigo, disciplina, turno, docentes[].
+     *
+     * @return array{dias: array<int, array<int, list<array>>>, turnos: list<string>}
+     */
+    public function gradeSemanalTurma($curso_nome, $id_turma_sigaa) {
+        $this->garantirSchema();
+        $curso_nome = (string) $curso_nome;
+        $id_turma_sigaa = (int) $id_turma_sigaa;
+
+        $stmt = $this->conn->prepare(
+            "SELECT codigo_disciplina, disciplina_nome, turno, periodos_nums, data_aula
+             FROM {$this->table}
+             WHERE curso_nome = :curso
+               AND id_turma_sigaa = :id_turma"
+        );
+        $stmt->bindValue(':curso', $curso_nome);
+        $stmt->bindValue(':id_turma', $id_turma_sigaa, PDO::PARAM_INT);
+        $stmt->execute();
+        $encontros = $stmt->fetchAll() ?: [];
+
+        $docenteModel = new DisciplinaDocente($this->conn);
+        $docentes_rows = $docenteModel->porCursoTurma($curso_nome, $id_turma_sigaa);
+        $docentes_por_codigo = [];
+        foreach ($docentes_rows as $d) {
+            $cod = (string) ($d['codigo_disciplina'] ?? '');
+            if ($cod === '') {
+                continue;
+            }
+            if (!isset($docentes_por_codigo[$cod])) {
+                $docentes_por_codigo[$cod] = [];
+            }
+            $nome = trim((string) ($d['docente_nome'] ?? ''));
+            if ($nome !== '' && !in_array($nome, $docentes_por_codigo[$cod], true)) {
+                $docentes_por_codigo[$cod][] = $nome;
+            }
+        }
+
+        // chave weekday|periodo|codigo → célula (agrega semanas)
+        $celulas = [];
+        $turnos_usados = [];
+        foreach ($encontros as $e) {
+            $data = $e['data_aula'] ?? '';
+            if ($data === '') {
+                continue;
+            }
+            $ts = strtotime($data);
+            if ($ts === false) {
+                continue;
+            }
+            // PHP: 0=dom…6=sáb → converter para 0=seg…5=sáb (ignora domingo)
+            $w = (int) date('w', $ts); // 0=dom
+            if ($w === 0) {
+                continue;
+            }
+            $weekday = $w - 1; // 0=seg … 5=sáb
+
+            $turno = strtoupper(substr(trim((string) ($e['turno'] ?? '')), 0, 1));
+            $nums = $this->parsePeriodosNums($e['periodos_nums'] ?? '');
+            if ($turno === '' || empty($nums)) {
+                continue;
+            }
+            $turnos_usados[$turno] = true;
+            $codigo = (string) ($e['codigo_disciplina'] ?? '');
+            $nome = (string) ($e['disciplina_nome'] ?? $codigo);
+            foreach ($nums as $periodo) {
+                $chave = $weekday . '|' . $turno . '|' . $periodo . '|' . $codigo;
+                if (!isset($celulas[$chave])) {
+                    $celulas[$chave] = [
+                        'weekday' => $weekday,
+                        'turno' => $turno,
+                        'periodo' => (int) $periodo,
+                        'codigo_disciplina' => $codigo,
+                        'disciplina_nome' => $nome,
+                        'docentes' => $docentes_por_codigo[$codigo] ?? [],
+                    ];
+                }
+            }
+        }
+
+        // dias[weekday][turno][periodo] = list de células
+        $dias = [];
+        foreach ($celulas as $c) {
+            $wd = $c['weekday'];
+            $t = $c['turno'];
+            $p = $c['periodo'];
+            if (!isset($dias[$wd])) {
+                $dias[$wd] = [];
+            }
+            if (!isset($dias[$wd][$t])) {
+                $dias[$wd][$t] = [];
+            }
+            if (!isset($dias[$wd][$t][$p])) {
+                $dias[$wd][$t][$p] = [];
+            }
+            $dias[$wd][$t][$p][] = $c;
+        }
+
+        $ordem_turno = ['M' => 0, 'T' => 1, 'N' => 2];
+        $turnos = array_keys($turnos_usados);
+        usort($turnos, function ($a, $b) use ($ordem_turno) {
+            return ($ordem_turno[$a] ?? 9) <=> ($ordem_turno[$b] ?? 9);
+        });
+
+        return [
+            'dias' => $dias,
+            'turnos' => $turnos,
+        ];
+    }
+
+    /**
      * Códigos em que o aluno tem frequência no ano (matrícula na disciplina).
      * @return list<string>
      */

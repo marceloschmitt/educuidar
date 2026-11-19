@@ -409,6 +409,9 @@ require_once 'includes/header.php';
                     <a href="horarios_periodos.php" class="btn btn-outline-secondary">
                         <i class="bi bi-clock"></i> Configurar horários dos períodos
                     </a>
+                    <a href="horarios_turmas.php" class="btn btn-outline-secondary">
+                        <i class="bi bi-calendar-week"></i> Ver horários das turmas
+                    </a>
                 </div>
             </div>
         </div>
