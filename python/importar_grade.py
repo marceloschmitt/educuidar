@@ -3,8 +3,10 @@
 
 Para cada turma cadastrada no EduCuidar, usa **um aluno** representante
 (com número de matrícula) e consulta a API **por matrícula**
-(`GET /matriculados?matricula=…&periodo_letivo=…`). A mesma coleta alimenta
-a tela de horários e os alertas.
+(`GET /matriculados?matricula=…&periodo_letivo=…`).
+Grava um **snapshot do horário atual**: só expande encontros na janela
+semana corrente + próxima (padrão 2 semanas), o bastante para montar a
+tabela de horários e vincular docentes.
 
 Uso:
     python3 importar_grade.py
@@ -19,7 +21,7 @@ import json
 import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -398,8 +400,25 @@ def turmas_com_representante(conn, ano_civil: int) -> list[dict[str, Any]]:
     return resultado
 
 
+def janela_snapshot(
+    *,
+    referencia: date | None = None,
+    semanas: int = 2,
+) -> tuple[date, date]:
+    """Segunda da semana de referência → último dia de N semanas (padrão: atual + próxima)."""
+    ref = referencia or date.today()
+    semanas = max(1, int(semanas))
+    segunda = ref - timedelta(days=ref.weekday())  # weekday: seg=0
+    fim = segunda + timedelta(days=(7 * semanas) - 1)
+    return segunda, fim
+
+
 def extrair_aulas_do_registro(
-    registro: dict[str, Any], turma_id: int
+    registro: dict[str, Any],
+    turma_id: int,
+    *,
+    data_min: date | None = None,
+    data_max: date | None = None,
 ) -> list[dict[str, Any]]:
     vistos: dict[tuple, dict[str, Any]] = {}
     nome_curso = str(registro.get("curso") or "").strip()
@@ -415,7 +434,10 @@ def extrair_aulas_do_registro(
             id_turma = 0
         nome_disc = str(item.get("disciplina") or "").strip() or codigo
         detalhado = extrair_datas_detalhadas(
-            item.get("turno_turma"), incluir_sabado=True
+            item.get("turno_turma"),
+            incluir_sabado=True,
+            data_min=data_min,
+            data_max=data_max,
         )
         if not detalhado:
             continue
@@ -524,6 +546,9 @@ def gravar(
     periodo_letivo: str,
     turmas_ok: int,
     turmas_sem_match: int,
+    *,
+    data_min: date | None = None,
+    data_max: date | None = None,
 ) -> dict[str, int]:
     por_email, por_nome = _mapear_users(conn)
     with conn.cursor() as cur:
@@ -585,6 +610,8 @@ def gravar(
             f"{dias} dia(s), {len(aulas)} encontro(s), "
             f"{docentes_gravados} docente(s) ({vinculados} com usuário)"
         )
+        if data_min and data_max:
+            resumo += f"; janela {data_min.isoformat()}→{data_max.isoformat()}"
         if turmas_sem_match:
             resumo += f"; {turmas_sem_match} turma(s) sem aluno encontrado no SIGAA"
         for chave, valor, desc in (
@@ -696,6 +723,12 @@ def main() -> int:
         help=f"Consultas paralelas (padrão: {CONCORRENCIA}).",
     )
     parser.add_argument(
+        "--janela-semanas",
+        type=int,
+        default=2,
+        help="Semanas de encontros a gravar a partir da segunda atual (padrão: 2).",
+    )
+    parser.add_argument(
         "--unidade",
         default="",
         help=argparse.SUPPRESS,  # legado; dump por unidade não é mais usado
@@ -708,6 +741,7 @@ def main() -> int:
         print("Erro: configure o período letivo em API SIGAA.", file=sys.stderr)
         return 1
 
+    data_min, data_max = janela_snapshot(semanas=args.janela_semanas)
     concorrencia = max(1, int(args.concorrencia or CONCORRENCIA))
 
     conn = None
@@ -726,6 +760,10 @@ def main() -> int:
         print(
             f"Turmas com representante: {len(representantes)} "
             f"(ano {ano}, período {periodo})"
+        )
+        print(
+            f"Snapshot de horários: {data_min.isoformat()} → {data_max.isoformat()} "
+            f"({args.janela_semanas} semana(s))"
         )
 
         consultas_brutas: list[dict[str, Any]] = []
@@ -808,7 +846,11 @@ def main() -> int:
                     + (f" — {motivo}" if motivo else "")
                 )
                 continue
-            aulas.extend(extrair_aulas_do_registro(registro, tid))
+            aulas.extend(
+                extrair_aulas_do_registro(
+                    registro, tid, data_min=data_min, data_max=data_max
+                )
+            )
             docentes.extend(extrair_docentes_do_registro(registro, tid))
             turmas_ok += 1
             n_disc = len(registro.get("disciplinas") or [])
@@ -824,7 +866,16 @@ def main() -> int:
             )
             return 1
 
-        stats = gravar(conn, aulas, docentes, periodo, turmas_ok, turmas_sem_match)
+        stats = gravar(
+            conn,
+            aulas,
+            docentes,
+            periodo,
+            turmas_ok,
+            turmas_sem_match,
+            data_min=data_min,
+            data_max=data_max,
+        )
         print(f"Período letivo: {periodo}")
         print(
             f"Grade gravada: {stats['turmas_ok']} turma(s), "

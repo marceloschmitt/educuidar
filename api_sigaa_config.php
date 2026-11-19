@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
                 break;
             }
         }
-        $comando = [$python, $dir_python . '/importar_grade.py', '--salvar-json'];
+        $comando = [$python, $dir_python . '/importar_grade.py'];
         set_time_limit(600);
         $ambiente = array_merge(getenv() ?: [], ['PYTHONIOENCODING' => 'utf-8']);
         $processo = proc_open(
@@ -374,9 +374,10 @@ require_once 'includes/header.php';
                     Para cada turma do EduCuidar, consulta o SIGAA com a matrícula de
                     <strong>um aluno</strong> representante
                     (<code>/matriculados?matricula=…</code>), lê <code>turno_turma</code>/docentes
-                    e grava a grade dessa turma.
-                    Alimenta a tela de horários, alertas de dia completo e aviso aos professores
-                    na saída antecipada. Rode quando a grade mudar (1 a 3 vezes por ano).
+                    e grava um <strong>snapshot do horário atual</strong>
+                    (semana corrente + próxima — o bastante para montar a tabela de horários).
+                    Alimenta a tela de horários e o aviso aos professores na saída antecipada.
+                    Rode quando a grade mudar (ou periodicamente, se o horário variar ao longo do ano).
                 </p>
                 <?php if ($grade_gerada_em !== '' || $grade_stats): ?>
                 <div class="alert alert-secondary py-2">

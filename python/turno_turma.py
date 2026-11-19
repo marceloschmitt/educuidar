@@ -107,8 +107,14 @@ def extrair_datas_detalhadas(
     *,
     incluir_sabado: bool = True,
     incluir_domingo: bool = False,
+    data_min: date | None = None,
+    data_max: date | None = None,
 ) -> dict[date, dict[str, Any]]:
-    """Mapa data → {turno, periodos_nums, periodos}."""
+    """Mapa data → {turno, periodos_nums, periodos}.
+
+    Se data_min/data_max forem informados, só expande encontros nesse intervalo
+    (útil para snapshot limitado às datas da config SIGAA).
+    """
     if turno_turma is None:
         return {}
 
@@ -141,6 +147,14 @@ def extrair_datas_detalhadas(
             continue
         if fim < inicio:
             inicio, fim = fim, inicio
+        if data_min is not None and fim < data_min:
+            continue
+        if data_max is not None and inicio > data_max:
+            continue
+        if data_min is not None and inicio < data_min:
+            inicio = data_min
+        if data_max is not None and fim > data_max:
+            fim = data_max
 
         # weekday → (turno, periodos_nums)
         por_weekday: dict[int, dict[str, Any]] = {}
