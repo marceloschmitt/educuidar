@@ -195,16 +195,18 @@ class DisciplinaAula {
     }
 
     /**
-     * Janela de datas para a grade “atual”: 30 dias atrás até 14 dias à frente.
+     * Janela de datas para a grade “atual”: semana corrente + próxima (seg–dom).
      * Se não houver aulas nessa janela, usa a semana da data de aula mais recente.
-     * Evita misturar horários muito antigos após mudança de grade no SIGAA.
+     * Evita misturar horários antigos após mudança de grade no SIGAA.
      *
      * @return array{0:string,1:string}|null [inicio, fim] Y-m-d
      */
     private function janelaDatasGradeAtual($turma_id) {
         $hoje = date('Y-m-d');
-        $ini_janela = date('Y-m-d', strtotime($hoje . ' -30 days'));
-        $fim_janela = date('Y-m-d', strtotime($hoje . ' +14 days'));
+        $w = (int) date('w'); // 0=dom
+        $dias_desde_seg = ($w + 6) % 7;
+        $seg_atual = date('Y-m-d', strtotime($hoje . ' -' . $dias_desde_seg . ' days'));
+        $fim_janela = date('Y-m-d', strtotime($seg_atual . ' +13 days'));
 
         $stmt = $this->conn->prepare(
             "SELECT COUNT(*) FROM {$this->table}
@@ -213,11 +215,11 @@ class DisciplinaAula {
         );
         $stmt->execute([
             ':turma_id' => (int) $turma_id,
-            ':ini' => $ini_janela,
+            ':ini' => $seg_atual,
             ':fim' => $fim_janela,
         ]);
         if ((int) $stmt->fetchColumn() > 0) {
-            return [$ini_janela, $fim_janela];
+            return [$seg_atual, $fim_janela];
         }
 
         // Fallback: semana da última aula gravada
