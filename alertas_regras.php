@@ -125,85 +125,88 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
 <?php endif; ?>
 
 <?php if ($mostrar_formulario): ?>
-<div class="row mb-4">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-bell"></i> <?php echo $regra_edit ? 'Editar' : 'Nova'; ?> regra de evento</h5>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="" id="alertaRegraForm">
-                    <input type="hidden" name="action" value="<?php echo $regra_edit ? 'update' : 'create'; ?>">
-                    <?php if ($regra_edit): ?>
-                    <input type="hidden" name="id" value="<?php echo (int) $regra_edit['id']; ?>">
-                    <?php endif; ?>
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0"><i class="bi bi-bell"></i> <?php echo $regra_edit ? 'Editar' : 'Nova'; ?> regra de evento</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="" id="alertaRegraForm">
+            <input type="hidden" name="action" value="<?php echo $regra_edit ? 'update' : 'create'; ?>">
+            <?php if ($regra_edit): ?>
+            <input type="hidden" name="id" value="<?php echo (int) $regra_edit['id']; ?>">
+            <?php endif; ?>
+            <input type="hidden" name="quantidade" id="quantidade" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>">
 
-                    <div class="mb-3">
-                        <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="nome" name="nome"
-                               value="<?php echo htmlspecialchars($regra_edit['nome'] ?? ''); ?>" required>
-                    </div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="nome" name="nome"
+                           value="<?php echo htmlspecialchars($regra_edit['nome'] ?? ''); ?>" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="descricao" class="form-label">Descrição</label>
+                    <input type="text" class="form-control" id="descricao" name="descricao"
+                           value="<?php echo htmlspecialchars($regra_edit['descricao'] ?? ''); ?>">
+                </div>
 
-                    <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        <textarea class="form-control" id="descricao" name="descricao" rows="2"><?php echo htmlspecialchars($regra_edit['descricao'] ?? ''); ?></textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Tipos de evento <span class="text-danger">*</span></label>
-                        <div class="form-text mb-2">Inclui tipos não visíveis aos usuários (ex.: registro automático).</div>
-                        <div class="border rounded p-2" style="max-height: 180px; overflow-y: auto;">
+                <div class="col-lg-6">
+                    <label class="form-label">Tipos de evento <span class="text-danger">*</span></label>
+                    <div class="form-text mb-2">Inclui tipos não visíveis aos usuários (ex.: registro automático).</div>
+                    <div class="border rounded p-3" style="max-height: 280px; overflow-y: auto;">
+                        <div class="row row-cols-1 row-cols-md-2 g-1">
                             <?php foreach ($tipos_eventos as $te): ?>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="tipos_evento[]"
-                                       value="<?php echo (int) $te['id']; ?>"
-                                       id="tipo_evento_<?php echo (int) $te['id']; ?>"
-                                       <?php echo in_array((int) $te['id'], $tipos_selecionados, true) ? 'checked' : ''; ?>>
-                                <label class="form-check-label" for="tipo_evento_<?php echo (int) $te['id']; ?>">
-                                    <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1">
-                                        <?php echo htmlspecialchars($te['nome']); ?>
-                                    </span>
-                                    <?php if (empty($te['ativo'])): ?>
-                                        <small class="text-muted">(não visível aos usuários)</small>
-                                    <?php endif; ?>
-                                </label>
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="tipos_evento[]"
+                                           value="<?php echo (int) $te['id']; ?>"
+                                           id="tipo_evento_<?php echo (int) $te['id']; ?>"
+                                           <?php echo in_array((int) $te['id'], $tipos_selecionados, true) ? 'checked' : ''; ?>>
+                                    <label class="form-check-label" for="tipo_evento_<?php echo (int) $te['id']; ?>">
+                                        <span class="badge bg-<?php echo htmlspecialchars($te['cor'] ?? 'secondary'); ?> me-1">
+                                            <?php echo htmlspecialchars($te['nome']); ?>
+                                        </span>
+                                        <?php if (empty($te['ativo'])): ?>
+                                            <small class="text-muted">(não visível)</small>
+                                        <?php endif; ?>
+                                    </label>
+                                </div>
                             </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Critério de disparo <span class="text-danger">*</span></label>
-                        <?php
-                        $tipo_atual = $regra_edit['tipo_criterio'] ?? 'dias_consecutivos';
-                        $criterios = [
-                            'dias_consecutivos' => 'Dias consecutivos',
-                            'intervalo_dias' => 'Intervalo de dias',
-                            'mesmo_dia' => 'Mesmo dia',
-                        ];
-                        foreach ($criterios as $valor => $label):
-                        ?>
-                        <div class="form-check">
-                            <input class="form-check-input alerta-tipo-criterio" type="radio"
-                                   name="tipo_criterio" id="criterio_<?php echo $valor; ?>"
-                                   value="<?php echo $valor; ?>"
-                                   <?php echo $tipo_atual === $valor ? 'checked' : ''; ?>>
-                            <label class="form-check-label" for="criterio_<?php echo $valor; ?>">
-                                <?php echo $label; ?>
-                            </label>
-                        </div>
-                        <?php endforeach; ?>
+                <div class="col-lg-6">
+                    <label class="form-label">Critério de disparo <span class="text-danger">*</span></label>
+                    <?php
+                    $tipo_atual = $regra_edit['tipo_criterio'] ?? 'dias_consecutivos';
+                    $criterios = [
+                        'dias_consecutivos' => 'Dias consecutivos',
+                        'intervalo_dias' => 'Intervalo de dias',
+                        'mesmo_dia' => 'Mesmo dia',
+                    ];
+                    foreach ($criterios as $valor => $label):
+                    ?>
+                    <div class="form-check">
+                        <input class="form-check-input alerta-tipo-criterio" type="radio"
+                               name="tipo_criterio" id="criterio_<?php echo $valor; ?>"
+                               value="<?php echo $valor; ?>"
+                               <?php echo $tipo_atual === $valor ? 'checked' : ''; ?>>
+                        <label class="form-check-label" for="criterio_<?php echo $valor; ?>">
+                            <?php echo $label; ?>
+                        </label>
                     </div>
+                    <?php endforeach; ?>
 
-                    <div class="mb-3" id="campo_quantidade_consecutivos">
+                    <div class="mt-3" id="campo_quantidade_consecutivos">
                         <label for="quantidade_consecutivos" class="form-label">Dias seguidos</label>
                         <input type="number" class="form-control alerta-quantidade-input" id="quantidade_consecutivos"
-                               min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>">
+                               min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>" style="max-width: 12rem;">
                     </div>
 
-                    <div class="mb-3 d-none" id="campo_intervalo">
+                    <div class="mt-3 d-none" id="campo_intervalo">
                         <label class="form-label">Ocorrências no intervalo</label>
-                        <div class="row g-2">
+                        <div class="row g-2" style="max-width: 24rem;">
                             <div class="col-6">
                                 <input type="number" class="form-control alerta-quantidade-input" id="quantidade_intervalo"
                                        min="1" placeholder="Ocorrências"
@@ -218,15 +221,13 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         <small class="text-muted">Ex.: 5 ocorrências em 7 dias</small>
                     </div>
 
-                    <div class="mb-3 d-none" id="campo_mesmo_dia">
+                    <div class="mt-3 d-none" id="campo_mesmo_dia">
                         <label for="quantidade_mesmo_dia" class="form-label">Ocorrências no mesmo dia</label>
                         <input type="number" class="form-control alerta-quantidade-input" id="quantidade_mesmo_dia"
-                               min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 2); ?>">
+                               min="1" value="<?php echo (int) ($regra_edit['quantidade'] ?? 2); ?>" style="max-width: 12rem;">
                     </div>
 
-                    <input type="hidden" name="quantidade" id="quantidade" value="<?php echo (int) ($regra_edit['quantidade'] ?? 3); ?>">
-
-                    <div class="mb-3" id="campo_calendario">
+                    <div class="mt-3" id="campo_calendario">
                         <label class="form-label">Calendário</label>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="ignorar_domingos" name="ignorar_domingos" value="1"
@@ -240,23 +241,25 @@ $tipos_selecionados = $regra_edit['tipos_evento'] ?? [];
                         </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mt-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="ativo" name="ativo" value="1"
                                    <?php echo (!isset($regra_edit) || !empty($regra_edit['ativo'])) ? 'checked' : ''; ?>>
                             <label class="form-check-label" for="ativo">Regra ativa</label>
                         </div>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-save"></i> <?php echo $regra_edit ? 'Atualizar' : 'Criar'; ?> regra
-                    </button>
-                    <a href="alertas_regras.php" class="btn btn-secondary w-100 mt-2">
-                        <i class="bi bi-x-circle"></i> Cancelar
-                    </a>
-                </form>
+                </div>
             </div>
-        </div>
+
+            <div class="d-flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-save"></i> <?php echo $regra_edit ? 'Atualizar' : 'Criar'; ?> regra
+                </button>
+                <a href="alertas_regras.php" class="btn btn-secondary">
+                    <i class="bi bi-x-circle"></i> Cancelar
+                </a>
+            </div>
+        </form>
     </div>
 </div>
 <?php else: ?>
