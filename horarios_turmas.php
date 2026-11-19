@@ -113,6 +113,12 @@ function fmt_hora($valor) {
             <?php if (!empty($grade['disciplinas'])): ?>
             — <?php echo (int) $grade['disciplinas']; ?> disciplina(s)
             <?php endif; ?>
+            <?php if (!empty($grade['janela_inicio']) && !empty($grade['janela_fim'])): ?>
+            <br>Horário atual (não mistura mudanças antigas):
+            <?php echo date('d/m/Y', strtotime($grade['janela_inicio'])); ?>
+            a
+            <?php echo date('d/m/Y', strtotime($grade['janela_fim'])); ?>
+            <?php endif; ?>
         </p>
         <?php endif; ?>
 

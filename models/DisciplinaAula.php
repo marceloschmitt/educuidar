@@ -195,44 +195,107 @@ class DisciplinaAula {
     }
 
     /**
-     * Grade semanal da turma EduCuidar (importada a partir de um aluno representante).
+     * Janela de datas para a grade “atual”: semana corrente + próxima (seg–dom).
+     * Se não houver aulas nessa janela, usa a semana da data de aula mais recente.
+     * Evita misturar horários antigos após mudança de grade no SIGAA.
+     *
+     * @return array{0:string,1:string}|null [inicio, fim] Y-m-d
+     */
+    private function janelaDatasGradeAtual($turma_id) {
+        $hoje = date('Y-m-d');
+        $w = (int) date('w'); // 0=dom
+        $dias_desde_seg = ($w + 6) % 7;
+        $seg_atual = date('Y-m-d', strtotime($hoje . ' -' . $dias_desde_seg . ' days'));
+        $fim_janela = date('Y-m-d', strtotime($seg_atual . ' +13 days'));
+
+        $stmt = $this->conn->prepare(
+            "SELECT COUNT(*) FROM {$this->table}
+             WHERE turma_id = :turma_id
+               AND data_aula BETWEEN :ini AND :fim"
+        );
+        $stmt->execute([
+            ':turma_id' => (int) $turma_id,
+            ':ini' => $seg_atual,
+            ':fim' => $fim_janela,
+        ]);
+        if ((int) $stmt->fetchColumn() > 0) {
+            return [$seg_atual, $fim_janela];
+        }
+
+        // Fallback: semana da última aula gravada (ainda no futuro ou passada)
+        $stmt = $this->conn->prepare(
+            "SELECT MAX(data_aula) AS ultima
+             FROM {$this->table}
+             WHERE turma_id = :turma_id"
+        );
+        $stmt->bindValue(':turma_id', (int) $turma_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $ultima = $stmt->fetchColumn();
+        if (!$ultima) {
+            return null;
+        }
+        $ts = strtotime((string) $ultima);
+        $w_u = (int) date('w', $ts);
+        $desde_seg = ($w_u + 6) % 7;
+        $seg = date('Y-m-d', strtotime((string) $ultima . ' -' . $desde_seg . ' days'));
+        $fim = date('Y-m-d', strtotime($seg . ' +6 days'));
+        return [$seg, $fim];
+    }
+
+    /**
+     * Grade semanal da turma EduCuidar (snapshot da janela atual, não o ano inteiro).
      *
      * @return array{
      *   linhas: list<array{turno:string,periodo:int}>,
      *   celulas: array<string, list<array>>,
      *   disciplinas: int,
-     *   motivo_vazio: string
+     *   motivo_vazio: string,
+     *   janela_inicio: string,
+     *   janela_fim: string
      * }
      */
     public function gradeSemanalTurmaEducuidar($turma_id) {
         $this->garantirSchema();
         $turma_id = (int) $turma_id;
+        $vazio = [
+            'linhas' => [],
+            'celulas' => [],
+            'disciplinas' => 0,
+            'motivo_vazio' => '',
+            'janela_inicio' => '',
+            'janela_fim' => '',
+        ];
         if ($turma_id < 1) {
-            return [
-                'linhas' => [],
-                'celulas' => [],
-                'disciplinas' => 0,
-                'motivo_vazio' => 'Turma inválida.',
-            ];
+            $vazio['motivo_vazio'] = 'Turma inválida.';
+            return $vazio;
         }
+
+        $janela = $this->janelaDatasGradeAtual($turma_id);
+        if ($janela === null) {
+            $vazio['motivo_vazio'] = 'Nenhuma grade para esta turma. Em API SIGAA, use '
+                . '“Produzir / atualizar grade e docentes” (usa um aluno da turma como referência).';
+            return $vazio;
+        }
+        [$ini, $fim] = $janela;
 
         $stmt = $this->conn->prepare(
             "SELECT codigo_disciplina, disciplina_nome, turno, periodos_nums, data_aula
              FROM {$this->table}
-             WHERE turma_id = :turma_id"
+             WHERE turma_id = :turma_id
+               AND data_aula BETWEEN :ini AND :fim
+             ORDER BY data_aula DESC"
         );
         $stmt->bindValue(':turma_id', $turma_id, PDO::PARAM_INT);
+        $stmt->bindValue(':ini', $ini);
+        $stmt->bindValue(':fim', $fim);
         $stmt->execute();
         $encontros = $stmt->fetchAll() ?: [];
 
         if (empty($encontros)) {
-            return [
-                'linhas' => [],
-                'celulas' => [],
-                'disciplinas' => 0,
-                'motivo_vazio' => 'Nenhuma grade para esta turma. Em API SIGAA, use '
-                    . '“Produzir / atualizar grade e docentes” (usa um aluno da turma como referência).',
-            ];
+            $vazio['motivo_vazio'] = 'Nenhuma aula na janela atual da grade.';
+            $vazio['janela_inicio'] = $ini;
+            $vazio['janela_fim'] = $fim;
+            return $vazio;
         }
 
         $docenteModel = new DisciplinaDocente($this->conn);
@@ -252,7 +315,9 @@ class DisciplinaAula {
             }
         }
 
+        // Por slot (dia×turno×período) fica a disciplina da data mais recente na janela.
         $celulas_unicas = [];
+        $slot_data = [];
         $linhas_map = [];
         $codigos = [];
         foreach ($encontros as $e) {
@@ -286,6 +351,12 @@ class DisciplinaAula {
                 ];
                 $chave_cel = $weekday . '|' . $turno . '|' . $periodo;
                 $chave_disc = $chave_cel . '|' . $codigo;
+                $anterior = $slot_data[$chave_cel] ?? null;
+                // Já ordenado DESC: primeira vez que vemos o slot manda; disciplina extra no mesmo dia só se mesma data.
+                if ($anterior !== null && $anterior !== $data) {
+                    continue;
+                }
+                $slot_data[$chave_cel] = $data;
                 if (!isset($celulas_unicas[$chave_disc])) {
                     $celulas_unicas[$chave_disc] = [
                         'chave' => $chave_cel,
@@ -317,8 +388,10 @@ class DisciplinaAula {
             'celulas' => $celulas,
             'disciplinas' => count($codigos),
             'motivo_vazio' => empty($linhas)
-                ? 'Grade importada sem turno/período utilizável (seg–sex).'
+                ? 'Grade importada sem turno/período utilizável (seg–sex) na janela atual.'
                 : '',
+            'janela_inicio' => $ini,
+            'janela_fim' => $fim,
         ];
     }
 
