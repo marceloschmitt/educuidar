@@ -6,6 +6,8 @@ $db = $database->getConnection();
 $user = new User($db);
 $disciplina_aula = new DisciplinaAula($db);
 $periodo_horario = new PeriodoHorario($db);
+$turma_model = new Turma($db);
+$configuracao = new Configuracao($db);
 
 if (!$user->isLoggedIn() || !$user->isAdmin()) {
     header('Location: index.php');
@@ -15,7 +17,12 @@ if (!$user->isLoggedIn() || !$user->isAdmin()) {
 $disciplina_aula->garantirSchema();
 $periodo_horario->garantirSchema();
 
-$turmas_sigaa = $disciplina_aula->listarTurmasSigaa();
+$ano_corrente = (int) $configuracao->getAnoCorrente();
+$turmas = $turma_model->getTurmasPorAnoCorrente($ano_corrente);
+if (empty($turmas)) {
+    $turmas = $turma_model->getAll();
+}
+
 $mapa = $periodo_horario->getAll();
 $mapa_por_turno = [];
 foreach ($mapa as $linha) {
@@ -27,25 +34,25 @@ foreach ($mapa as $linha) {
     $mapa_por_turno[$t][$p] = $linha;
 }
 
-$curso_sel = isset($_GET['curso']) ? (string) $_GET['curso'] : '';
-$id_turma_sel = isset($_GET['id_turma']) ? (int) $_GET['id_turma'] : -1;
-
-if ($curso_sel === '' && $id_turma_sel < 0 && !empty($turmas_sigaa)) {
-    $curso_sel = $turmas_sigaa[0]['curso_nome'];
-    $id_turma_sel = (int) $turmas_sigaa[0]['id_turma_sigaa'];
+$turma_sel = isset($_GET['turma_id']) ? (int) $_GET['turma_id'] : 0;
+if ($turma_sel < 1 && !empty($turmas)) {
+    $turma_sel = (int) $turmas[0]['id'];
 }
 
 $turma_ok = false;
-foreach ($turmas_sigaa as $t) {
-    if ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel) {
+$turma_label = '';
+foreach ($turmas as $t) {
+    if ((int) $t['id'] === $turma_sel) {
         $turma_ok = true;
+        $turma_label = ($t['curso_nome'] ?? '') . ' — ' . (int) ($t['ano_curso'] ?? 0) . 'º Ano ('
+            . (int) ($t['ano_civil'] ?? 0) . ')';
         break;
     }
 }
 
 $grade = $turma_ok
-    ? $disciplina_aula->gradeSemanalTurma($curso_sel, $id_turma_sel)
-    : ['linhas' => [], 'celulas' => []];
+    ? $disciplina_aula->gradeSemanalTurmaEducuidar($turma_sel)
+    : ['linhas' => [], 'celulas' => [], 'disciplinas' => 0, 'motivo_vazio' => 'Selecione uma turma.'];
 
 $dias_labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 $turnos_labels = PeriodoHorario::TURNOS;
@@ -75,35 +82,42 @@ function fmt_hora($valor) {
         </div>
     </div>
     <div class="card-body">
-        <?php if (empty($turmas_sigaa)): ?>
+        <?php if (empty($turmas)): ?>
         <div class="alert alert-warning mb-0">
-            Nenhuma grade importada. Em
-            <a href="api_sigaa_config.php">API SIGAA</a>, use
-            <strong>Produzir / atualizar grade e docentes</strong>.
+            Nenhuma turma cadastrada. Cadastre em <a href="turmas.php">Turmas</a>.
         </div>
         <?php else: ?>
         <form method="GET" action="" class="row g-2 align-items-end mb-3">
             <div class="col-md-8">
-                <label for="turma" class="form-label">Turma</label>
-                <select class="form-select" id="turma" name="sel" onchange="aplicarTurma(this)">
-                    <?php foreach ($turmas_sigaa as $t): ?>
-                    <?php
-                    $val = rawurlencode($t['curso_nome']) . '|' . (int) $t['id_turma_sigaa'];
-                    $sel = ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel);
-                    ?>
-                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo $sel ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($t['label']); ?>
-                        (<?php echo (int) $t['disciplinas']; ?> disciplina<?php echo (int) $t['disciplinas'] === 1 ? '' : 's'; ?>)
+                <label for="turma_id" class="form-label">Turma (EduCuidar)</label>
+                <select class="form-select" id="turma_id" name="turma_id">
+                    <?php foreach ($turmas as $t): ?>
+                    <option value="<?php echo (int) $t['id']; ?>"
+                        <?php echo (int) $t['id'] === $turma_sel ? 'selected' : ''; ?>>
+                        <?php
+                        echo htmlspecialchars(
+                            ($t['curso_nome'] ?? '') . ' — '
+                            . (int) ($t['ano_curso'] ?? 0) . 'º Ano ('
+                            . (int) ($t['ano_civil'] ?? 0) . ')'
+                        );
+                        ?>
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <input type="hidden" name="curso" id="campo_curso" value="<?php echo htmlspecialchars($curso_sel); ?>">
-                <input type="hidden" name="id_turma" id="campo_id_turma" value="<?php echo (int) $id_turma_sel; ?>">
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary w-100">Exibir</button>
             </div>
         </form>
+
+        <?php if ($turma_label !== ''): ?>
+        <p class="text-muted small mb-2">
+            <?php echo htmlspecialchars($turma_label); ?>
+            <?php if (!empty($grade['disciplinas'])): ?>
+            — <?php echo (int) $grade['disciplinas']; ?> disciplina(s)
+            <?php endif; ?>
+        </p>
+        <?php endif; ?>
 
         <?php if (empty($mapa)): ?>
         <div class="alert alert-info">
@@ -114,7 +128,9 @@ function fmt_hora($valor) {
         <?php endif; ?>
 
         <?php if (empty($grade['linhas'])): ?>
-        <p class="text-muted mb-0">Nenhum horário encontrado para esta turma (faltam turno/períodos na grade).</p>
+        <div class="alert alert-warning mb-0">
+            <?php echo htmlspecialchars($grade['motivo_vazio'] ?: 'Nenhum horário encontrado.'); ?>
+        </div>
         <?php else: ?>
         <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle mb-0">
@@ -187,16 +203,5 @@ function fmt_hora($valor) {
         <?php endif; ?>
     </div>
 </div>
-
-<script>
-function aplicarTurma(sel) {
-    var raw = sel.value || '';
-    var parts = raw.split('|');
-    var curso = parts.length ? decodeURIComponent(parts[0]) : '';
-    var id = parts.length > 1 ? parts[1] : '0';
-    document.getElementById('campo_curso').value = curso;
-    document.getElementById('campo_id_turma').value = id;
-}
-</script>
 
 <?php require_once 'includes/footer.php'; ?>

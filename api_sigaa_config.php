@@ -371,11 +371,11 @@ require_once 'includes/header.php';
             </div>
             <div class="card-body">
                 <p class="mb-2">
-                    Consulta os matriculados no SIGAA (<code>turno_turma</code>), expande os dias de aula
-                    (com turno e números de período) e grava docentes por disciplina.
-                    Usado nos alertas de “faltou todas as disciplinas do dia” e no aviso aos
-                    professores na autorização de saída antecipada.
-                    Rode apenas quando a grade mudar (1 a 3 vezes por ano).
+                    Para cada turma do EduCuidar, usa <strong>um aluno</strong> com matrícula
+                    como referência, lê as disciplinas/<code>turno_turma</code> no SIGAA e grava
+                    a grade + docentes dessa turma.
+                    Alimenta a tela de horários, alertas de dia completo e aviso aos professores
+                    na saída antecipada. Rode quando a grade mudar (1 a 3 vezes por ano).
                 </p>
                 <?php if ($grade_gerada_em !== '' || $grade_stats): ?>
                 <div class="alert alert-secondary py-2">

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Consulta matriculados SIGAA e grava a grade de aulas + docentes no EduCuidar.
 
-Usa turno_turma para expandir datas efetivas (turno + números de período).
-Acionado pelo botão em Configurações → API SIGAA (ou via CLI).
+Para cada turma cadastrada no EduCuidar, usa **um aluno** representante
+(com número de matrícula) e importa as disciplinas/horários desse aluno.
+A mesma coleta alimenta a tela de horários e os alertas.
 
 Uso:
     python3 importar_grade.py
@@ -104,6 +105,7 @@ def garantir_tabelas(conn) -> None:
             """
             CREATE TABLE IF NOT EXISTS disciplina_aulas (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                turma_id INT NULL,
                 codigo_disciplina VARCHAR(50) NOT NULL,
                 disciplina_nome VARCHAR(255) NULL,
                 curso_nome VARCHAR(255) NULL,
@@ -113,25 +115,38 @@ def garantir_tabelas(conn) -> None:
                 turno CHAR(1) NULL,
                 periodos_nums VARCHAR(64) NULL,
                 periodo_letivo VARCHAR(10) NULL,
-                UNIQUE KEY uq_disciplina_aula (
-                    codigo_disciplina, curso_nome, id_turma_sigaa, data_aula
+                UNIQUE KEY uq_disciplina_aula_turma (
+                    turma_id, codigo_disciplina, id_turma_sigaa, data_aula
                 ),
                 INDEX idx_data_aula (data_aula),
                 INDEX idx_codigo_data (codigo_disciplina, data_aula),
+                INDEX idx_turma_id (turma_id),
                 INDEX idx_periodo_letivo (periodo_letivo)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """
         )
-        if not _coluna_existe(cur, "disciplina_aulas", "turno"):
-            cur.execute("ALTER TABLE disciplina_aulas ADD COLUMN turno CHAR(1) NULL")
-        if not _coluna_existe(cur, "disciplina_aulas", "periodos_nums"):
+        for coluna, definicao in (
+            ("turno", "CHAR(1) NULL"),
+            ("periodos_nums", "VARCHAR(64) NULL"),
+            ("turma_id", "INT NULL"),
+        ):
+            if not _coluna_existe(cur, "disciplina_aulas", coluna):
+                cur.execute(
+                    f"ALTER TABLE disciplina_aulas ADD COLUMN {coluna} {definicao}"
+                )
+        if not _coluna_existe(cur, "disciplina_aulas", "turma_id"):
+            pass  # already added
+        try:
             cur.execute(
-                "ALTER TABLE disciplina_aulas ADD COLUMN periodos_nums VARCHAR(64) NULL"
+                "ALTER TABLE disciplina_aulas ADD INDEX idx_turma_id (turma_id)"
             )
+        except Exception:
+            pass
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS disciplina_docentes (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                turma_id INT NULL,
                 codigo_disciplina VARCHAR(50) NOT NULL,
                 disciplina_nome VARCHAR(255) NULL,
                 curso_nome VARCHAR(255) NULL,
@@ -141,16 +156,25 @@ def garantir_tabelas(conn) -> None:
                 docente_cpf VARCHAR(14) NULL,
                 user_id INT NULL,
                 periodo_letivo VARCHAR(10) NULL,
-                UNIQUE KEY uq_disciplina_docente (
-                    codigo_disciplina, curso_nome, id_turma_sigaa,
+                UNIQUE KEY uq_disciplina_docente_turma (
+                    turma_id, codigo_disciplina, id_turma_sigaa,
                     docente_nome, periodo_letivo
                 ),
                 INDEX idx_codigo_turma (codigo_disciplina, id_turma_sigaa),
+                INDEX idx_turma_id (turma_id),
                 INDEX idx_user_id (user_id),
                 INDEX idx_periodo_letivo (periodo_letivo)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """
         )
+        if not _coluna_existe(cur, "disciplina_docentes", "turma_id"):
+            cur.execute("ALTER TABLE disciplina_docentes ADD COLUMN turma_id INT NULL")
+            try:
+                cur.execute(
+                    "ALTER TABLE disciplina_docentes ADD INDEX idx_turma_id (turma_id)"
+                )
+            except Exception:
+                pass
     conn.commit()
 
 
@@ -158,105 +182,165 @@ def _periodos_nums_str(nums: list[int]) -> str:
     return ",".join(str(n) for n in sorted(set(int(x) for x in nums if int(x) > 0)))
 
 
-def extrair_aulas(registros: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Une turmas SIGAA: uma linha por (codigo, curso, id_turma, data)."""
-    vistos: dict[tuple, dict[str, Any]] = {}
-
-    for registro in registros:
-        nome_curso = str(registro.get("curso") or "").strip()
-        disciplinas = registro.get("disciplinas") or []
-        if not isinstance(disciplinas, list):
+def _matricula_registro(registro: dict[str, Any]) -> str:
+    for chave in ("Matricula", "matricula", "numero_matricula", "mat"):
+        valor = registro.get(chave)
+        if valor is None:
             continue
-        for item in disciplinas:
-            if not isinstance(item, dict):
-                continue
-            codigo = str(item.get("cod_disciplina") or "").strip()
-            if codigo == "":
-                continue
-            try:
-                id_turma = int(item.get("id_turma") or 0)
-            except (TypeError, ValueError):
-                id_turma = 0
-            nome_disc = str(item.get("disciplina") or "").strip() or codigo
-            detalhado = extrair_datas_detalhadas(
-                item.get("turno_turma"), incluir_sabado=True
-            )
-            if not detalhado:
-                continue
-            for data_aula, info in detalhado.items():
-                chave = (codigo, nome_curso, id_turma, data_aula.isoformat())
-                nums = list(info.get("periodos_nums") or [])
-                turno = str(info.get("turno") or "").upper()[:1]
-                atual = vistos.get(chave)
-                if atual is None:
-                    vistos[chave] = {
-                        "codigo_disciplina": codigo,
-                        "disciplina_nome": nome_disc,
-                        "curso_nome": nome_curso,
-                        "id_turma_sigaa": id_turma,
-                        "data_aula": data_aula.isoformat(),
-                        "periodos": int(info.get("periodos") or max(len(nums), 1)),
-                        "turno": turno or None,
-                        "periodos_nums": _periodos_nums_str(nums),
-                    }
-                else:
-                    antigos = [
-                        int(x)
-                        for x in str(atual.get("periodos_nums") or "").split(",")
-                        if x.strip().isdigit()
-                    ]
-                    unidos = sorted(set(antigos) | set(nums))
-                    atual["periodos_nums"] = _periodos_nums_str(unidos)
-                    atual["periodos"] = max(len(unidos), 1)
-                    if not atual.get("turno") and turno:
-                        atual["turno"] = turno
-                    if nome_disc and (
-                        not atual["disciplina_nome"]
-                        or atual["disciplina_nome"] == codigo
-                    ):
-                        atual["disciplina_nome"] = nome_disc
-
-    return list(vistos.values())
+        texto = str(valor).strip()
+        if texto:
+            return texto
+    return ""
 
 
-def extrair_docentes(registros: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    vistos: dict[tuple, dict[str, Any]] = {}
+def indice_por_matricula(registros: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    indice: dict[str, dict[str, Any]] = {}
     for registro in registros:
-        nome_curso = str(registro.get("curso") or "").strip()
-        disciplinas = registro.get("disciplinas") or []
-        if not isinstance(disciplinas, list):
+        disciplinas = registro.get("disciplinas")
+        if not isinstance(disciplinas, list) or not disciplinas:
             continue
-        for item in disciplinas:
-            if not isinstance(item, dict):
-                continue
-            codigo = str(item.get("cod_disciplina") or "").strip()
-            if codigo == "":
-                continue
-            try:
-                id_turma = int(item.get("id_turma") or 0)
-            except (TypeError, ValueError):
-                id_turma = 0
-            nome_disc = str(item.get("disciplina") or "").strip() or codigo
-            for docente in item.get("docentes") or []:
-                if not isinstance(docente, dict):
-                    continue
-                nome = str(docente.get("docente") or "").strip()
-                if nome == "":
-                    continue
-                email = str(docente.get("email_docente") or "").strip().lower() or None
-                cpf = re.sub(r"\D", "", str(docente.get("cpf_docente") or "")) or None
-                chave = (codigo, nome_curso, id_turma, nome.lower())
-                if chave in vistos:
-                    continue
+        mat = _matricula_registro(registro)
+        if mat == "":
+            continue
+        # Prefer records that actually have turno_turma
+        tem_turno = any(
+            isinstance(d, dict) and str(d.get("turno_turma") or "").strip()
+            for d in disciplinas
+        )
+        atual = indice.get(mat)
+        if atual is None or (tem_turno and not any(
+            isinstance(d, dict) and str(d.get("turno_turma") or "").strip()
+            for d in (atual.get("disciplinas") or [])
+        )):
+            indice[mat] = registro
+    return indice
+
+
+def turmas_com_representante(conn, ano_civil: int) -> list[dict[str, Any]]:
+    """Uma linha por turma EduCuidar com um aluno (matrícula) representante."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            SELECT t.id AS turma_id,
+                   t.ano_curso,
+                   t.ano_civil,
+                   c.nome AS curso_nome,
+                   a.id AS aluno_id,
+                   a.nome AS aluno_nome,
+                   a.numero_matricula
+            FROM turmas t
+            INNER JOIN cursos c ON c.id = t.curso_id
+            INNER JOIN aluno_turmas at ON at.turma_id = t.id
+            INNER JOIN alunos a ON a.id = at.aluno_id
+            WHERE t.ano_civil = %s
+              AND COALESCE(a.desistente, 0) = 0
+              AND a.numero_matricula IS NOT NULL
+              AND TRIM(a.numero_matricula) <> ''
+            ORDER BY c.nome ASC, t.ano_curso ASC, a.nome ASC
+            """,
+            (ano_civil,),
+        )
+        rows = list(cur.fetchall())
+    vistos: set[int] = set()
+    resultado: list[dict[str, Any]] = []
+    for row in rows:
+        tid = int(row["turma_id"])
+        if tid in vistos:
+            continue
+        vistos.add(tid)
+        resultado.append(row)
+    return resultado
+
+
+def extrair_aulas_do_registro(
+    registro: dict[str, Any], turma_id: int
+) -> list[dict[str, Any]]:
+    vistos: dict[tuple, dict[str, Any]] = {}
+    nome_curso = str(registro.get("curso") or "").strip()
+    for item in registro.get("disciplinas") or []:
+        if not isinstance(item, dict):
+            continue
+        codigo = str(item.get("cod_disciplina") or "").strip()
+        if codigo == "":
+            continue
+        try:
+            id_turma = int(item.get("id_turma") or 0)
+        except (TypeError, ValueError):
+            id_turma = 0
+        nome_disc = str(item.get("disciplina") or "").strip() or codigo
+        detalhado = extrair_datas_detalhadas(
+            item.get("turno_turma"), incluir_sabado=True
+        )
+        if not detalhado:
+            continue
+        for data_aula, info in detalhado.items():
+            chave = (turma_id, codigo, id_turma, data_aula.isoformat())
+            nums = list(info.get("periodos_nums") or [])
+            turno = str(info.get("turno") or "").upper()[:1]
+            atual = vistos.get(chave)
+            if atual is None:
                 vistos[chave] = {
+                    "turma_id": turma_id,
                     "codigo_disciplina": codigo,
                     "disciplina_nome": nome_disc,
                     "curso_nome": nome_curso,
                     "id_turma_sigaa": id_turma,
-                    "docente_nome": nome,
-                    "docente_email": email,
-                    "docente_cpf": cpf,
+                    "data_aula": data_aula.isoformat(),
+                    "periodos": int(info.get("periodos") or max(len(nums), 1)),
+                    "turno": turno or None,
+                    "periodos_nums": _periodos_nums_str(nums),
                 }
+            else:
+                antigos = [
+                    int(x)
+                    for x in str(atual.get("periodos_nums") or "").split(",")
+                    if x.strip().isdigit()
+                ]
+                unidos = sorted(set(antigos) | set(nums))
+                atual["periodos_nums"] = _periodos_nums_str(unidos)
+                atual["periodos"] = max(len(unidos), 1)
+                if not atual.get("turno") and turno:
+                    atual["turno"] = turno
+    return list(vistos.values())
+
+
+def extrair_docentes_do_registro(
+    registro: dict[str, Any], turma_id: int
+) -> list[dict[str, Any]]:
+    vistos: dict[tuple, dict[str, Any]] = {}
+    nome_curso = str(registro.get("curso") or "").strip()
+    for item in registro.get("disciplinas") or []:
+        if not isinstance(item, dict):
+            continue
+        codigo = str(item.get("cod_disciplina") or "").strip()
+        if codigo == "":
+            continue
+        try:
+            id_turma = int(item.get("id_turma") or 0)
+        except (TypeError, ValueError):
+            id_turma = 0
+        nome_disc = str(item.get("disciplina") or "").strip() or codigo
+        for docente in item.get("docentes") or []:
+            if not isinstance(docente, dict):
+                continue
+            nome = str(docente.get("docente") or "").strip()
+            if nome == "":
+                continue
+            email = str(docente.get("email_docente") or "").strip().lower() or None
+            cpf = re.sub(r"\D", "", str(docente.get("cpf_docente") or "")) or None
+            chave = (turma_id, codigo, id_turma, nome.lower())
+            if chave in vistos:
+                continue
+            vistos[chave] = {
+                "turma_id": turma_id,
+                "codigo_disciplina": codigo,
+                "disciplina_nome": nome_disc,
+                "curso_nome": nome_curso,
+                "id_turma_sigaa": id_turma,
+                "docente_nome": nome,
+                "docente_email": email,
+                "docente_cpf": cpf,
+            }
     return list(vistos.values())
 
 
@@ -276,11 +360,24 @@ def _mapear_users(conn) -> tuple[dict[str, int], dict[str, int]]:
     return por_email, por_nome
 
 
+def _ano_corrente(conn) -> int:
+    with conn.cursor() as cur:
+        cur.execute(
+            "SELECT valor FROM configuracoes WHERE chave = 'ano_corrente' LIMIT 1"
+        )
+        row = cur.fetchone()
+    if row and str(row.get("valor") or "").isdigit():
+        return int(row["valor"])
+    return datetime.now().year
+
+
 def gravar(
     conn,
     aulas: list[dict[str, Any]],
     docentes: list[dict[str, Any]],
     periodo_letivo: str,
+    turmas_ok: int,
+    turmas_sem_match: int,
 ) -> dict[str, int]:
     por_email, por_nome = _mapear_users(conn)
     with conn.cursor() as cur:
@@ -296,10 +393,10 @@ def gravar(
             cur.executemany(
                 """
                 INSERT INTO disciplina_aulas
-                    (codigo_disciplina, disciplina_nome, curso_nome, id_turma_sigaa,
+                    (turma_id, codigo_disciplina, disciplina_nome, curso_nome, id_turma_sigaa,
                      data_aula, periodos, turno, periodos_nums, periodo_letivo)
                 VALUES
-                    (%(codigo_disciplina)s, %(disciplina_nome)s, %(curso_nome)s,
+                    (%(turma_id)s, %(codigo_disciplina)s, %(disciplina_nome)s, %(curso_nome)s,
                      %(id_turma_sigaa)s, %(data_aula)s, %(periodos)s, %(turno)s,
                      %(periodos_nums)s, %(periodo_letivo)s)
                 """,
@@ -323,10 +420,10 @@ def gravar(
             cur.executemany(
                 """
                 INSERT INTO disciplina_docentes
-                    (codigo_disciplina, disciplina_nome, curso_nome, id_turma_sigaa,
+                    (turma_id, codigo_disciplina, disciplina_nome, curso_nome, id_turma_sigaa,
                      docente_nome, docente_email, docente_cpf, user_id, periodo_letivo)
                 VALUES
-                    (%(codigo_disciplina)s, %(disciplina_nome)s, %(curso_nome)s,
+                    (%(turma_id)s, %(codigo_disciplina)s, %(disciplina_nome)s, %(curso_nome)s,
                      %(id_turma_sigaa)s, %(docente_nome)s, %(docente_email)s,
                      %(docente_cpf)s, %(user_id)s, %(periodo_letivo)s)
                 """,
@@ -335,14 +432,15 @@ def gravar(
             docentes_gravados = len(linhas)
 
         agora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        disciplinas = len({a["codigo_disciplina"] for a in aulas})
+        disciplinas = len({(a["turma_id"], a["codigo_disciplina"]) for a in aulas})
         dias = len({a["data_aula"] for a in aulas})
-        turmas = len({a["id_turma_sigaa"] for a in aulas if a["id_turma_sigaa"]})
         resumo = (
-            f"{disciplinas} disciplina(s), {turmas} turma(s) SIGAA, "
-            f"{dias} dia(s) de aula, {len(aulas)} encontro(s), "
+            f"{turmas_ok} turma(s) EduCuidar, {disciplinas} disciplina(s), "
+            f"{dias} dia(s), {len(aulas)} encontro(s), "
             f"{docentes_gravados} docente(s) ({vinculados} com usuário)"
         )
+        if turmas_sem_match:
+            resumo += f"; {turmas_sem_match} turma(s) sem aluno encontrado no SIGAA"
         for chave, valor, desc in (
             (CHAVE_GRADE_EM, agora, "Última geração da grade de aulas SIGAA"),
             (CHAVE_GRADE_RESUMO, resumo, "Resumo da última grade de aulas SIGAA"),
@@ -360,7 +458,8 @@ def gravar(
         "encontros": len(aulas),
         "disciplinas": disciplinas,
         "dias": dias,
-        "turmas": turmas,
+        "turmas_ok": turmas_ok,
+        "turmas_sem_match": turmas_sem_match,
         "docentes": docentes_gravados,
         "docentes_vinculados": vinculados,
     }
@@ -368,7 +467,7 @@ def gravar(
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Importa a grade de aulas e docentes do SIGAA."
+        description="Importa a grade de aulas e docentes do SIGAA (1 aluno por turma EduCuidar)."
     )
     parser.add_argument("--unidade", default="31", help="Código da unidade (padrão: 31).")
     parser.add_argument(
@@ -410,26 +509,79 @@ def main() -> int:
                 print(f"JSON salvo em {JSON_GRADE}")
 
         registros = registros_da_resposta(dados)
-        aulas = extrair_aulas(registros)
-        docentes = extrair_docentes(registros)
-        if not aulas:
+        por_matricula = indice_por_matricula(registros)
+        if not por_matricula:
             print(
-                "Nenhuma aula expandida. Verifique se a resposta traz turno_turma "
-                "(mapa matrícula→registro, não lista enxuta).",
+                "Nenhum registro com matrícula e disciplinas/turno_turma na resposta.",
                 file=sys.stderr,
             )
             return 1
 
         conn = pymysql.connect(**carregar_config_mysql())
         garantir_tabelas(conn)
-        stats = gravar(conn, aulas, docentes, periodo)
+        ano = _ano_corrente(conn)
+        representantes = turmas_com_representante(conn, ano)
+        if not representantes:
+            print(
+                f"Nenhuma turma EduCuidar de {ano} com aluno (matrícula) vinculado.",
+                file=sys.stderr,
+            )
+            return 1
+
+        aulas: list[dict[str, Any]] = []
+        docentes: list[dict[str, Any]] = []
+        turmas_ok = 0
+        turmas_sem_match = 0
+        for rep in representantes:
+            mat = str(rep["numero_matricula"]).strip()
+            registro = por_matricula.get(mat)
+            if registro is None:
+                # tenta só dígitos
+                mat_dig = re.sub(r"\D", "", mat)
+                registro = next(
+                    (
+                        r
+                        for m, r in por_matricula.items()
+                        if re.sub(r"\D", "", m) == mat_dig
+                    ),
+                    None,
+                )
+            if registro is None:
+                turmas_sem_match += 1
+                print(
+                    f"  Sem match SIGAA: turma {rep['turma_id']} "
+                    f"({rep['curso_nome']} {rep['ano_curso']}º) "
+                    f"aluno {rep['aluno_nome']} matrícula {mat}"
+                )
+                continue
+            tid = int(rep["turma_id"])
+            aulas.extend(extrair_aulas_do_registro(registro, tid))
+            docentes.extend(extrair_docentes_do_registro(registro, tid))
+            turmas_ok += 1
+            print(
+                f"  OK turma {tid} ({rep['curso_nome']} {rep['ano_curso']}º) "
+                f"via {rep['aluno_nome']} ({mat})"
+            )
+
+        if not aulas:
+            print(
+                "Nenhuma aula expandida a partir dos alunos representantes.",
+                file=sys.stderr,
+            )
+            return 1
+
+        stats = gravar(conn, aulas, docentes, periodo, turmas_ok, turmas_sem_match)
         print(f"Período letivo: {periodo}")
         print(
-            f"Grade gravada: {stats['disciplinas']} disciplinas, "
-            f"{stats['turmas']} turmas SIGAA, {stats['dias']} dias, "
+            f"Grade gravada: {stats['turmas_ok']} turma(s), "
+            f"{stats['disciplinas']} disciplinas, {stats['dias']} dias, "
             f"{stats['encontros']} encontros; "
             f"{stats['docentes']} docentes ({stats['docentes_vinculados']} com usuário)."
         )
+        if stats["turmas_sem_match"]:
+            print(
+                f"Atenção: {stats['turmas_sem_match']} turma(s) sem correspondente no SIGAA."
+            )
         return 0
     except HTTPError as error:
         detalhe = error.read().decode("utf-8", errors="replace")

@@ -2,6 +2,7 @@
 
 CREATE TABLE IF NOT EXISTS disciplina_docentes (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    turma_id INT NULL,
     codigo_disciplina VARCHAR(50) NOT NULL,
     disciplina_nome VARCHAR(255) NULL,
     curso_nome VARCHAR(255) NULL,
@@ -11,10 +12,11 @@ CREATE TABLE IF NOT EXISTS disciplina_docentes (
     docente_cpf VARCHAR(14) NULL,
     user_id INT NULL,
     periodo_letivo VARCHAR(10) NULL,
-    UNIQUE KEY uq_disciplina_docente (
-        codigo_disciplina, curso_nome, id_turma_sigaa, docente_nome, periodo_letivo
+    UNIQUE KEY uq_disciplina_docente_turma (
+        turma_id, codigo_disciplina, id_turma_sigaa, docente_nome, periodo_letivo
     ),
     INDEX idx_codigo_turma (codigo_disciplina, id_turma_sigaa),
+    INDEX idx_turma_id (turma_id),
     INDEX idx_user_id (user_id),
     INDEX idx_periodo_letivo (periodo_letivo),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL

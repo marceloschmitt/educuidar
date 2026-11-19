@@ -491,6 +491,7 @@ CREATE TABLE IF NOT EXISTS frequencia_disciplina (
 -- Grade de aulas (turno_turma do SIGAA expandido) para alertas de dia completo
 CREATE TABLE IF NOT EXISTS disciplina_aulas (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    turma_id INT NULL,
     codigo_disciplina VARCHAR(50) NOT NULL,
     disciplina_nome VARCHAR(255) NULL,
     curso_nome VARCHAR(255) NULL,
@@ -500,11 +501,12 @@ CREATE TABLE IF NOT EXISTS disciplina_aulas (
     turno CHAR(1) NULL,
     periodos_nums VARCHAR(64) NULL,
     periodo_letivo VARCHAR(10) NULL,
-    UNIQUE KEY uq_disciplina_aula (
-        codigo_disciplina, curso_nome, id_turma_sigaa, data_aula
+    UNIQUE KEY uq_disciplina_aula_turma (
+        turma_id, codigo_disciplina, id_turma_sigaa, data_aula
     ),
     INDEX idx_data_aula (data_aula),
     INDEX idx_codigo_data (codigo_disciplina, data_aula),
+    INDEX idx_turma_id (turma_id),
     INDEX idx_periodo_letivo (periodo_letivo)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -522,6 +524,7 @@ CREATE TABLE IF NOT EXISTS periodos_horario (
 -- Docentes por disciplina/turma SIGAA
 CREATE TABLE IF NOT EXISTS disciplina_docentes (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    turma_id INT NULL,
     codigo_disciplina VARCHAR(50) NOT NULL,
     disciplina_nome VARCHAR(255) NULL,
     curso_nome VARCHAR(255) NULL,
@@ -531,10 +534,11 @@ CREATE TABLE IF NOT EXISTS disciplina_docentes (
     docente_cpf VARCHAR(14) NULL,
     user_id INT NULL,
     periodo_letivo VARCHAR(10) NULL,
-    UNIQUE KEY uq_disciplina_docente (
-        codigo_disciplina, curso_nome, id_turma_sigaa, docente_nome, periodo_letivo
+    UNIQUE KEY uq_disciplina_docente_turma (
+        turma_id, codigo_disciplina, id_turma_sigaa, docente_nome, periodo_letivo
     ),
     INDEX idx_codigo_turma (codigo_disciplina, id_turma_sigaa),
+    INDEX idx_turma_id (turma_id),
     INDEX idx_user_id (user_id),
     INDEX idx_periodo_letivo (periodo_letivo),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL

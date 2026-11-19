@@ -66,6 +66,40 @@ class DisciplinaDocente {
     }
 
     /**
+     * Docentes importados para uma turma EduCuidar.
+     * @return list<array>
+     */
+    public function porTurmaEducuidar($turma_id) {
+        $this->garantirSchema();
+        $this->garantirColunaTurmaId();
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE turma_id = :turma_id
+             ORDER BY codigo_disciplina ASC, docente_nome ASC"
+        );
+        $stmt->bindValue(':turma_id', (int) $turma_id, PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
+
+    private function garantirColunaTurmaId() {
+        try {
+            $stmt = $this->conn->prepare(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                   AND TABLE_NAME = :tabela
+                   AND COLUMN_NAME = 'turma_id'"
+            );
+            $stmt->execute([':tabela' => $this->table]);
+            if ((int) $stmt->fetchColumn() === 0) {
+                $this->conn->exec("ALTER TABLE {$this->table} ADD COLUMN turma_id INT NULL");
+            }
+        } catch (Throwable $e) {
+            // ignore
+        }
+    }
+
+    /**
      * Docentes das turmas SIGAA informadas.
      * @param list<array{codigo_disciplina:string,id_turma_sigaa:int}> $turmas
      * @return list<array>
