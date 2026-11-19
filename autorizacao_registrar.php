@@ -110,8 +110,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
         );
         if ($novo_id) {
             $msg = 'Autorização registrada.';
-            if (!empty($professor_ids)) {
+            // Saída: une docentes da aula (grade) com a seleção manual; outros tipos: só seleção.
+            if ($tipo === AutorizacaoResponsavel::TIPO_SAIDA) {
+                $stats = $autorizacao->notificarDocentesDaAulaSeSaida($novo_id, $professor_ids);
+            } elseif (!empty($professor_ids)) {
                 $stats = $autorizacao->enviarEmailProfessores($novo_id, $professor_ids);
+            } else {
+                $stats = null;
+            }
+            if (is_array($stats)) {
                 if ($stats['enviados'] > 0 && $stats['falhas'] === 0) {
                     $msg .= ' E-mail enviado a ' . (int) $stats['enviados'] . ' professor(es).';
                 } elseif ($stats['enviados'] > 0) {
@@ -120,10 +127,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'criar
                     if (!empty($stats['mensagens'])) {
                         $_SESSION['error'] = implode(' ', array_slice($stats['mensagens'], -3));
                     }
-                } else {
-                    $_SESSION['error'] = !empty($stats['mensagens'])
-                        ? implode(' ', $stats['mensagens'])
-                        : 'Autorização salva, mas nenhum e-mail foi enviado aos professores.';
+                } elseif (!empty($professor_ids) || ($tipo === AutorizacaoResponsavel::TIPO_SAIDA)) {
+                    // Seleção manual ou saída sem docentes resolvidos/com falha de SMTP
+                    if (!empty($stats['mensagens'])) {
+                        $_SESSION['error'] = implode(' ', $stats['mensagens']);
+                    } elseif (!empty($professor_ids)) {
+                        $_SESSION['error'] = 'Autorização salva, mas nenhum e-mail foi enviado aos professores.';
+                    }
                 }
             }
             $_SESSION['success'] = $msg;
@@ -253,7 +263,9 @@ require_once 'includes/header.php';
                         <?php endforeach; ?>
                     </div>
                     <div class="form-text">
-                        Opcional. Se marcar alguém, o e-mail é enviado imediatamente ao salvar.
+                        Em saída fora do horário, os docentes da aula naquele dia/horário
+                        (grade SIGAA) são avisados automaticamente; use a lista para complementar.
+                        Nos demais tipos, o e-mail vai só a quem você marcar.
                     </div>
                     <?php endif; ?>
                 </div>

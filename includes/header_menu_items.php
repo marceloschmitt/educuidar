@@ -134,7 +134,7 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
         </a>
     </li>
     <?php
-    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'ldap_config.php', 'email_config.php'];
+    $paginas_config = ['configuracoes.php', 'api_sigaa_config.php', 'horarios_periodos.php', 'ldap_config.php', 'email_config.php'];
     $menu_config_aberto = in_array($current_page, $paginas_config, true);
     if (!isset($menu_config_uid)) {
         $menu_config_uid = 0;

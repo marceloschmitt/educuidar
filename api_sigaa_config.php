@@ -85,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'impor
             fclose($pipes[2]);
             $codigo = proc_close($processo);
             if ($codigo === 0) {
-                $success = 'Grade de aulas atualizada.';
+                $success = 'Grade de aulas e docentes atualizados.';
                 if ($saida !== '') {
                     $success .= ' ' . preg_replace('/\s+/', ' ', $saida);
                 }
@@ -372,8 +372,10 @@ require_once 'includes/header.php';
             <div class="card-body">
                 <p class="mb-2">
                     Consulta os matriculados no SIGAA (<code>turno_turma</code>), expande os dias de aula
-                    e grava a grade usada nos alertas de “faltou todas as disciplinas do dia”.
-                    Rode apenas quando a grade mudar (início do período ou alteração de horários).
+                    (com turno e números de período) e grava docentes por disciplina.
+                    Usado nos alertas de “faltou todas as disciplinas do dia” e no aviso aos
+                    professores na autorização de saída antecipada.
+                    Rode apenas quando a grade mudar (1 a 3 vezes por ano).
                 </p>
                 <?php if ($grade_gerada_em !== '' || $grade_stats): ?>
                 <div class="alert alert-secondary py-2">
@@ -396,12 +398,18 @@ require_once 'includes/header.php';
                     Nenhuma grade gravada ainda. Os alertas de dia completo só funcionam depois da primeira geração.
                 </div>
                 <?php endif; ?>
-                <form method="POST" action="" onsubmit="return confirm('Produzir/atualizar a grade agora? A consulta ao SIGAA pode demorar alguns minutos.');">
-                    <input type="hidden" name="action" value="importar_grade">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-repeat"></i> Produzir / atualizar grade
-                    </button>
-                </form>
+                <div class="d-flex flex-wrap gap-2">
+                    <form method="POST" action="" class="d-inline"
+                          onsubmit="return confirm('Produzir/atualizar a grade e os docentes agora? A consulta ao SIGAA pode demorar alguns minutos.');">
+                        <input type="hidden" name="action" value="importar_grade">
+                        <button type="submit" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-repeat"></i> Produzir / atualizar grade e docentes
+                        </button>
+                    </form>
+                    <a href="horarios_periodos.php" class="btn btn-outline-secondary">
+                        <i class="bi bi-clock"></i> Configurar horários dos períodos
+                    </a>
+                </div>
             </div>
         </div>
     </div>

@@ -65,10 +65,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_error'] = 'Não é permitido registrar autorização com data/horário anteriores ao momento atual.';
         } elseif ($justificativa === '') {
             $_SESSION['flash_error'] = 'Informe a justificativa.';
-        } elseif ($autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa)) {
-            $_SESSION['flash_success'] = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
         } else {
-            $_SESSION['flash_error'] = 'Erro ao salvar a autorização.';
+            $novo_id = $autorizacao->create($responsavel_id, $aluno_id, $tipo, $data, $hora, $justificativa);
+            if ($novo_id) {
+                $msg = 'Autorização registrada. A escola marcará quando a entrada/saída ocorrer.';
+                $stats = $autorizacao->notificarDocentesDaAulaSeSaida($novo_id);
+                if (is_array($stats) && ($stats['enviados'] ?? 0) > 0) {
+                    $msg .= ' Professores da aula avisados por e-mail.';
+                }
+                $_SESSION['flash_success'] = $msg;
+            } else {
+                $_SESSION['flash_error'] = 'Erro ao salvar a autorização.';
+            }
         }
     }
 

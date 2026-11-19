@@ -245,6 +245,43 @@ class AutorizacaoResponsavel {
     }
 
     /**
+     * IDs de users (professores) com aula no horário da autorização de saída.
+     * @return list<int>
+     */
+    public function professorIdsDaAula($aluno_id, $data, $hora) {
+        $disciplina_aula = new DisciplinaAula($this->conn);
+        return $disciplina_aula->professorIdsNaHora((int) $aluno_id, $data, $hora);
+    }
+
+    /**
+     * Para saída fora do horário: resolve docentes da aula e envia e-mail.
+     * @return array{enviados: int, falhas: int, destinatarios: int, mensagens: list<string>}|null
+     *         null se não for saída ou não houver docentes resolvidos
+     */
+    public function notificarDocentesDaAulaSeSaida($autorizacao_id, array $professor_ids_extra = []) {
+        $auth = $this->getById($autorizacao_id);
+        if (!$auth || ($auth['tipo'] ?? '') !== self::TIPO_SAIDA) {
+            return null;
+        }
+        $resolvidos = $this->professorIdsDaAula(
+            (int) $auth['aluno_id'],
+            $auth['data_autorizacao'] ?? '',
+            $auth['hora'] ?? ''
+        );
+        $ids = array_values(array_unique(array_merge(
+            $resolvidos,
+            array_map('intval', $professor_ids_extra)
+        )));
+        $ids = array_values(array_filter($ids, function ($id) {
+            return $id > 0;
+        }));
+        if (empty($ids)) {
+            return null;
+        }
+        return $this->enviarEmailProfessores($autorizacao_id, $ids);
+    }
+
+    /**
      * Envia e-mail imediato aos professores indicados ($professor_ids = IDs de users).
      * @param list<int> $professor_ids
      * @return array{enviados: int, falhas: int, destinatarios: int, mensagens: list<string>}

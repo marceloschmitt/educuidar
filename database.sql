@@ -497,6 +497,8 @@ CREATE TABLE IF NOT EXISTS disciplina_aulas (
     id_turma_sigaa INT NOT NULL DEFAULT 0,
     data_aula DATE NOT NULL,
     periodos INT NOT NULL DEFAULT 1,
+    turno CHAR(1) NULL,
+    periodos_nums VARCHAR(64) NULL,
     periodo_letivo VARCHAR(10) NULL,
     UNIQUE KEY uq_disciplina_aula (
         codigo_disciplina, curso_nome, id_turma_sigaa, data_aula
@@ -504,6 +506,38 @@ CREATE TABLE IF NOT EXISTS disciplina_aulas (
     INDEX idx_data_aula (data_aula),
     INDEX idx_codigo_data (codigo_disciplina, data_aula),
     INDEX idx_periodo_letivo (periodo_letivo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Mapa único do campus: período SIGAA → horário de relógio
+CREATE TABLE IF NOT EXISTS periodos_horario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    turno CHAR(1) NOT NULL,
+    periodo TINYINT UNSIGNED NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fim TIME NOT NULL,
+    UNIQUE KEY uq_turno_periodo (turno, periodo),
+    INDEX idx_turno (turno)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Docentes por disciplina/turma SIGAA
+CREATE TABLE IF NOT EXISTS disciplina_docentes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    codigo_disciplina VARCHAR(50) NOT NULL,
+    disciplina_nome VARCHAR(255) NULL,
+    curso_nome VARCHAR(255) NULL,
+    id_turma_sigaa INT NOT NULL DEFAULT 0,
+    docente_nome VARCHAR(255) NOT NULL,
+    docente_email VARCHAR(255) NULL,
+    docente_cpf VARCHAR(14) NULL,
+    user_id INT NULL,
+    periodo_letivo VARCHAR(10) NULL,
+    UNIQUE KEY uq_disciplina_docente (
+        codigo_disciplina, curso_nome, id_turma_sigaa, docente_nome, periodo_letivo
+    ),
+    INDEX idx_codigo_turma (codigo_disciplina, id_turma_sigaa),
+    INDEX idx_user_id (user_id),
+    INDEX idx_periodo_letivo (periodo_letivo),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Registros feitos direto no prontuário de um tipo de usuário, sem criar evento

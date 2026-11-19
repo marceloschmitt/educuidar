@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS disciplina_aulas (
     id_turma_sigaa INT NOT NULL DEFAULT 0,
     data_aula DATE NOT NULL,
     periodos INT NOT NULL DEFAULT 1,
+    turno CHAR(1) NULL,
+    periodos_nums VARCHAR(64) NULL,
     periodo_letivo VARCHAR(10) NULL,
     UNIQUE KEY uq_disciplina_aula (
         codigo_disciplina, curso_nome, id_turma_sigaa, data_aula
