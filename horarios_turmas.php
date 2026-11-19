@@ -15,7 +15,7 @@ if (!$user->isLoggedIn() || !$user->isAdmin()) {
 $disciplina_aula->garantirSchema();
 $periodo_horario->garantirSchema();
 
-$turmas_sigaa = $disciplina_aula->listarTurmasSigaa();
+$cursos_grade = $disciplina_aula->listarCursosGrade();
 $mapa = $periodo_horario->getAll();
 $mapa_por_turno = [];
 foreach ($mapa as $linha) {
@@ -28,26 +28,23 @@ foreach ($mapa as $linha) {
 }
 
 $curso_sel = isset($_GET['curso']) ? (string) $_GET['curso'] : '';
-$id_turma_sel = isset($_GET['id_turma']) ? (int) $_GET['id_turma'] : -1;
-
-if ($curso_sel === '' && $id_turma_sel < 0 && !empty($turmas_sigaa)) {
-    $curso_sel = $turmas_sigaa[0]['curso_nome'];
-    $id_turma_sel = (int) $turmas_sigaa[0]['id_turma_sigaa'];
+if ($curso_sel === '' && !empty($cursos_grade)) {
+    $curso_sel = $cursos_grade[0]['curso_nome'];
 }
 
-$turma_ok = false;
-foreach ($turmas_sigaa as $t) {
-    if ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel) {
-        $turma_ok = true;
+$curso_ok = false;
+foreach ($cursos_grade as $c) {
+    if ($c['curso_nome'] === $curso_sel) {
+        $curso_ok = true;
         break;
     }
 }
 
-$grade = $turma_ok
-    ? $disciplina_aula->gradeSemanalTurma($curso_sel, $id_turma_sel)
-    : ['dias' => [], 'turnos' => []];
+$grade = $curso_ok
+    ? $disciplina_aula->gradeSemanalCurso($curso_sel)
+    : ['linhas' => [], 'celulas' => []];
 
-$dias_labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+$dias_labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
 $turnos_labels = PeriodoHorario::TURNOS;
 
 $page_title = 'Horários das turmas';
@@ -64,7 +61,7 @@ function fmt_hora($valor) {
 
 <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Horários das turmas</h5>
+        <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Horários por curso</h5>
         <div class="d-flex flex-wrap gap-2">
             <a href="horarios_periodos.php" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock"></i> Períodos
@@ -75,7 +72,7 @@ function fmt_hora($valor) {
         </div>
     </div>
     <div class="card-body">
-        <?php if (empty($turmas_sigaa)): ?>
+        <?php if (empty($cursos_grade)): ?>
         <div class="alert alert-warning mb-0">
             Nenhuma grade importada. Em
             <a href="api_sigaa_config.php">API SIGAA</a>, use
@@ -84,21 +81,16 @@ function fmt_hora($valor) {
         <?php else: ?>
         <form method="GET" action="" class="row g-2 align-items-end mb-3">
             <div class="col-md-8">
-                <label for="turma" class="form-label">Turma (SIGAA)</label>
-                <select class="form-select" id="turma" name="sel" onchange="aplicarTurma(this)">
-                    <?php foreach ($turmas_sigaa as $t): ?>
-                    <?php
-                    $val = rawurlencode($t['curso_nome']) . '|' . (int) $t['id_turma_sigaa'];
-                    $sel = ($t['curso_nome'] === $curso_sel && (int) $t['id_turma_sigaa'] === $id_turma_sel);
-                    ?>
-                    <option value="<?php echo htmlspecialchars($val); ?>" <?php echo $sel ? 'selected' : ''; ?>>
-                        <?php echo htmlspecialchars($t['label']); ?>
-                        (<?php echo (int) $t['disciplinas']; ?> disc.)
+                <label for="curso" class="form-label">Curso</label>
+                <select class="form-select" id="curso" name="curso">
+                    <?php foreach ($cursos_grade as $c): ?>
+                    <option value="<?php echo htmlspecialchars($c['curso_nome']); ?>"
+                        <?php echo $c['curso_nome'] === $curso_sel ? 'selected' : ''; ?>>
+                        <?php echo htmlspecialchars($c['label']); ?>
+                        (<?php echo (int) $c['disciplinas']; ?> disciplina<?php echo (int) $c['disciplinas'] === 1 ? '' : 's'; ?>)
                     </option>
                     <?php endforeach; ?>
                 </select>
-                <input type="hidden" name="curso" id="campo_curso" value="<?php echo htmlspecialchars($curso_sel); ?>">
-                <input type="hidden" name="id_turma" id="campo_id_turma" value="<?php echo (int) $id_turma_sel; ?>">
             </div>
             <div class="col-md-4">
                 <button type="submit" class="btn btn-primary w-100">Exibir</button>
@@ -109,62 +101,50 @@ function fmt_hora($valor) {
         <div class="alert alert-info">
             Configure os
             <a href="horarios_periodos.php">horários dos períodos</a>
-            para ver o relógio em cada linha. A grade semanal de disciplinas já aparece abaixo.
+            para ver o relógio em cada linha.
         </div>
         <?php endif; ?>
 
-        <?php if (empty($grade['turnos'])): ?>
-        <p class="text-muted mb-0">Nenhum horário encontrado para esta turma (faltam turno/períodos na grade).</p>
+        <?php if (empty($grade['linhas'])): ?>
+        <p class="text-muted mb-0">Nenhum horário encontrado para este curso (faltam turno/períodos na grade).</p>
         <?php else: ?>
-        <?php foreach ($grade['turnos'] as $turno): ?>
-        <?php
-        $periodos_turno = array_keys($mapa_por_turno[$turno] ?? []);
-        // também períodos que aparecem na grade mesmo sem mapa
-        foreach ($grade['dias'] as $slots_turno) {
-            if (empty($slots_turno[$turno])) {
-                continue;
-            }
-            foreach (array_keys($slots_turno[$turno]) as $p) {
-                $periodos_turno[] = (int) $p;
-            }
-        }
-        $periodos_turno = array_values(array_unique($periodos_turno));
-        sort($periodos_turno, SORT_NUMERIC);
-        if (empty($periodos_turno)) {
-            continue;
-        }
-        ?>
-        <h6 class="mt-3 mb-2">
-            <?php echo htmlspecialchars($turnos_labels[$turno] ?? $turno); ?>
-            <span class="text-muted">(<?php echo htmlspecialchars($turno); ?>)</span>
-        </h6>
-        <div class="table-responsive mb-4">
+        <div class="table-responsive">
             <table class="table table-bordered table-sm align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th style="min-width: 7rem;">Período</th>
+                        <th style="min-width: 8rem;">Horário</th>
                         <?php foreach ($dias_labels as $dl): ?>
-                        <th class="text-center" style="min-width: 8rem;"><?php echo $dl; ?></th>
+                        <th class="text-center" style="min-width: 9rem;"><?php echo $dl; ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ($periodos_turno as $periodo): ?>
+                    <?php foreach ($grade['linhas'] as $linha): ?>
                     <?php
+                    $turno = $linha['turno'];
+                    $periodo = (int) $linha['periodo'];
                     $faixa = $mapa_por_turno[$turno][$periodo] ?? null;
                     $hora_label = $faixa
                         ? fmt_hora($faixa['hora_inicio']) . '–' . fmt_hora($faixa['hora_fim'])
                         : '';
+                    $turno_nome = $turnos_labels[$turno] ?? $turno;
                     ?>
                     <tr>
                         <td>
-                            <strong><?php echo (int) $periodo; ?>º</strong>
                             <?php if ($hora_label !== ''): ?>
-                            <div class="small text-muted"><?php echo htmlspecialchars($hora_label); ?></div>
+                            <strong><?php echo htmlspecialchars($hora_label); ?></strong>
+                            <div class="small text-muted">
+                                <?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º período
+                            </div>
+                            <?php else: ?>
+                            <strong><?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º</strong>
                             <?php endif; ?>
                         </td>
-                        <?php for ($wd = 0; $wd < 6; $wd++): ?>
-                        <?php $celulas = $grade['dias'][$wd][$turno][$periodo] ?? []; ?>
+                        <?php for ($wd = 0; $wd < 5; $wd++): ?>
+                        <?php
+                        $chave = $wd . '|' . $turno . '|' . $periodo;
+                        $celulas = $grade['celulas'][$chave] ?? [];
+                        ?>
                         <td>
                             <?php if (empty($celulas)): ?>
                             <span class="text-muted">—</span>
@@ -195,21 +175,9 @@ function fmt_hora($valor) {
                 </tbody>
             </table>
         </div>
-        <?php endforeach; ?>
         <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>
-
-<script>
-function aplicarTurma(sel) {
-    var raw = sel.value || '';
-    var parts = raw.split('|');
-    var curso = parts.length ? decodeURIComponent(parts[0]) : '';
-    var id = parts.length > 1 ? parts[1] : '0';
-    document.getElementById('campo_curso').value = curso;
-    document.getElementById('campo_id_turma').value = id;
-}
-</script>
 
 <?php require_once 'includes/footer.php'; ?>

@@ -50,6 +50,22 @@ class DisciplinaDocente {
     }
 
     /**
+     * Docentes de todas as turmas SIGAA de um curso.
+     * @return list<array>
+     */
+    public function porCurso($curso_nome) {
+        $this->garantirSchema();
+        $stmt = $this->conn->prepare(
+            "SELECT * FROM {$this->table}
+             WHERE curso_nome = :curso
+             ORDER BY codigo_disciplina ASC, docente_nome ASC"
+        );
+        $stmt->bindValue(':curso', (string) $curso_nome);
+        $stmt->execute();
+        return $stmt->fetchAll() ?: [];
+    }
+
+    /**
      * Docentes das turmas SIGAA informadas.
      * @param list<array{codigo_disciplina:string,id_turma_sigaa:int}> $turmas
      * @return list<array>
