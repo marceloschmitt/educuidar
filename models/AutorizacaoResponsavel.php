@@ -245,7 +245,8 @@ class AutorizacaoResponsavel {
     }
 
     /**
-     * IDs de users (professores) com aula no horário da autorização de saída.
+     * IDs de users (professores) com aula no horário da autorização de saída
+     * (disciplina_aulas na data + periodos_horario + disciplina_docentes).
      * @return list<int>
      */
     public function professorIdsDaAula($aluno_id, $data, $hora) {

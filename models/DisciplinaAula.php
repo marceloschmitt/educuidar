@@ -159,7 +159,7 @@ class DisciplinaAula {
     }
 
     /**
-     * IDs de users (professores) que dão aula ao aluno na data/hora.
+     * IDs de users (professores) que dão aula ao aluno na data/hora da autorização.
      * @return list<int>
      */
     public function professorIdsNaHora($aluno_id, $data_aula, $hora) {
@@ -195,18 +195,16 @@ class DisciplinaAula {
     }
 
     /**
-     * Janela de datas para a grade “atual”: semana corrente + próxima (seg–dom).
+     * Janela de datas para a grade “atual”: 30 dias atrás até 14 dias à frente.
      * Se não houver aulas nessa janela, usa a semana da data de aula mais recente.
-     * Evita misturar horários antigos após mudança de grade no SIGAA.
+     * Evita misturar horários muito antigos após mudança de grade no SIGAA.
      *
      * @return array{0:string,1:string}|null [inicio, fim] Y-m-d
      */
     private function janelaDatasGradeAtual($turma_id) {
         $hoje = date('Y-m-d');
-        $w = (int) date('w'); // 0=dom
-        $dias_desde_seg = ($w + 6) % 7;
-        $seg_atual = date('Y-m-d', strtotime($hoje . ' -' . $dias_desde_seg . ' days'));
-        $fim_janela = date('Y-m-d', strtotime($seg_atual . ' +13 days'));
+        $ini_janela = date('Y-m-d', strtotime($hoje . ' -30 days'));
+        $fim_janela = date('Y-m-d', strtotime($hoje . ' +14 days'));
 
         $stmt = $this->conn->prepare(
             "SELECT COUNT(*) FROM {$this->table}
@@ -215,14 +213,14 @@ class DisciplinaAula {
         );
         $stmt->execute([
             ':turma_id' => (int) $turma_id,
-            ':ini' => $seg_atual,
+            ':ini' => $ini_janela,
             ':fim' => $fim_janela,
         ]);
         if ((int) $stmt->fetchColumn() > 0) {
-            return [$seg_atual, $fim_janela];
+            return [$ini_janela, $fim_janela];
         }
 
-        // Fallback: semana da última aula gravada (ainda no futuro ou passada)
+        // Fallback: semana da última aula gravada
         $stmt = $this->conn->prepare(
             "SELECT MAX(data_aula) AS ultima
              FROM {$this->table}
