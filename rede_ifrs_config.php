@@ -91,8 +91,9 @@ require_once 'includes/header.php';
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
                     Defina os intervalos (CIDR) da rede local do campus.
-                    Na lista de autorizações, pedidos cujo IP de origem estiver nesses intervalos
-                    aparecem com fundo destacado.
+                    Na lista de autorizações, pedidos feitos pelo <strong>responsável</strong>
+                    cujo IP estiver nesses intervalos aparecem com fundo vermelho
+                    (registros da escola não são destacados).
                 </div>
 
                 <form method="POST" action="" autocomplete="off">
