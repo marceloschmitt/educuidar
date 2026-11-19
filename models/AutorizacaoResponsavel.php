@@ -389,7 +389,7 @@ class AutorizacaoResponsavel {
         return $stats;
     }
 
-    /** URL absoluta da tela Autorizações → Entrada e saída. */
+    /** URL absoluta da tela escolar Autorizações → Entrada e saída (não o portal do responsável). */
     public static function urlAutorizacoesEntradaSaida() {
         $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ((int) ($_SERVER['SERVER_PORT'] ?? 0) === 443);
@@ -397,6 +397,14 @@ class AutorizacaoResponsavel {
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $base = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
         $base = rtrim($base, '/');
+        // E-mail ao professor: sempre a área da escola, mesmo se o disparo veio de /responsaveis/
+        if (basename($base) === 'responsaveis') {
+            $base = str_replace('\\', '/', dirname($base));
+            $base = rtrim($base, '/');
+        }
+        if ($base === '' || $base === '/' || $base === '.') {
+            return $scheme . '://' . $host . '/autorizacoes.php';
+        }
         return $scheme . '://' . $host . $base . '/autorizacoes.php';
     }
 
