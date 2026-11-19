@@ -41,6 +41,11 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
             <i class="bi bi-people"></i> Evento de grupo
         </a>
     </li>
+    <li class="nav-item">
+        <a class="nav-link <?php echo $current_page === 'horarios_turmas.php' ? 'active' : ''; ?>" href="horarios_turmas.php">
+            <i class="bi bi-calendar-week"></i> Horários
+        </a>
+    </li>
     <?php if ($pode_ver_alertas && !$is_nivel2): ?>
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'alertas.php' ? 'active' : ''; ?>" href="alertas.php">
@@ -121,11 +126,6 @@ $can_view_alunos = $is_admin || $is_nivel0 || $is_nivel1 || $is_nivel2
     <li class="nav-item">
         <a class="nav-link <?php echo $current_page === 'turmas.php' ? 'active' : ''; ?>" href="turmas.php">
             <i class="bi bi-collection"></i> Turmas
-        </a>
-    </li>
-    <li class="nav-item">
-        <a class="nav-link <?php echo $current_page === 'horarios_turmas.php' ? 'active' : ''; ?>" href="horarios_turmas.php">
-            <i class="bi bi-calendar-week"></i> Horários
         </a>
     </li>
     <li class="nav-item">

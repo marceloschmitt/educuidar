@@ -9,7 +9,7 @@ $periodo_horario = new PeriodoHorario($db);
 $turma_model = new Turma($db);
 $configuracao = new Configuracao($db);
 
-if (!$user->isLoggedIn() || !$user->isAdmin()) {
+if (!$user->isLoggedIn()) {
     header('Location: index.php');
     exit;
 }
@@ -72,6 +72,7 @@ function fmt_hora($valor) {
 <div class="card mb-3">
     <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Horários das turmas</h5>
+        <?php if ($user->isAdmin()): ?>
         <div class="d-flex flex-wrap gap-2">
             <a href="horarios_periodos.php" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-clock"></i> Períodos
@@ -80,6 +81,7 @@ function fmt_hora($valor) {
                 Grade SIGAA
             </a>
         </div>
+        <?php endif; ?>
     </div>
     <div class="card-body">
         <?php if (empty($turmas)): ?>
@@ -87,27 +89,22 @@ function fmt_hora($valor) {
             Nenhuma turma cadastrada. Cadastre em <a href="turmas.php">Turmas</a>.
         </div>
         <?php else: ?>
-        <form method="GET" action="" class="row g-2 align-items-end mb-3">
-            <div class="col-md-8">
-                <label for="turma_id" class="form-label">Turma (EduCuidar)</label>
-                <select class="form-select" id="turma_id" name="turma_id">
-                    <?php foreach ($turmas as $t): ?>
-                    <option value="<?php echo (int) $t['id']; ?>"
-                        <?php echo (int) $t['id'] === $turma_sel ? 'selected' : ''; ?>>
-                        <?php
-                        echo htmlspecialchars(
-                            ($t['curso_nome'] ?? '') . ' — '
-                            . (int) ($t['ano_curso'] ?? 0) . 'º Ano ('
-                            . (int) ($t['ano_civil'] ?? 0) . ')'
-                        );
-                        ?>
-                    </option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">Exibir</button>
-            </div>
+        <form method="GET" action="" class="mb-3" id="formTurmaHorario">
+            <label for="turma_id" class="form-label">Turma (EduCuidar)</label>
+            <select class="form-select" id="turma_id" name="turma_id" onchange="this.form.submit()">
+                <?php foreach ($turmas as $t): ?>
+                <option value="<?php echo (int) $t['id']; ?>"
+                    <?php echo (int) $t['id'] === $turma_sel ? 'selected' : ''; ?>>
+                    <?php
+                    echo htmlspecialchars(
+                        ($t['curso_nome'] ?? '') . ' — '
+                        . (int) ($t['ano_curso'] ?? 0) . 'º Ano ('
+                        . (int) ($t['ano_civil'] ?? 0) . ')'
+                    );
+                    ?>
+                </option>
+                <?php endforeach; ?>
+            </select>
         </form>
 
         <?php if ($turma_label !== ''): ?>
@@ -119,7 +116,7 @@ function fmt_hora($valor) {
         </p>
         <?php endif; ?>
 
-        <?php if (empty($mapa)): ?>
+        <?php if (empty($mapa) && $user->isAdmin()): ?>
         <div class="alert alert-info">
             Configure os
             <a href="horarios_periodos.php">horários dos períodos</a>
@@ -132,13 +129,22 @@ function fmt_hora($valor) {
             <?php echo htmlspecialchars($grade['motivo_vazio'] ?: 'Nenhum horário encontrado.'); ?>
         </div>
         <?php else: ?>
+        <style>
+            .grade-turma-table { font-size: 0.72rem; }
+            .grade-turma-table th,
+            .grade-turma-table td { padding: 0.25rem 0.35rem; vertical-align: top; }
+            .grade-turma-table .hora-principal { font-weight: 600; font-size: 0.78rem; }
+            .grade-turma-table .disc-nome { font-weight: 600; line-height: 1.2; }
+            .grade-turma-table .disc-meta { color: #6c757d; font-size: 0.65rem; line-height: 1.2; }
+            .grade-turma-table .disc-docente { font-size: 0.68rem; line-height: 1.2; }
+        </style>
         <div class="table-responsive">
-            <table class="table table-bordered table-sm align-middle mb-0">
+            <table class="table table-bordered table-sm align-middle mb-0 grade-turma-table">
                 <thead class="table-light">
                     <tr>
-                        <th style="min-width: 8rem;">Horário</th>
+                        <th style="min-width: 5.5rem;">Horário</th>
                         <?php foreach ($dias_labels as $dl): ?>
-                        <th class="text-center" style="min-width: 9rem;"><?php echo $dl; ?></th>
+                        <th class="text-center" style="min-width: 6.5rem;"><?php echo $dl; ?></th>
                         <?php endforeach; ?>
                     </tr>
                 </thead>
@@ -156,12 +162,12 @@ function fmt_hora($valor) {
                     <tr>
                         <td>
                             <?php if ($hora_label !== ''): ?>
-                            <strong><?php echo htmlspecialchars($hora_label); ?></strong>
-                            <div class="small text-muted">
-                                <?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º período
+                            <div class="hora-principal"><?php echo htmlspecialchars($hora_label); ?></div>
+                            <div class="disc-meta">
+                                <?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º
                             </div>
                             <?php else: ?>
-                            <strong><?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º</strong>
+                            <div class="hora-principal"><?php echo htmlspecialchars($turno_nome); ?> · <?php echo $periodo; ?>º</div>
                             <?php endif; ?>
                         </td>
                         <?php for ($wd = 0; $wd < 5; $wd++): ?>
@@ -175,19 +181,14 @@ function fmt_hora($valor) {
                             <?php else: ?>
                                 <?php foreach ($celulas as $c): ?>
                                 <div class="mb-1">
-                                    <div class="fw-semibold small">
-                                        <?php echo htmlspecialchars($c['disciplina_nome']); ?>
-                                    </div>
-                                    <div class="text-muted" style="font-size: 0.75rem;">
-                                        <?php echo htmlspecialchars($c['codigo_disciplina']); ?>
-                                    </div>
+                                    <div class="disc-nome"><?php echo htmlspecialchars($c['disciplina_nome']); ?></div>
+                                    <div class="disc-meta"><?php echo htmlspecialchars($c['codigo_disciplina']); ?></div>
                                     <?php if (!empty($c['docentes'])): ?>
-                                    <div class="small">
-                                        <i class="bi bi-person"></i>
+                                    <div class="disc-docente">
                                         <?php echo htmlspecialchars(implode(', ', $c['docentes'])); ?>
                                     </div>
                                     <?php else: ?>
-                                    <div class="small text-muted">Sem docente</div>
+                                    <div class="disc-meta">Sem docente</div>
                                     <?php endif; ?>
                                 </div>
                                 <?php endforeach; ?>
