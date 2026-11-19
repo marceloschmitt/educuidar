@@ -2,12 +2,13 @@
 """Consulta matriculados SIGAA e grava a grade de aulas + docentes no EduCuidar.
 
 Para cada turma cadastrada no EduCuidar, usa **um aluno** representante
-(com número de matrícula) e importa as disciplinas/horários desse aluno.
-A mesma coleta alimenta a tela de horários e os alertas.
+(com número de matrícula) e consulta a API **por matrícula**
+(`GET /matriculados?matricula=…&periodo_letivo=…`). A mesma coleta alimenta
+a tela de horários e os alertas.
 
 Uso:
     python3 importar_grade.py
-    python3 importar_grade.py --unidade 31
+    python3 importar_grade.py --salvar-json
     python3 importar_grade.py --arquivo resposta_matriculas_grade.json
 """
 
@@ -17,6 +18,7 @@ import argparse
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -41,37 +43,21 @@ from api_auth import (
 from paths import DIR_PYTHON, garantir_diretorios
 from turno_turma import extrair_datas_detalhadas
 
-TIMEOUT_SEGUNDOS = 300
+TIMEOUT_SEGUNDOS = 120
+TENTATIVAS = 3
+CONCORRENCIA = 10
 CHAVE_GRADE_EM = "api_sigaa_grade_gerada_em"
 CHAVE_GRADE_RESUMO = "api_sigaa_grade_resumo"
 JSON_GRADE = DIR_PYTHON / "resposta_matriculas_grade.json"
 
 
-def montar_url(base_url: str, unidade: str, periodo_letivo: str) -> str:
+def montar_url_matricula(base_url: str, matricula: str, periodo_letivo: str) -> str:
     params = {
-        "unidade": unidade,
+        "matricula": matricula,
         "matriculado": "sim",
         "periodo_letivo": periodo_letivo,
     }
     return f"{base_url.rstrip('/')}/api/v1/sig/sigaa/matriculados?{urlencode(params)}"
-
-
-def consultar_matriculados(unidade: str, periodo_letivo: str) -> Any:
-    env = carregar_config_api()
-    base_url = env.get("API_BASE_URL") or DEFAULTS["api_sigaa_base_url"]
-    token = obter_access_token(env)
-    url = montar_url(base_url, unidade, periodo_letivo)
-    request = Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {token}",
-            "User-Agent": USER_AGENT,
-        },
-        method="GET",
-    )
-    with urlopen(request, timeout=TIMEOUT_SEGUNDOS, context=ssl_context(env)) as response:
-        return json.loads(response.read().decode("utf-8"))
 
 
 def registros_da_resposta(dados: Any) -> list[dict[str, Any]]:
@@ -82,6 +68,202 @@ def registros_da_resposta(dados: Any) -> list[dict[str, Any]]:
     if isinstance(dados, list):
         return [r for r in dados if isinstance(r, dict)]
     raise ValueError("Formato inesperado da resposta de matriculados.")
+
+
+def _matricula_registro(registro: dict[str, Any]) -> str:
+    for chave in ("Matricula", "matricula", "numero_matricula", "mat"):
+        valor = registro.get(chave)
+        if valor is None:
+            continue
+        texto = str(valor).strip()
+        if texto:
+            return texto
+    return ""
+
+
+def _tem_turno_turma(registro: dict[str, Any]) -> bool:
+    disciplinas = registro.get("disciplinas")
+    if not isinstance(disciplinas, list):
+        return False
+    return any(
+        isinstance(d, dict) and str(d.get("turno_turma") or "").strip()
+        for d in disciplinas
+    )
+
+
+def registro_da_consulta(
+    dados: Any, matricula_esperada: str = ""
+) -> dict[str, Any] | None:
+    """Extrai o registro do aluno (com disciplinas) de uma resposta por matrícula."""
+    registros = registros_da_resposta(dados)
+    if not registros:
+        return None
+
+    mat_esp = str(matricula_esperada or "").strip()
+    mat_esp_dig = re.sub(r"\D", "", mat_esp)
+
+    candidatos = [
+        r
+        for r in registros
+        if isinstance(r.get("disciplinas"), list) and r.get("disciplinas")
+    ]
+    if not candidatos:
+        candidatos = list(registros)
+
+    if mat_esp:
+        for registro in candidatos:
+            mat = _matricula_registro(registro)
+            if mat == mat_esp or (
+                mat_esp_dig and re.sub(r"\D", "", mat) == mat_esp_dig
+            ):
+                return registro
+        # Resposta costuma vir indexada pela matrícula
+        if isinstance(dados, dict):
+            direto = dados.get(mat_esp) or (
+                dados.get(mat_esp_dig) if mat_esp_dig else None
+            )
+            if isinstance(direto, dict):
+                return direto
+
+    # Preferir quem tem turno_turma
+    com_turno = [r for r in candidatos if _tem_turno_turma(r)]
+    if len(com_turno) == 1:
+        return com_turno[0]
+    if len(candidatos) == 1:
+        return candidatos[0]
+    if com_turno:
+        return com_turno[0]
+    return candidatos[0] if candidatos else None
+
+
+def indice_por_matricula(registros: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """Índice para JSON antigo (dump do campus)."""
+    indice: dict[str, dict[str, Any]] = {}
+    for registro in registros:
+        disciplinas = registro.get("disciplinas")
+        if not isinstance(disciplinas, list) or not disciplinas:
+            continue
+        mat = _matricula_registro(registro)
+        if mat == "":
+            continue
+        tem_turno = _tem_turno_turma(registro)
+        atual = indice.get(mat)
+        if atual is None or (tem_turno and not _tem_turno_turma(atual)):
+            indice[mat] = registro
+    return indice
+
+
+def consultar_uma_matricula(
+    *,
+    env: dict[str, str],
+    token: str,
+    base_url: str,
+    matricula: str,
+    periodo_letivo: str,
+) -> dict[str, Any]:
+    url = montar_url_matricula(base_url, matricula, periodo_letivo)
+    ultimo_erro = ""
+    for tentativa in range(1, TENTATIVAS + 1):
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
+                "User-Agent": USER_AGENT,
+            },
+            method="GET",
+        )
+        try:
+            with urlopen(
+                request, timeout=TIMEOUT_SEGUNDOS, context=ssl_context(env)
+            ) as response:
+                body = response.read().decode("utf-8")
+                status = response.getcode()
+            if status == 200:
+                dados = json.loads(body)
+                registro = registro_da_consulta(dados, matricula)
+                return {
+                    "status": 200,
+                    "tentativas": tentativa,
+                    "dados": dados,
+                    "registro": registro,
+                }
+            ultimo_erro = body
+            if status < 500:
+                return {
+                    "status": status,
+                    "tentativas": tentativa,
+                    "erro": body,
+                    "registro": None,
+                }
+        except HTTPError as error:
+            corpo = error.read().decode("utf-8", errors="replace")
+            ultimo_erro = corpo
+            if error.code < 500:
+                return {
+                    "status": error.code,
+                    "tentativas": tentativa,
+                    "erro": corpo,
+                    "registro": None,
+                }
+        except URLError as error:
+            ultimo_erro = str(error.reason)
+        except TimeoutError:
+            ultimo_erro = "tempo limite excedido"
+        except json.JSONDecodeError as error:
+            return {
+                "status": 200,
+                "tentativas": tentativa,
+                "erro": f"JSON inválido: {error}",
+                "registro": None,
+            }
+    return {
+        "status": None,
+        "tentativas": TENTATIVAS,
+        "erro": ultimo_erro or "falha desconhecida",
+        "registro": None,
+    }
+
+
+def consultar_representantes(
+    env: dict[str, str],
+    representantes: list[dict[str, Any]],
+    periodo_letivo: str,
+    concorrencia: int = CONCORRENCIA,
+) -> list[dict[str, Any]]:
+    base_url = env.get("API_BASE_URL") or DEFAULTS["api_sigaa_base_url"]
+    token = obter_access_token(env)
+    resultados: list[dict[str, Any] | None] = [None] * len(representantes)
+    workers = max(1, int(concorrencia or CONCORRENCIA))
+
+    def trabalho(idx: int, rep: dict[str, Any]) -> tuple[int, dict[str, Any]]:
+        mat = str(rep["numero_matricula"]).strip()
+        consulta = consultar_uma_matricula(
+            env=env,
+            token=token,
+            base_url=base_url,
+            matricula=mat,
+            periodo_letivo=periodo_letivo,
+        )
+        return idx, {
+            "turma_id": int(rep["turma_id"]),
+            "curso_nome": rep.get("curso_nome"),
+            "ano_curso": rep.get("ano_curso"),
+            "aluno_id": rep.get("aluno_id"),
+            "aluno_nome": rep.get("aluno_nome"),
+            "matricula": mat,
+            **consulta,
+        }
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [
+            pool.submit(trabalho, i, rep) for i, rep in enumerate(representantes)
+        ]
+        for future in as_completed(futures):
+            idx, item = future.result()
+            resultados[idx] = item
+
+    return [r for r in resultados if r is not None]
 
 
 def _coluna_existe(cur, tabela: str, coluna: str) -> bool:
@@ -134,8 +316,6 @@ def garantir_tabelas(conn) -> None:
                 cur.execute(
                     f"ALTER TABLE disciplina_aulas ADD COLUMN {coluna} {definicao}"
                 )
-        if not _coluna_existe(cur, "disciplina_aulas", "turma_id"):
-            pass  # already added
         try:
             cur.execute(
                 "ALTER TABLE disciplina_aulas ADD INDEX idx_turma_id (turma_id)"
@@ -180,40 +360,6 @@ def garantir_tabelas(conn) -> None:
 
 def _periodos_nums_str(nums: list[int]) -> str:
     return ",".join(str(n) for n in sorted(set(int(x) for x in nums if int(x) > 0)))
-
-
-def _matricula_registro(registro: dict[str, Any]) -> str:
-    for chave in ("Matricula", "matricula", "numero_matricula", "mat"):
-        valor = registro.get(chave)
-        if valor is None:
-            continue
-        texto = str(valor).strip()
-        if texto:
-            return texto
-    return ""
-
-
-def indice_por_matricula(registros: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    indice: dict[str, dict[str, Any]] = {}
-    for registro in registros:
-        disciplinas = registro.get("disciplinas")
-        if not isinstance(disciplinas, list) or not disciplinas:
-            continue
-        mat = _matricula_registro(registro)
-        if mat == "":
-            continue
-        # Prefer records that actually have turno_turma
-        tem_turno = any(
-            isinstance(d, dict) and str(d.get("turno_turma") or "").strip()
-            for d in disciplinas
-        )
-        atual = indice.get(mat)
-        if atual is None or (tem_turno and not any(
-            isinstance(d, dict) and str(d.get("turno_turma") or "").strip()
-            for d in (atual.get("disciplinas") or [])
-        )):
-            indice[mat] = registro
-    return indice
 
 
 def turmas_com_representante(conn, ano_civil: int) -> list[dict[str, Any]]:
@@ -465,11 +611,69 @@ def gravar(
     }
 
 
+def _pares_de_arquivo(
+    dados: Any, representantes: list[dict[str, Any]]
+) -> list[tuple[dict[str, Any], dict[str, Any] | None, str]]:
+    """Retorna lista (rep, registro|None, motivo_falha)."""
+    pares: list[tuple[dict[str, Any], dict[str, Any] | None, str]] = []
+
+    if isinstance(dados, dict) and isinstance(dados.get("consultas"), list):
+        por_turma: dict[int, dict[str, Any]] = {}
+        for item in dados["consultas"]:
+            if not isinstance(item, dict):
+                continue
+            try:
+                tid = int(item.get("turma_id"))
+            except (TypeError, ValueError):
+                continue
+            por_turma[tid] = item
+        for rep in representantes:
+            tid = int(rep["turma_id"])
+            item = por_turma.get(tid)
+            if item is None:
+                pares.append((rep, None, "ausente no JSON"))
+                continue
+            registro = item.get("registro")
+            if not isinstance(registro, dict):
+                registro = registro_da_consulta(
+                    item.get("dados"), str(rep["numero_matricula"]).strip()
+                )
+            if registro is None:
+                pares.append((rep, None, str(item.get("erro") or "sem registro")))
+            else:
+                pares.append((rep, registro, ""))
+        return pares
+
+    # Formato antigo: dump do campus indexado por matrícula
+    registros = registros_da_resposta(dados)
+    por_mat = indice_por_matricula(registros)
+    for rep in representantes:
+        mat = str(rep["numero_matricula"]).strip()
+        registro = por_mat.get(mat)
+        if registro is None:
+            mat_dig = re.sub(r"\D", "", mat)
+            registro = next(
+                (
+                    r
+                    for m, r in por_mat.items()
+                    if re.sub(r"\D", "", m) == mat_dig
+                ),
+                None,
+            )
+        if registro is None:
+            pares.append((rep, None, "sem match no dump"))
+        else:
+            pares.append((rep, registro, ""))
+    return pares
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Importa a grade de aulas e docentes do SIGAA (1 aluno por turma EduCuidar)."
+        description=(
+            "Importa a grade de aulas e docentes do SIGAA "
+            "(1 consulta /matriculados por turma EduCuidar, filtrada por matrícula)."
+        )
     )
-    parser.add_argument("--unidade", default="31", help="Código da unidade (padrão: 31).")
     parser.add_argument(
         "--periodo",
         default="",
@@ -478,12 +682,23 @@ def main() -> int:
     parser.add_argument(
         "--arquivo",
         type=Path,
-        help="Lê matriculados de um JSON em vez de consultar a API.",
+        help="Lê respostas já salvas (formato novo com consultas[] ou dump antigo).",
     )
     parser.add_argument(
         "--salvar-json",
         action="store_true",
-        help=f"Salva a resposta bruta em {JSON_GRADE.name}.",
+        help=f"Salva as respostas por turma em {JSON_GRADE.name}.",
+    )
+    parser.add_argument(
+        "--concorrencia",
+        type=int,
+        default=CONCORRENCIA,
+        help=f"Consultas paralelas (padrão: {CONCORRENCIA}).",
+    )
+    parser.add_argument(
+        "--unidade",
+        default="",
+        help=argparse.SUPPRESS,  # legado; dump por unidade não é mais usado
     )
     args = parser.parse_args()
 
@@ -493,30 +708,10 @@ def main() -> int:
         print("Erro: configure o período letivo em API SIGAA.", file=sys.stderr)
         return 1
 
+    concorrencia = max(1, int(args.concorrencia or CONCORRENCIA))
+
     conn = None
     try:
-        if args.arquivo:
-            dados = json.loads(args.arquivo.read_text(encoding="utf-8"))
-        else:
-            print(f"Consultando matriculados (unidade={args.unidade}, período={periodo})…")
-            dados = consultar_matriculados(args.unidade, periodo)
-            if args.salvar_json:
-                garantir_diretorios()
-                JSON_GRADE.write_text(
-                    json.dumps(dados, ensure_ascii=False, indent=2),
-                    encoding="utf-8",
-                )
-                print(f"JSON salvo em {JSON_GRADE}")
-
-        registros = registros_da_resposta(dados)
-        por_matricula = indice_por_matricula(registros)
-        if not por_matricula:
-            print(
-                "Nenhum registro com matrícula e disciplinas/turno_turma na resposta.",
-                file=sys.stderr,
-            )
-            return 1
-
         conn = pymysql.connect(**carregar_config_mysql())
         garantir_tabelas(conn)
         ano = _ano_corrente(conn)
@@ -528,39 +723,98 @@ def main() -> int:
             )
             return 1
 
+        print(
+            f"Turmas com representante: {len(representantes)} "
+            f"(ano {ano}, período {periodo})"
+        )
+
+        consultas_brutas: list[dict[str, Any]] = []
+        pares: list[tuple[dict[str, Any], dict[str, Any] | None, str]]
+
+        if args.arquivo:
+            dados = json.loads(args.arquivo.read_text(encoding="utf-8"))
+            pares = _pares_de_arquivo(dados, representantes)
+        else:
+            print(
+                f"Consultando SIGAA por matrícula "
+                f"({len(representantes)} turma(s), concorrência={concorrencia})…"
+            )
+            consultas_brutas = consultar_representantes(
+                env, representantes, periodo, concorrencia=concorrencia
+            )
+            pares = []
+            for item in consultas_brutas:
+                rep = {
+                    "turma_id": item["turma_id"],
+                    "curso_nome": item.get("curso_nome"),
+                    "ano_curso": item.get("ano_curso"),
+                    "aluno_id": item.get("aluno_id"),
+                    "aluno_nome": item.get("aluno_nome"),
+                    "numero_matricula": item.get("matricula"),
+                }
+                registro = item.get("registro")
+                if not isinstance(registro, dict):
+                    motivo = str(item.get("erro") or f"HTTP {item.get('status')}")
+                    pares.append((rep, None, motivo))
+                elif not _tem_turno_turma(registro) and not (
+                    isinstance(registro.get("disciplinas"), list)
+                    and registro.get("disciplinas")
+                ):
+                    pares.append((rep, None, "sem disciplinas/turno_turma"))
+                else:
+                    pares.append((rep, registro, ""))
+
+            if args.salvar_json:
+                garantir_diretorios()
+                payload = {
+                    "periodo_letivo": periodo,
+                    "gerado_em": datetime.now().isoformat(timespec="seconds"),
+                    "consultas": [
+                        {
+                            "turma_id": c["turma_id"],
+                            "curso_nome": c.get("curso_nome"),
+                            "ano_curso": c.get("ano_curso"),
+                            "aluno_id": c.get("aluno_id"),
+                            "aluno_nome": c.get("aluno_nome"),
+                            "matricula": c.get("matricula"),
+                            "status": c.get("status"),
+                            "tentativas": c.get("tentativas"),
+                            "erro": c.get("erro"),
+                            "dados": c.get("dados"),
+                            "registro": c.get("registro"),
+                        }
+                        for c in consultas_brutas
+                    ],
+                }
+                JSON_GRADE.write_text(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+                print(f"JSON salvo em {JSON_GRADE}")
+
         aulas: list[dict[str, Any]] = []
         docentes: list[dict[str, Any]] = []
         turmas_ok = 0
         turmas_sem_match = 0
-        for rep in representantes:
-            mat = str(rep["numero_matricula"]).strip()
-            registro = por_matricula.get(mat)
-            if registro is None:
-                # tenta só dígitos
-                mat_dig = re.sub(r"\D", "", mat)
-                registro = next(
-                    (
-                        r
-                        for m, r in por_matricula.items()
-                        if re.sub(r"\D", "", m) == mat_dig
-                    ),
-                    None,
-                )
+        for rep, registro, motivo in pares:
+            tid = int(rep["turma_id"])
+            mat = str(rep.get("numero_matricula") or "").strip()
             if registro is None:
                 turmas_sem_match += 1
                 print(
-                    f"  Sem match SIGAA: turma {rep['turma_id']} "
-                    f"({rep['curso_nome']} {rep['ano_curso']}º) "
-                    f"aluno {rep['aluno_nome']} matrícula {mat}"
+                    f"  Sem match SIGAA: turma {tid} "
+                    f"({rep.get('curso_nome')} {rep.get('ano_curso')}º) "
+                    f"aluno {rep.get('aluno_nome')} matrícula {mat}"
+                    + (f" — {motivo}" if motivo else "")
                 )
                 continue
-            tid = int(rep["turma_id"])
             aulas.extend(extrair_aulas_do_registro(registro, tid))
             docentes.extend(extrair_docentes_do_registro(registro, tid))
             turmas_ok += 1
+            n_disc = len(registro.get("disciplinas") or [])
             print(
-                f"  OK turma {tid} ({rep['curso_nome']} {rep['ano_curso']}º) "
-                f"via {rep['aluno_nome']} ({mat})"
+                f"  OK turma {tid} ({rep.get('curso_nome')} {rep.get('ano_curso')}º) "
+                f"via {rep.get('aluno_nome')} ({mat}) — {n_disc} disciplina(s)"
             )
 
         if not aulas:

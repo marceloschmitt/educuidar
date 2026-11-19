@@ -371,9 +371,10 @@ require_once 'includes/header.php';
             </div>
             <div class="card-body">
                 <p class="mb-2">
-                    Para cada turma do EduCuidar, usa <strong>um aluno</strong> com matrícula
-                    como referência, lê as disciplinas/<code>turno_turma</code> no SIGAA e grava
-                    a grade + docentes dessa turma.
+                    Para cada turma do EduCuidar, consulta o SIGAA com a matrícula de
+                    <strong>um aluno</strong> representante
+                    (<code>/matriculados?matricula=…</code>), lê <code>turno_turma</code>/docentes
+                    e grava a grade dessa turma.
                     Alimenta a tela de horários, alertas de dia completo e aviso aos professores
                     na saída antecipada. Rode quando a grade mudar (1 a 3 vezes por ano).
                 </p>
@@ -400,7 +401,7 @@ require_once 'includes/header.php';
                 <?php endif; ?>
                 <div class="d-flex flex-wrap gap-2">
                     <form method="POST" action="" class="d-inline"
-                          onsubmit="return confirm('Produzir/atualizar a grade e os docentes agora? A consulta ao SIGAA pode demorar alguns minutos.');">
+                          onsubmit="return confirm('Produzir/atualizar a grade e os docentes agora? Será feita uma consulta SIGAA por turma (rápida).');">
                         <input type="hidden" name="action" value="importar_grade">
                         <button type="submit" class="btn btn-outline-primary">
                             <i class="bi bi-arrow-repeat"></i> Produzir / atualizar grade e docentes
